@@ -140,7 +140,7 @@ const loadGoodsForProvider = async (providerid: number) => {
 }
 const handleSubmitApi = (data: any) => isEdit.value ? updateInport(data) : addInport(data)
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确认删除？', '提示', { type: 'warning' })
+  await ElMessageBox.confirm('确认删除？删除后将同时删除该进货单的所有退货记录。', '提示', { type: 'warning' })
   await deleteInport(row.id)
   tableRef.value?.reload()
 }

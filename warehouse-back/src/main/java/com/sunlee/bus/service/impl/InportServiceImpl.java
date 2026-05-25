@@ -1,16 +1,17 @@
 package com.sunlee.bus.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Inport;
+import com.sunlee.bus.entity.Outport;
 import com.sunlee.bus.mapper.GoodsMapper;
 import com.sunlee.bus.mapper.InportMapper;
+import com.sunlee.bus.mapper.OutportMapper;
 import com.sunlee.bus.service.IInportService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.io.Serializable;
 
 /**
  * <p>
@@ -26,6 +27,9 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
 
     @Autowired
     private GoodsMapper goodsMapper;
+
+    @Autowired
+    private OutportMapper outportMapper;
 
     /**
      * 保存商品进货
@@ -60,21 +64,19 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
         return super.updateById(entity);
     }
 
-    /**
-     * 删除商品进货信息
-     * @param id
-     * @return
-     */
     @Override
-    public boolean removeById(Serializable id) {
-        //根据进货ID查询进货信息
+    public void deleteInport(Integer id) {
         Inport inport = baseMapper.selectById(id);
-        //根据商品ID查询商品信息
+        // 级联删除该进货单关联的所有退货记录（通过inportid精确匹配）
+        QueryWrapper<Outport> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("inportid", id);
+        outportMapper.delete(queryWrapper);
+        // 回滚商品库存
         Goods goods = goodsMapper.selectById(inport.getGoodsid());
-        //库存算法  当前库存-进货单数量
-        goods.setNumber(goods.getNumber()-inport.getNumber());
+        goods.setNumber(goods.getNumber() - inport.getNumber());
         goodsMapper.updateById(goods);
-        //更新商品的数量
-        return super.removeById(id);
+        // 删除进货单
+        baseMapper.deleteById(id);
     }
+
 }

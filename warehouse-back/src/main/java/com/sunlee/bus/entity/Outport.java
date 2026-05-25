@@ -46,6 +46,8 @@ public class Outport implements Serializable {
 
     private Integer goodsid;
 
+    private Integer inportid;
+
     /**
      * 供应商姓名
      */

@@ -142,15 +142,14 @@ public class InportController {
     }
 
     /**
-     * 删除进货商品
+     * 删除进货记录（级联删除相关退货记录）
      * @param id
      * @return
      */
     @RequestMapping("deleteInport")
     public ResultObj deleteInport(Integer id){
         try {
-            Inport inport = inportService.getById(id);
-            inportService.removeById(id);
+            inportService.deleteInport(id);
             User user = (User) WebUtils.getSession().getAttribute("user");
             OperationLog opLog = new OperationLog();
             opLog.setType("删除");
@@ -165,7 +164,6 @@ public class InportController {
             return ResultObj.DELETE_ERROR;
         }
     }
-
 
 }
 

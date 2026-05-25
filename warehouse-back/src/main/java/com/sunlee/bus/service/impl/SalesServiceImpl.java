@@ -1,15 +1,17 @@
 package com.sunlee.bus.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Sales;
+import com.sunlee.bus.entity.Salesback;
 import com.sunlee.bus.mapper.GoodsMapper;
 import com.sunlee.bus.mapper.SalesMapper;
+import com.sunlee.bus.mapper.SalesbackMapper;
 import com.sunlee.bus.service.ISalesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.io.Serializable;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * <p>
@@ -20,10 +22,14 @@ import java.io.Serializable;
  * @since 2026-04-20
  */
 @Service
+@Transactional
 public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements ISalesService {
 
     @Autowired
     private GoodsMapper goodsMapper;
+
+    @Autowired
+    private SalesbackMapper salesbackMapper;
 
     /**
      * 添加商品销售
@@ -50,26 +56,25 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
         Sales sales = baseMapper.selectById(entity.getId());
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
         //仓库商品数量=原库存-销售单修改之前的数量+修改之后的数量
-        //     80  +40 -  50     30
         goods.setNumber(goods.getNumber()+sales.getNumber()-entity.getNumber());
         //更新商品
         goodsMapper.updateById(goods);
         return super.updateById(entity);
     }
 
-    /**
-     * 删除商品销售信息
-     * @param id    商品销售单ID
-     * @return
-     */
     @Override
-    public boolean removeById(Serializable id) {
-        //根据商品销售单ID查询出销售单数据
+    public void deleteSales(Integer id) {
         Sales sales = baseMapper.selectById(id);
+        // 级联删除该销售单关联的所有退货记录
+        QueryWrapper<Salesback> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("salesid", id);
+        salesbackMapper.delete(queryWrapper);
+        // 回滚商品库存
         Goods goods = goodsMapper.selectById(sales.getGoodsid());
-        //仓库商品数量=原库存+删除商品销售单的数量
-        goods.setNumber(goods.getNumber()+sales.getNumber());
+        goods.setNumber(goods.getNumber() + sales.getNumber());
         goodsMapper.updateById(goods);
-        return super.removeById(id);
+        // 删除销售单
+        baseMapper.deleteById(id);
     }
+
 }

@@ -75,31 +75,6 @@ public class OutportController {
     }
 
     /**
-     * 删除退货信息（仅删除记录，不回滚库存）
-     * @param id
-     * @return
-     */
-    @RequestMapping("deleteOutport")
-    public ResultObj deleteOutport(Integer id){
-        try {
-            Outport outport = outportService.getById(id);
-            outportService.removeById(id);
-            User user = (User) WebUtils.getSession().getAttribute("user");
-            OperationLog opLog = new OperationLog();
-            opLog.setType("删除");
-            opLog.setModule("退回供应商");
-            opLog.setDescription("删除退货记录 ID=" + id);
-            opLog.setOperateperson(user != null ? user.getName() : "未知用户");
-            opLog.setOperatetime(new Date());
-            operationLogService.save(opLog);
-            return ResultObj.DELETE_SUCCESS;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResultObj.DELETE_ERROR;
-        }
-    }
-
-    /**
      * 取消退货（删除记录并回滚库存）
      * @param id
      * @return

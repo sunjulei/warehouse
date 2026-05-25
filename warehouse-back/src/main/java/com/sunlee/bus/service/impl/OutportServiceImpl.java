@@ -1,6 +1,5 @@
 package com.sunlee.bus.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Inport;
 import com.sunlee.bus.entity.Outport;
@@ -67,6 +66,7 @@ public class OutportServiceImpl extends ServiceImpl<OutportMapper, Outport> impl
         outport.setOutputtime(new Date());
         outport.setRemark(remark);
         outport.setProviderid(inport.getProviderid());
+        outport.setInportid(inport.getId());
         getBaseMapper().insert(outport);
     }
 
@@ -79,10 +79,8 @@ public class OutportServiceImpl extends ServiceImpl<OutportMapper, Outport> impl
         goods.setNumber(goods.getNumber() + outport.getNumber());
         goodsMapper.updateById(goods);
         // 3. 回滚进货单数量
-        QueryWrapper<Inport> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("goodsid", outport.getGoodsid());
-        queryWrapper.eq("providerid", outport.getProviderid());
-        Inport inport = inportMapper.selectOne(queryWrapper);
+        // 通过inportid精确回滚进货单
+        Inport inport = inportMapper.selectById(outport.getInportid());
         if (inport != null) {
             inport.setNumber(inport.getNumber() + outport.getNumber());
             inportMapper.updateById(inport);

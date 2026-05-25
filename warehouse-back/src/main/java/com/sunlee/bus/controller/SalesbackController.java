@@ -113,31 +113,6 @@ public class SalesbackController {
     }
 
     /**
-     * 删除商品销售退回信息（仅删除记录，不回滚库存）
-     * @param id
-     * @return
-     */
-    @RequestMapping("deleteSalesback")
-    public ResultObj deleteSalesback(Integer id){
-        try {
-            Salesback salesback = salesbackService.getById(id);
-            salesbackService.removeById(id);
-            User user = (User) WebUtils.getSession().getAttribute("user");
-            OperationLog opLog = new OperationLog();
-            opLog.setType("删除");
-            opLog.setModule("销售退回");
-            opLog.setDescription("删除销售退货记录 ID=" + id);
-            opLog.setOperateperson(user != null ? user.getName() : "未知用户");
-            opLog.setOperatetime(new Date());
-            operationLogService.save(opLog);
-            return ResultObj.DELETE_SUCCESS;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResultObj.DELETE_ERROR;
-        }
-    }
-
-    /**
      * 取消销售退货（删除记录并回滚库存）
      * @param id
      * @return

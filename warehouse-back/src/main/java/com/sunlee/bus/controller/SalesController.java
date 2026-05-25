@@ -139,15 +139,14 @@ public class SalesController {
     }
 
     /**
-     * 删除商品销售信息
+     * 删除销售记录（级联删除相关退货记录）
      * @param id
      * @return
      */
     @RequestMapping("deleteSales")
     public ResultObj deleteSales(Integer id){
         try {
-            Sales sales = salesService.getById(id);
-            salesService.removeById(id);
+            salesService.deleteSales(id);
             User user = (User) WebUtils.getSession().getAttribute("user");
             OperationLog opLog = new OperationLog();
             opLog.setType("删除");

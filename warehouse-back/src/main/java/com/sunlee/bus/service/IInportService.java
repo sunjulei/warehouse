@@ -13,4 +13,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IInportService extends IService<Inport> {
 
+    /**
+     * 删除进货记录并级联删除相关退货记录
+     * @param id 进货单ID
+     */
+    void deleteInport(Integer id);
 }

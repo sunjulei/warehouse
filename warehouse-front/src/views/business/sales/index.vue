@@ -114,7 +114,7 @@ const handleAdd = () => { isEdit.value = false; dialogRef.value?.open({}, false)
 const handleEdit = (row: any) => { isEdit.value = true; dialogRef.value?.open(row, true) }
 const handleSubmitApi = (data: any) => isEdit.value ? updateSales(data) : addSales(data)
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确认删除？', '提示', { type: 'warning' })
+  await ElMessageBox.confirm('确认删除？删除后将同时删除该销售单的所有退货记录。', '提示', { type: 'warning' })
   await deleteSales(row.id)
   tableRef.value?.reload()
 }

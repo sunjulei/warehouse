@@ -81,9 +81,20 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="分类" prop="categoryid">
-              <el-select v-model="formData.categoryid" placeholder="选择分类" filterable>
-                <el-option v-for="c in categories" :key="c.id" :label="c.catename" :value="c.id" />
-              </el-select>
+              <div style="display:flex;gap:4px;width:100%">
+                <el-select v-model="formData.categoryid" placeholder="选择分类" filterable style="flex:1">
+                  <el-option v-for="c in categories" :key="c.id" :label="c.catename" :value="c.id" />
+                </el-select>
+                <el-popover placement="bottom" :width="220" trigger="click" ref="categoryPopoverRef">
+                  <template #reference>
+                    <el-button :icon="Plus" />
+                  </template>
+                  <div style="display:flex;gap:8px">
+                    <el-input v-model="newCategoryName" placeholder="新分类名称" size="small" clearable @keyup.enter="handleQuickAddCategory(formData)" />
+                    <el-button type="primary" size="small" :disabled="!newCategoryName.trim()" @click="handleQuickAddCategory(formData)">添加</el-button>
+                  </div>
+                </el-popover>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -143,20 +154,23 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import SearchForm from '@/components/SearchForm.vue'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
 import ImageUpload from '@/components/ImageUpload.vue'
 import { loadAllGoods, addGoods, updateGoods, deleteGoods, updateGoodsAvailable } from '@/api/goods'
 import { loadAllProviderForSelect } from '@/api/provider'
-import { loadAllCategoryForSelect } from '@/api/category'
+import { loadAllCategoryForSelect, addCategory } from '@/api/category'
 import { getImageUrl } from '@/api/file'
 
 const tableRef = ref()
 const dialogRef = ref()
+const categoryPopoverRef = ref()
 const isEdit = ref(false)
 const providers = ref<any[]>([])
 const categories = ref<any[]>([])
+const newCategoryName = ref('')
 
 const searchParams = reactive({
   goodsname: '',
@@ -188,6 +202,22 @@ const handleToggleAvailable = async (row: any) => {
   await updateGoodsAvailable(row.id, newStatus)
   ElMessage.success(`${action}成功`)
   tableRef.value?.reload()
+}
+const handleQuickAddCategory = async (formData: any) => {
+  const name = newCategoryName.value.trim()
+  if (!name) return
+  const res: any = await addCategory({ catename: name })
+  if (res.code === 200) {
+    ElMessage.success('分类创建成功')
+    const list: any = await loadAllCategoryForSelect()
+    categories.value = list.data || []
+    const created = (list.data || []).find((c: any) => c.catename === name)
+    if (created) formData.categoryid = created.id
+    newCategoryName.value = ''
+    categoryPopoverRef.value?.hide()
+  } else {
+    ElMessage.error(res.msg || '创建失败')
+  }
 }
 const handleDelete = async (row: any) => {
   await ElMessageBox.confirm('确认删除该商品？', '提示', { type: 'warning' })
