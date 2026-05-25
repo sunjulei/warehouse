@@ -124,7 +124,7 @@ public class CacheAspect {
      * 声明用户的切面表达式
      */
     private static final String POINTCUT_USER_UPDATE="execution(* com.sunlee.sys.service.impl.UserServiceImpl.updateById(..))";
-    private static final String POINTCUT_USER_ADD="execution(* com.sunlee.sys.service.impl.UserServiceImpl.updateById(..))";
+    private static final String POINTCUT_USER_ADD="execution(* com.sunlee.sys.service.impl.UserServiceImpl.save(..))";
     private static final String POINTCUT_USER_GET="execution(* com.sunlee.sys.service.impl.UserServiceImpl.getById(..))";
     private static final String POINTCUT_USER_DELETE="execution(* com.sunlee.sys.service.impl.UserServiceImpl.removeById(..))";
 

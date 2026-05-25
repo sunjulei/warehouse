@@ -38,7 +38,7 @@ public class Customer implements Serializable {
 
     private String telephone;
 
-    private String connectionpersion;
+    private String connectionperson;
 
     private String phone;
 

@@ -6,7 +6,7 @@
           <el-input v-model="searchParams.customername" placeholder="客户名" clearable />
         </el-form-item>
         <el-form-item label="联系人">
-          <el-input v-model="searchParams.connectionpersion" placeholder="联系人" clearable />
+          <el-input v-model="searchParams.connectionperson" placeholder="联系人" clearable />
         </el-form-item>
         <el-form-item label="电话">
           <el-input v-model="searchParams.phone" placeholder="电话" clearable />
@@ -17,7 +17,7 @@
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="customername" label="客户名" />
-        <el-table-column prop="connectionpersion" label="联系人" />
+        <el-table-column prop="connectionperson" label="联系人" />
         <el-table-column prop="phone" label="电话" />
         <el-table-column prop="address" label="地址" />
         <el-table-column label="操作" width="180" fixed="right">
@@ -39,8 +39,8 @@
         <el-form-item label="客户名" prop="customername">
           <el-input v-model="formData.customername" />
         </el-form-item>
-        <el-form-item label="联系人" prop="connectionpersion">
-          <el-input v-model="formData.connectionpersion" />
+        <el-form-item label="联系人" prop="connectionperson">
+          <el-input v-model="formData.connectionperson" />
         </el-form-item>
         <el-form-item label="电话" prop="phone">
           <el-input v-model="formData.phone" />
@@ -67,7 +67,7 @@ const isEdit = ref(false)
 
 const searchParams = reactive({
   customername: '',
-  connectionpersion: '',
+  connectionperson: '',
   phone: ''
 })
 
@@ -81,7 +81,7 @@ const handleSearch = () => {
 
 const handleReset = () => {
   searchParams.customername = ''
-  searchParams.connectionpersion = ''
+  searchParams.connectionperson = ''
   searchParams.phone = ''
 }
 

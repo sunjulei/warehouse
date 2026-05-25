@@ -1,7 +1,7 @@
 export interface Customer {
   id: number
   customername: string
-  connectionpersion: string
+  connectionperson: string
   phone: string
   address: string
 }

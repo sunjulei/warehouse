@@ -56,7 +56,7 @@ public class CustomerController {
         //2.声明一个queryWrapper
         QueryWrapper<Customer> queryWrapper = new QueryWrapper<Customer>();
         queryWrapper.like(StringUtils.isNotBlank(customerVo.getCustomername()),"customername",customerVo.getCustomername());
-        queryWrapper.like(StringUtils.isNotBlank(customerVo.getConnectionpersion()),"connectionpersion",customerVo.getConnectionpersion());
+        queryWrapper.like(StringUtils.isNotBlank(customerVo.getConnectionperson()),"connectionperson",customerVo.getConnectionperson());
         queryWrapper.like(StringUtils.isNotBlank(customerVo.getPhone()),"phone",customerVo.getPhone());
         queryWrapper.orderByDesc("id");
         customerService.page(page,queryWrapper);
