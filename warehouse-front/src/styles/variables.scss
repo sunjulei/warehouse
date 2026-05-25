@@ -1,0 +1,138 @@
+// ============================================
+// CSS 变量定义 — 精工雅致主题
+// ============================================
+
+:root {
+  // 主色调 - 深邃靛蓝
+  --primary-color: #3b82f6;
+  --primary-light: #60a5fa;
+  --primary-dark: #2563eb;
+  --primary-darker: #1d4ed8;
+  --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  --primary-rgb: 59, 130, 246;
+  --primary-subtle: rgba(59, 130, 246, 0.06);
+
+  // 强调色 - 琥珀金
+  --accent-color: #f59e0b;
+  --accent-light: #fbbf24;
+  --accent-dark: #d97706;
+  --accent-rgb: 245, 158, 11;
+  --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+
+  // 功能色
+  --success-color: #10b981;
+  --success-light: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.08);
+  --warning-color: #f59e0b;
+  --warning-light: #fbbf24;
+  --warning-bg: rgba(245, 158, 11, 0.08);
+  --danger-color: #ef4444;
+  --danger-light: #f87171;
+  --danger-bg: rgba(239, 68, 68, 0.08);
+  --info-color: #6366f1;
+  --info-light: #818cf8;
+  --info-bg: rgba(99, 102, 241, 0.08);
+
+  // 文本色
+  --text-primary: #0f172a;
+  --text-regular: #334155;
+  --text-secondary: #64748b;
+  --text-placeholder: #94a3b8;
+  --text-disabled: #cbd5e1;
+
+  // 背景色
+  --bg-primary: #ffffff;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #f8fafc;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(15, 23, 42, 0.6);
+  --bg-glass: rgba(255, 255, 255, 0.72);
+  --bg-pattern: #f8fafc;
+
+  // 侧边栏 - 深邃午夜
+  --sidebar-bg: #0f172a;
+  --sidebar-bg-light: #1e293b;
+  --sidebar-hover: rgba(59, 130, 246, 0.12);
+  --sidebar-active: rgba(59, 130, 246, 0.2);
+  --sidebar-text: #94a3b8;
+  --sidebar-text-active: #ffffff;
+  --sidebar-divider: rgba(148, 163, 184, 0.1);
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 68px;
+
+  // 边框
+  --border-color: #e2e8f0;
+  --border-light: #f1f5f9;
+  --border-dark: #cbd5e1;
+  --border-focus: var(--primary-color);
+  --border-radius-xs: 4px;
+  --border-radius-sm: 6px;
+  --border-radius-md: 10px;
+  --border-radius-lg: 14px;
+  --border-radius-xl: 20px;
+  --border-radius-2xl: 28px;
+
+  // 阴影 - 层次更丰富
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.2);
+  --shadow-primary: 0 4px 14px 0 rgba(var(--primary-rgb), 0.3);
+  --shadow-primary-lg: 0 8px 24px rgba(var(--primary-rgb), 0.35);
+  --shadow-inner: inset 0 2px 4px 0 rgba(15, 23, 42, 0.04);
+
+  // 动画 - 更流畅
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --transition-bounce: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  // 间距
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  // 字体 - 更具辨识度
+  --font-family: 'DM Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 30px;
+  --font-size-5xl: 36px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+
+  // 头部高度
+  --header-height: 60px;
+
+  // 层级
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
