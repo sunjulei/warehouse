@@ -3,6 +3,7 @@ package com.sunlee.bus.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -47,6 +48,9 @@ public class Salesback implements Serializable {
     private Integer goodsid;
 
     private Integer salesid;
+
+    @TableLogic
+    private Integer isdelete;
 
     /**
      * 客户姓名

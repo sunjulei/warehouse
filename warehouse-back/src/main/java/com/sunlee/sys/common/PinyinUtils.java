@@ -46,7 +46,6 @@ public class PinyinUtils {
 
     public static void main(String[] args) {
         String s = getPingYin("超级管理员");
-        System.out.println(s);
     }
 
 

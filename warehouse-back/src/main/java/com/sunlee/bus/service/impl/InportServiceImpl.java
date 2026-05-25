@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * <p>
  * InnoDB free: 9216 kB; (`providerid`) REFER `warehouse/bus_provider`(`id`); (`goo 服务实现类
@@ -67,15 +70,19 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
     @Override
     public void deleteInport(Integer id) {
         Inport inport = baseMapper.selectById(id);
-        // 级联删除该进货单关联的所有退货记录（通过inportid精确匹配）
+        // 级联软删除该进货单关联的所有退货记录
         QueryWrapper<Outport> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("inportid", id);
-        outportMapper.delete(queryWrapper);
+        List<Integer> outportIds = outportMapper.selectList(queryWrapper)
+                .stream().map(Outport::getId).collect(Collectors.toList());
+        if (!outportIds.isEmpty()) {
+            outportMapper.deleteByIds(outportIds);
+        }
         // 回滚商品库存
         Goods goods = goodsMapper.selectById(inport.getGoodsid());
         goods.setNumber(goods.getNumber() - inport.getNumber());
         goodsMapper.updateById(goods);
-        // 删除进货单
+        // 软删除进货单
         baseMapper.deleteById(id);
     }
 

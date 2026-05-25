@@ -3,6 +3,7 @@ package com.sunlee.bus.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -47,6 +48,9 @@ public class Outport implements Serializable {
     private Integer goodsid;
 
     private Integer inportid;
+
+    @TableLogic
+    private Integer isdelete;
 
     /**
      * 供应商姓名

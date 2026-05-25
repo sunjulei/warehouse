@@ -95,7 +95,6 @@ public class SalesbackController {
         salesbackService.page(page, queryWrapper);
         List<Salesback> records = page.getRecords();
         for (Salesback salesback : records) {
-            System.out.println("============================");
             Customer customer = customerService.getById(salesback.getCustomerid());
             if (customer!=null){
                 //设置客户姓名

@@ -107,6 +107,7 @@ CREATE TABLE `bus_inport`  (
   `inportprice` double NULL DEFAULT NULL,
   `providerid` int(11) NULL DEFAULT NULL,
   `goodsid` int(11) NULL DEFAULT NULL,
+  `isdelete` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `bus_inport_ibfk_1`(`providerid`) USING BTREE,
   INDEX `bus_inport_ibfk_2`(`goodsid`) USING BTREE,
@@ -117,16 +118,16 @@ CREATE TABLE `bus_inport`  (
 -- ----------------------------
 -- Records of bus_inport
 -- ----------------------------
-INSERT INTO `bus_inport` VALUES (1, '微信', '2018-05-07 00:00:00', '张三', 100, '备注', 3.5, 1, 1);
-INSERT INTO `bus_inport` VALUES (2, '支付宝', '2018-05-07 00:00:00', '张三', 1000, '无', 2.5, 3, 3);
-INSERT INTO `bus_inport` VALUES (3, '银联', '2018-05-07 00:00:00', '张三', 100, '1231', 111, 3, 3);
-INSERT INTO `bus_inport` VALUES (4, '银联', '2018-05-07 00:00:00', '张三', 1000, '无', 2, 3, 1);
-INSERT INTO `bus_inport` VALUES (5, '银联', '2018-05-07 00:00:00', '张三', 100, '无', 1, 3, 1);
-INSERT INTO `bus_inport` VALUES (6, '银联', '2018-05-07 00:00:00', '张三', 100, '1231', 2.5, 1, 2);
-INSERT INTO `bus_inport` VALUES (8, '支付宝', '2018-05-07 00:00:00', '张三', 100, '', 1, 3, 1);
-INSERT INTO `bus_inport` VALUES (10, '支付宝', '2018-08-07 17:17:57', '超级管理员', 100, 'sadfasfdsa', 1.5, 3, 1);
-INSERT INTO `bus_inport` VALUES (11, '支付宝', '2018-09-17 16:12:25', '超级管理员', 21, '21', 21, 1, 3);
-INSERT INTO `bus_inport` VALUES (12, '微信', '2018-12-25 16:48:24', '超级管理员', 100, '123213213', 12321321, 3, 1);
+INSERT INTO `bus_inport` VALUES (1, '微信', '2018-05-07 00:00:00', '张三', 100, '备注', 3.5, 1, 1, 0);
+INSERT INTO `bus_inport` VALUES (2, '支付宝', '2018-05-07 00:00:00', '张三', 1000, '无', 2.5, 3, 3, 0);
+INSERT INTO `bus_inport` VALUES (3, '银联', '2018-05-07 00:00:00', '张三', 100, '1231', 111, 3, 3, 0);
+INSERT INTO `bus_inport` VALUES (4, '银联', '2018-05-07 00:00:00', '张三', 1000, '无', 2, 3, 1, 0);
+INSERT INTO `bus_inport` VALUES (5, '银联', '2018-05-07 00:00:00', '张三', 100, '无', 1, 3, 1, 0);
+INSERT INTO `bus_inport` VALUES (6, '银联', '2018-05-07 00:00:00', '张三', 100, '1231', 2.5, 1, 2, 0);
+INSERT INTO `bus_inport` VALUES (8, '支付宝', '2018-05-07 00:00:00', '张三', 100, '', 1, 3, 1, 0);
+INSERT INTO `bus_inport` VALUES (10, '支付宝', '2018-08-07 17:17:57', '超级管理员', 100, 'sadfasfdsa', 1.5, 3, 1, 0);
+INSERT INTO `bus_inport` VALUES (11, '支付宝', '2018-09-17 16:12:25', '超级管理员', 21, '21', 21, 1, 3, 0);
+INSERT INTO `bus_inport` VALUES (12, '微信', '2018-12-25 16:48:24', '超级管理员', 100, '123213213', 12321321, 3, 1, 0);
 
 -- ----------------------------
 -- Table structure for bus_outport
@@ -143,14 +144,15 @@ CREATE TABLE `bus_outport`  (
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `goodsid` int(11) NULL DEFAULT NULL,
   `inportid` int(11) NULL DEFAULT NULL,
+  `isdelete` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bus_outport
 -- ----------------------------
-INSERT INTO `bus_outport` VALUES (1, 3, '微信', '2019-08-16 08:19:50', '超级管理员', 12321321.00, 1, '', 1, 1);
-INSERT INTO `bus_outport` VALUES (2, 3, '微信', '2019-08-16 08:26:54', '超级管理员', 12321321.00, 11, '11', 1, 1);
+INSERT INTO `bus_outport` VALUES (1, 3, '微信', '2019-08-16 08:19:50', '超级管理员', 12321321.00, 1, '', 1, 1, 0);
+INSERT INTO `bus_outport` VALUES (2, 3, '微信', '2019-08-16 08:26:54', '超级管理员', 12321321.00, 11, '11', 1, 1, 0);
 
 -- ----------------------------
 -- Table structure for bus_provider
@@ -196,14 +198,15 @@ CREATE TABLE `bus_sales`  (
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `saleprice` decimal(10, 2) NULL DEFAULT NULL,
   `goodsid` int(11) NULL DEFAULT NULL,
+  `isdelete` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bus_sales
 -- ----------------------------
-INSERT INTO `bus_sales` VALUES (1, 4, '支付宝', '2020-01-21 03:04:52', '超级管理员', 15, '士大夫士大夫', 60.00, 1);
-INSERT INTO `bus_sales` VALUES (2, 8, '支付宝', '2020-01-21 03:05:13', '超级管理员', 10, '萨的发生地方', 100.00, 2);
+INSERT INTO `bus_sales` VALUES (1, 4, '支付宝', '2020-01-21 03:04:52', '超级管理员', 15, '士大夫士大夫', 60.00, 1, 0);
+INSERT INTO `bus_sales` VALUES (2, 8, '支付宝', '2020-01-21 03:05:13', '超级管理员', 10, '萨的发生地方', 100.00, 2, 0);
 
 -- ----------------------------
 -- Table structure for bus_salesback
@@ -220,14 +223,15 @@ CREATE TABLE `bus_salesback`  (
   `remark` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `goodsid` int(11) NULL DEFAULT NULL,
   `salesid` int(11) NULL DEFAULT NULL,
+  `isdelete` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of bus_salesback
 -- ----------------------------
-INSERT INTO `bus_salesback` VALUES (1, 8, '支付宝', '2020-01-21 03:05:26', 100.00, '超级管理员', 20, '过期了', 2, 2);
-INSERT INTO `bus_salesback` VALUES (4, 4, '支付宝', '2020-03-07 07:45:12', 60.00, '超级管理员', 5, 'sdf', 1, 1);
+INSERT INTO `bus_salesback` VALUES (1, 8, '支付宝', '2020-01-21 03:05:26', 100.00, '超级管理员', 20, '过期了', 2, 2, 0);
+INSERT INTO `bus_salesback` VALUES (4, 4, '支付宝', '2020-03-07 07:45:12', 60.00, '超级管理员', 5, 'sdf', 1, 1, 0);
 
 -- ----------------------------
 -- Table structure for sys_dept

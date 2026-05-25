@@ -104,8 +104,6 @@ public class GoodsController {
     @RequestMapping("addGoods")
     public ResultObj addGoods(GoodsVo goodsVo){
         try {
-            System.out.println("====================================");
-            System.out.println(goodsVo.getGoodsimg());
             if (goodsVo.getGoodsimg()!=null&&goodsVo.getGoodsimg().endsWith("_temp")){
                 String newName = AppFileUtils.renameFile(goodsVo.getGoodsimg());
                 goodsVo.setGoodsimg(newName);
