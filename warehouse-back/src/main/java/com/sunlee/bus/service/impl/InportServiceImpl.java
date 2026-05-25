@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -71,13 +69,11 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
     public void deleteInport(Integer id) {
         Inport inport = baseMapper.selectById(id);
         // 级联软删除该进货单关联的所有退货记录
-        QueryWrapper<Outport> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("inportid", id);
-        List<Integer> outportIds = outportMapper.selectList(queryWrapper)
-                .stream().map(Outport::getId).collect(Collectors.toList());
-        if (!outportIds.isEmpty()) {
-            outportMapper.deleteByIds(outportIds);
-        }
+        Outport outportUpdate = new Outport();
+        outportUpdate.setIsdelete(1);
+        QueryWrapper<Outport> outportWrapper = new QueryWrapper<>();
+        outportWrapper.eq("inportid", id);
+        outportMapper.update(outportUpdate, outportWrapper);
         // 回滚商品库存
         Goods goods = goodsMapper.selectById(inport.getGoodsid());
         goods.setNumber(goods.getNumber() - inport.getNumber());

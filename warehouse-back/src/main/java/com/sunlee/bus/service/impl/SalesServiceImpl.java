@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -69,13 +67,11 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
     public void deleteSales(Integer id) {
         Sales sales = baseMapper.selectById(id);
         // 级联软删除该销售单关联的所有退货记录
-        QueryWrapper<Salesback> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("salesid", id);
-        List<Integer> salesbackIds = salesbackMapper.selectList(queryWrapper)
-                .stream().map(Salesback::getId).collect(Collectors.toList());
-        if (!salesbackIds.isEmpty()) {
-            salesbackMapper.deleteByIds(salesbackIds);
-        }
+        Salesback salesbackUpdate = new Salesback();
+        salesbackUpdate.setIsdelete(1);
+        QueryWrapper<Salesback> salesbackWrapper = new QueryWrapper<>();
+        salesbackWrapper.eq("salesid", id);
+        salesbackMapper.update(salesbackUpdate, salesbackWrapper);
         // 回滚商品库存
         Goods goods = goodsMapper.selectById(sales.getGoodsid());
         goods.setNumber(goods.getNumber() + sales.getNumber());

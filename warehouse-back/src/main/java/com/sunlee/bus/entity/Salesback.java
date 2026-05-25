@@ -49,7 +49,6 @@ public class Salesback implements Serializable {
 
     private Integer salesid;
 
-    @TableLogic
     private Integer isdelete;
 
     /**
