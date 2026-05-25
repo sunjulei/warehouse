@@ -7,6 +7,7 @@ import com.sunlee.bus.entity.OperationLog;
 import com.sunlee.bus.service.IOperationLogService;
 import com.sunlee.bus.vo.OperationLogVo;
 import com.sunlee.sys.common.DataGridView;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +23,11 @@ public class OperationLogController {
     public DataGridView loadAllOperationLog(OperationLogVo operationLogVo) {
         IPage<OperationLog> page = new Page<>(operationLogVo.getPage(), operationLogVo.getLimit());
         QueryWrapper<OperationLog> queryWrapper = new QueryWrapper<>();
+        queryWrapper.like(StringUtils.isNotBlank(operationLogVo.getType()), "type", operationLogVo.getType());
+        queryWrapper.like(StringUtils.isNotBlank(operationLogVo.getModule()), "module", operationLogVo.getModule());
+        queryWrapper.like(StringUtils.isNotBlank(operationLogVo.getOperateperson()), "operateperson", operationLogVo.getOperateperson());
+        queryWrapper.ge(operationLogVo.getStartTime() != null, "operatetime", operationLogVo.getStartTime());
+        queryWrapper.le(operationLogVo.getEndTime() != null, "operatetime", operationLogVo.getEndTime());
         queryWrapper.orderByDesc("operatetime");
         operationLogService.page(page, queryWrapper);
         return new DataGridView(page.getTotal(), page.getRecords());

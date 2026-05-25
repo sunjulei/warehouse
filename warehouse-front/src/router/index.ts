@@ -78,6 +78,12 @@ const router = createRouter({
           meta: { title: '登录日志' }
         },
         {
+          path: 'system/operation-log',
+          name: 'OperationLogManager',
+          component: () => import('@/views/system/operation-log/index.vue'),
+          meta: { title: '操作日志' }
+        },
+        {
           path: 'system/cache',
           name: 'CacheManager',
           component: () => import('@/views/system/cache/index.vue'),
