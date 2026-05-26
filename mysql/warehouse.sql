@@ -13,6 +13,11 @@
 
  Date: 09/03/2020 16:37:32
 */
+
+create database warehouse;
+
+use warehouse;
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -85,13 +90,13 @@ CREATE TABLE `bus_goods`  (
 -- ----------------------------
 -- Records of bus_goods
 -- ----------------------------
-INSERT INTO `bus_goods` VALUES (1, '娃哈哈', 3, '武汉', '120ML', '瓶', 'PH12345', 'PZ1234', '小孩子都爱的', 2, 473, 10, '2020-02-24/99F329D96E06449E9A5D613B1D3FA7DD.jpg', 1);
-INSERT INTO `bus_goods` VALUES (2, '旺旺雪饼[小包]', 1, '仙桃', '包', '袋', 'PH12312312', 'PZ12312', '好吃不上火', 4, 1090, 10, '2020-01-21/625C047E6A934D9FA5C611BB7D93CD8F.jpg', 1);
-INSERT INTO `bus_goods` VALUES (3, '旺旺大礼包', 1, '仙桃', '盒', '盒', '11', '11', '111', 28, 1021, 100, '2020-01-21/8F743D2038D747878B02C0E2183823A6.jpg', 1);
-INSERT INTO `bus_goods` VALUES (4, '娃哈哈', 3, '武汉', '200ML', '瓶', '11', '111', '12321', 3, 760, 10, '2020-01-21/B1B4C7D489EB43E5B662E8E92A6A5180.jpg', 1);
-INSERT INTO `bus_goods` VALUES (5, '娃哈哈', 3, '武汉', '300ML', '瓶', '1234', '12321', '22221111', 3, 1000, 100, '2020-01-21/BAF8B804591942F2AEF43E6BE25934DD.jpg', 1);
-INSERT INTO `bus_goods` VALUES (6, '纯牛奶', 4, '内蒙古', '24瓶一箱', '瓶', 'SD13156146', '321651613', '牛奶', 55, 100, 20, '2020-01-21/F0BC1EBC2BFA4497BDF8B9254BA59511.jpg', 1);
-INSERT INTO `bus_goods` VALUES (18, '八宝粥', 2, '广州', '箱', '15', 'DFS234341231', 'DF123124324', '粥', 4, 500, 100, '2020-03-07/5D1B185D310245A7AD7EFF51393C8432.jpg', 1);
+INSERT INTO `bus_goods` VALUES (1, '娃哈哈', 3, 1, '武汉', '120ML', '瓶', 'PH12345', 'PZ1234', '小孩子都爱的', 2, 473, 10, '2020-02-24/99F329D96E06449E9A5D613B1D3FA7DD.jpg', 1);
+INSERT INTO `bus_goods` VALUES (2, '旺旺雪饼[小包]', 1, 1, '仙桃', '包', '袋', 'PH12312312', 'PZ12312', '好吃不上火', 4, 1090, 10, '2020-01-21/625C047E6A934D9FA5C611BB7D93CD8F.jpg', 1);
+INSERT INTO `bus_goods` VALUES (3, '旺旺大礼包', 1, 1, '仙桃', '盒', '盒', '11', '11', '111', 28, 1021, 100, '2020-01-21/8F743D2038D747878B02C0E2183823A6.jpg', 1);
+INSERT INTO `bus_goods` VALUES (4, '娃哈哈', 3, 1, '武汉', '200ML', '瓶', '11', '111', '12321', 3, 760, 10, '2020-01-21/B1B4C7D489EB43E5B662E8E92A6A5180.jpg', 1);
+INSERT INTO `bus_goods` VALUES (5, '娃哈哈', 3, 1, '武汉', '300ML', '瓶', '1234', '12321', '22221111', 3, 1000, 100, '2020-01-21/BAF8B804591942F2AEF43E6BE25934DD.jpg', 1);
+INSERT INTO `bus_goods` VALUES (6, '纯牛奶', 4, 1, '内蒙古', '24瓶一箱', '瓶', 'SD13156146', '321651613', '牛奶', 55, 100, 20, '2020-01-21/F0BC1EBC2BFA4497BDF8B9254BA59511.jpg', 1);
+INSERT INTO `bus_goods` VALUES (18, '八宝粥', 2, 1, '广州', '箱', '15', 'DFS234341231', 'DF123124324', '粥', 4, 500, 100, '2020-03-07/5D1B185D310245A7AD7EFF51393C8432.jpg', 1);
 
 -- ----------------------------
 -- Table structure for bus_inport

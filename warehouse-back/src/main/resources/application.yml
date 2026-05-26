@@ -8,7 +8,7 @@ spring:
       driver-class-name: com.mysql.cj.jdbc.Driver
       url: jdbc:mysql://127.0.0.1:3306/warehouse?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=UTC&useSSL=false
       username: root
-      password: sjl0.0
+      password: 123456
       max-active: 20
       max-wait: 5000
       initial-size: 1
