@@ -43,6 +43,44 @@
 - 最近操作日志
 - 库存预警商品列表
 
+## 默认账号
+
+| 用户名 | 密码 | 角色 |
+|---|---|---|
+| admin | 123456 | 超级管理员 |
+
+## 功能截图
+
+### 首页
+![首页](./img/首页.png)
+
+### 系统管理
+![系统管理](./img/系统管理.png)
+
+### 基础数据管理
+| 客户管理 | 供应商管理 |
+|:---:|:---:|
+| ![客户管理](./img/客户管理.png) | ![供应商管理](./img/供应商管理.png) |
+
+| 商品分类 | 商品管理 |
+|:---:|:---:|
+| ![商品分类](./img/商品分类.png) | ![商品管理](./img/商品管理.png) |
+
+### 进货管理
+| 商品进货 | 商品退货 |
+|:---:|:---:|
+| ![进货管理-商品进货](./img/进货管理-商品进货.png) | ![进货管理-商品退货](./img/进货管理-商品退货.png) |
+
+### 销售管理
+| 商品销售 | 商品退货 |
+|:---:|:---:|
+| ![销售管理-商品销售](./img/销售管理-商品销售.png) | ![销售管理-商品退货](./img/销售管理-商品退货.png) |
+
+### 报表统计
+| 进销金额分析 | 进销商品分析 | 利润分析 |
+|:---:|:---:|:---:|
+| ![报表统计-进销金额分析](./img/报表统计-进销金额分析.png) | ![报表统计-进销商品分析](./img/报表统计-进销商品分析.png) | ![报表统计-利润分析](./img/报表统计-利润分析.png) |
+
 ## 快速开始
 
 ### 环境要求
@@ -83,90 +121,6 @@ npm run build
 # 产物在 warehouse-frontend/dist/
 ```
 
-## 默认账号
-
-| 用户名 | 密码 | 角色 |
-|---|---|---|
-| admin | 123456 | 超级管理员 |
-
-## 项目结构
-
-```
-warehouse-master/
-├── src/main/java/com/sunlee/
-│   ├── WarehouseApplication.java          # 启动类
-│   ├── bus/                               # 业务模块
-│   │   ├── controller/                    # 控制层
-│   │   ├── entity/                        # 实体类
-│   │   ├── mapper/                        # MyBatis Mapper
-│   │   ├── service/                       # 业务层
-│   │   ├── vo/                            # 视图对象
-│   │   └── cache/                         # 业务缓存切面
-│   └── sys/                               # 系统模块
-│       ├── controller/                    # 控制层
-│       ├── entity/                        # 实体类
-│       ├── mapper/                        # MyBatis Mapper
-│       ├── service/                       # 业务层
-│       ├── vo/                            # 视图对象
-│       ├── common/                        # 公共类（DataGridView, ResultObj 等）
-│       ├── config/                        # 配置（SA-Token, Springdoc, MyBatis-Plus）
-│       └── cache/                         # 缓存切面
-├── src/main/resources/
-│   ├── application.yml                    # 应用配置
-│   └── mapper/{bus,sys}/                  # MyBatis XML
-├── warehouse-frontend/
-│   ├── src/
-│   │   ├── api/                           # 接口请求
-│   │   ├── components/                    # 公共组件
-│   │   ├── composables/                   # 组合式函数
-│   │   ├── layout/                        # 布局组件
-│   │   ├── router/                        # 路由配置
-│   │   ├── stores/                        # Pinia 状态管理
-│   │   ├── types/                         # TypeScript 类型
-│   │   ├── utils/                         # 工具函数
-│   │   └── views/                         # 页面组件
-│   ├── vite.config.ts                     # Vite 配置
-│   └── package.json
-├── warehouse.sql                          # 数据库脚本
-├── pom.xml                                # Maven 配置
-└── README.md
-```
-
-## 接口说明
-
-所有接口以 `/api` 为前缀（前端 Vite 代理会去掉 `/api`）。
-
-| 模块 | 前缀 | 说明 |
-|---|---|---|
-| 认证 | `/login` | 登录、登出、当前用户 |
-| 系统 | `/user`, `/role`, `/dept`, `/menu`, `/permission`, `/notice` | 系统管理 CRUD |
-| 业务 | `/customer`, `/provider`, `/category`, `/goods` | 基础数据 CRUD |
-| 业务 | `/inport`, `/outport`, `/sales`, `/salesback` | 进销存操作 |
-| 报表 | `/report` | 数据分析接口 |
-| 文件 | `/file` | 文件上传/预览 |
-
-## 数据库表
-
-| 表名 | 说明 |
-|---|---|
-| `sys_user` | 用户表 |
-| `sys_role` | 角色表 |
-| `sys_dept` | 部门表 |
-| `sys_menu` | 菜单表 |
-| `sys_permission` | 权限表（菜单 + 按钮权限） |
-| `sys_role_permission` | 角色-权限关联 |
-| `sys_user_role` | 用户-角色关联 |
-| `sys_notice` | 公告表 |
-| `sys_loginfo` | 登录日志 |
-| `bus_goods` | 商品表 |
-| `bus_category` | 商品分类表 |
-| `bus_customer` | 客户表 |
-| `bus_provider` | 供应商表 |
-| `bus_inport` | 进货记录表 |
-| `bus_outport` | 退货记录表 |
-| `bus_sales` | 销售记录表 |
-| `bus_salesback` | 销售退货表 |
-| `bus_operation_log` | 操作日志表 |
 
 ## 许可证
 
