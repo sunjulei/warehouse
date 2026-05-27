@@ -13,6 +13,7 @@ export interface Goods {
   dangernum: number
   goodsimg: string
   available: number
+  attribute: string
   providername?: string
   categoryname?: string
 }

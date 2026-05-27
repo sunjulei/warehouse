@@ -77,6 +77,7 @@ public class GoodsController {
         queryWrapper.like(StringUtils.isNotBlank(goodsVo.getPromitcode()),"promitcode",goodsVo.getPromitcode());
         queryWrapper.like(StringUtils.isNotBlank(goodsVo.getDescription()),"description",goodsVo.getDescription());
         queryWrapper.like(StringUtils.isNotBlank(goodsVo.getSize()),"size",goodsVo.getSize());
+        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getAttribute()),"attribute",goodsVo.getAttribute());
 
         queryWrapper.orderByDesc("id");
         goodsService.page(page,queryWrapper);

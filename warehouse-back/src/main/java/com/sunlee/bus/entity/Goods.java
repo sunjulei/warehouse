@@ -55,6 +55,8 @@ public class Goods implements Serializable {
 
     private Integer available;
 
+    private String attribute;
+
     private Integer providerid;
 
     @TableField(exist = false)

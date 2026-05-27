@@ -18,6 +18,9 @@
             <el-option v-for="c in categories" :key="c.id" :label="c.catename" :value="c.id" />
           </el-select>
         </el-form-item>
+        <el-form-item label="附加属性">
+          <el-input v-model="searchParams.attribute" placeholder="附加属性" clearable />
+        </el-form-item>
       </SearchForm>
 
       <CrudTable ref="tableRef" :load-api="loadAllGoods" :search-params="searchParams">
@@ -37,6 +40,13 @@
         <el-table-column prop="price" label="价格" width="80" />
         <el-table-column prop="number" label="库存" width="80" />
         <el-table-column prop="dangernum" label="预警值" width="80" />
+        <el-table-column label="附加属性" min-width="160">
+          <template #default="{ row }">
+            <template v-if="row.attribute">
+              <div v-for="(item, idx) in parseAttribute(row.attribute)" :key="idx" style="line-height:1.4">{{ item.key }}:{{ item.value }}</div>
+            </template>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="row.available === 1 ? 'success' : 'danger'" size="small">
@@ -134,6 +144,22 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="24">
+            <el-form-item label="附加属性">
+              <div style="width:100%">
+                <div v-for="(item, idx) in attrList" :key="idx" style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+                  <el-input v-model="item.key" placeholder="属性名" style="flex:1" />
+                  <el-input v-model="item.value" placeholder="属性值" style="flex:1" />
+                  <el-button type="danger" :icon="Delete" link @click="attrList.splice(idx, 1); syncAttribute(formData)" />
+                </div>
+                <el-button type="primary" link @click="attrList.push({ key: '', value: '' })">
+                  <el-icon><Plus /></el-icon> 添加属性
+                </el-button>
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="24">
             <el-form-item label="描述" prop="description">
               <el-input v-model="formData.description" type="textarea" :rows="2" />
             </el-form-item>
@@ -152,9 +178,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Delete } from '@element-plus/icons-vue'
 import SearchForm from '@/components/SearchForm.vue'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
@@ -171,10 +197,17 @@ const isEdit = ref(false)
 const providers = ref<any[]>([])
 const categories = ref<any[]>([])
 const newCategoryName = ref('')
+const attrList = ref<{ key: string; value: string }[]>([])
+
+watch(attrList, () => {
+  const fd = dialogRef.value?.formData
+  if (fd) syncAttribute(fd.value || fd)
+}, { deep: true })
 
 const searchParams = reactive({
   goodsname: '',
   productcode: '',
+  attribute: '',
   providerid: null as number | null,
   categoryid: null as number | null
 })
@@ -189,11 +222,27 @@ const handleSearch = () => tableRef.value?.reload()
 const handleReset = () => {
   searchParams.goodsname = ''
   searchParams.productcode = ''
+  searchParams.attribute = ''
   searchParams.providerid = null
   searchParams.categoryid = null
 }
-const handleAdd = () => { isEdit.value = false; dialogRef.value?.open({}, false) }
-const handleEdit = (row: any) => { isEdit.value = true; dialogRef.value?.open(row, true) }
+const parseAttribute = (val: string): { key: string; value: string }[] => {
+  try { return JSON.parse(val) } catch { return [] }
+}
+const syncAttribute = (formData: any) => {
+  const valid = attrList.value.filter(a => a.key.trim())
+  formData.attribute = valid.length ? JSON.stringify(valid) : ''
+}
+const handleAdd = () => {
+  isEdit.value = false
+  attrList.value = []
+  dialogRef.value?.open({}, false)
+}
+const handleEdit = (row: any) => {
+  isEdit.value = true
+  attrList.value = row.attribute ? parseAttribute(row.attribute) : []
+  dialogRef.value?.open(row, true)
+}
 const handleSubmitApi = (data: any) => isEdit.value ? updateGoods(data) : addGoods(data)
 const handleToggleAvailable = async (row: any) => {
   const newStatus = row.available === 1 ? 0 : 1
