@@ -144,6 +144,18 @@ const router = createRouter({
           meta: { title: '销售退货' }
         },
         {
+          path: 'business/retail',
+          name: 'RetailManager',
+          component: () => import('@/views/business/retail/index.vue'),
+          meta: { title: '散客零售' }
+        },
+        {
+          path: 'business/retailback',
+          name: 'RetailbackManager',
+          component: () => import('@/views/business/retailback/index.vue'),
+          meta: { title: '零售退货' }
+        },
+        {
           path: 'business/report',
           name: 'ReportManager',
           component: () => import('@/views/business/report/index.vue'),

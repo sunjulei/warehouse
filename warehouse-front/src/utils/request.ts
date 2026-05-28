@@ -11,6 +11,7 @@ const service = axios.create({
 // POST请求自动将JSON转为form表单格式（后端用VO接收表单参数）
 service.interceptors.request.use((config) => {
   if (config.method === 'post' && config.data
+    && !Array.isArray(config.data)
     && !(config.data instanceof FormData)
     && !(config.data instanceof URLSearchParams)) {
     const params = new URLSearchParams()

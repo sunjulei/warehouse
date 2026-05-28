@@ -141,6 +141,7 @@ CREATE TABLE `bus_goods`
     `dangernum`    int                                                           DEFAULT NULL,
     `goodsimg`     varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
     `available`    int                                                           DEFAULT NULL,
+    `attribute`    varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci        DEFAULT NULL,
     PRIMARY KEY (`id`) USING BTREE,
     KEY `FK_sq0btr2v2lq8gt8b4gb8tlk0i` (`providerid`) USING BTREE,
     CONSTRAINT `bus_goods_ibfk_1` FOREIGN KEY (`providerid`) REFERENCES `bus_provider` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
@@ -522,6 +523,51 @@ VALUES (1, '旺旺食品集团', '434000', '湖北省仙桃市旺旺工业园', 
 /*!40000 ALTER TABLE `bus_provider`
     ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `bus_retail`
+--
+
+DROP TABLE IF EXISTS `bus_retail`;
+/*!40101 SET @saved_cs_client = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bus_retail`
+(
+    `id`            int NOT NULL AUTO_INCREMENT,
+    `goodsid`       int                                                           DEFAULT NULL,
+    `paytype`       varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
+    `retailtime`    datetime                                                      DEFAULT NULL,
+    `operateperson` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
+    `number`        int                                                           DEFAULT NULL,
+    `remark`        varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
+    `retailprice`   decimal(10, 2)                                                DEFAULT NULL,
+    `isdelete`      int NOT NULL                                                  DEFAULT '0',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb3 ROW_FORMAT = DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `bus_retailback`
+--
+
+DROP TABLE IF EXISTS `bus_retailback`;
+/*!40101 SET @saved_cs_client = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bus_retailback`
+(
+    `id`              int NOT NULL AUTO_INCREMENT,
+    `goodsid`         int                                                           DEFAULT NULL,
+    `retailid`        int                                                           DEFAULT NULL,
+    `paytype`         varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
+    `retailbacktime`  datetime                                                      DEFAULT NULL,
+    `retailbackprice` double(10, 2)                                                 DEFAULT NULL,
+    `operateperson`   varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
+    `number`          int                                                           DEFAULT NULL,
+    `remark`          varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
+    `isdelete`        int NOT NULL                                                  DEFAULT '0',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb3 ROW_FORMAT = DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `bus_sales`
@@ -1162,7 +1208,10 @@ VALUES (1, 0, 'menu', '仓库管理系统', NULL, 'Box', '', '', 1, 1, 1),
        (127, 125, 'menu', '进销商品分析', NULL, 'TrendCharts', '/bus/toGoodsAnalysis', NULL, 0, 93, 1),
        (128, 125, 'menu', '利润分析', NULL, 'TrendCharts', '/bus/toProfitAnalysis', NULL, 0, 94, 1),
        (130, 1, 'menu', '商品分类', NULL, 'Folder', '/bus/toCategoryManager', '', 0, 2, 1),
-       (132, 5, 'menu', '操作日志', NULL, 'Document', '/system/operation-log', NULL, NULL, 25, 1);
+       (132, 5, 'menu', '操作日志', NULL, 'Document', '/system/operation-log', NULL, 0, 25, 1),
+       (133, 1, 'menu', '零售管理', NULL, 'ShoppingCart', '', NULL, 0, 25, 1),
+       (134, 133, 'menu', '散客零售', NULL, 'Sell', '/business/retail', NULL, 0, 10, 1),
+       (135, 133, 'menu', '零售退货', NULL, 'RefreshLeft', '/business/retailback', NULL, 0, 13, 1);
 /*!40000 ALTER TABLE `sys_permission`
     ENABLE KEYS */;
 UNLOCK TABLES;
@@ -1343,7 +1392,10 @@ VALUES (1, 1),
        (10, 122),
        (1, 125),
        (1, 126),
-       (1, 132);
+       (1, 132),
+       (1, 133),
+       (1, 134),
+       (1, 135);
 /*!40000 ALTER TABLE `sys_role_permission`
     ENABLE KEYS */;
 UNLOCK TABLES;
