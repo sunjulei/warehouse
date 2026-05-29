@@ -167,7 +167,7 @@ vim .env
 # 3. 创建数据目录（Windows 会自动创建，Linux/macOS 需手动）
 mkdir -p D:/dockerData/mysql D:/dockerData/warehouse-nginx D:/dockerData/warehouse/back
 
-# 4. 启动全部服务（Nginx 配置首次会自动从镜像模板复制到挂载目录）
+# 4. 启动全部服务（配置文件首次会自动从镜像模板复制到挂载目录）
 docker compose up -d --build
 ```
 
