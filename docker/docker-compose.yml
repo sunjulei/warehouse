@@ -42,7 +42,8 @@ services:
     ports:
       - "8888:80"
     volumes:
-      # 去掉 :ro，允许容器首次启动时自动初始化配置
-      - ${DATA_ROOT}/warehouse-nginx:/etc/nginx
+      # 文件级挂载，不影响 nginx 自带的 mime.types 等文件
+      - ${DATA_ROOT}/warehouse-nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ${DATA_ROOT}/warehouse-nginx/conf.d:/etc/nginx/conf.d
     depends_on:
       - backend

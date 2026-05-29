@@ -209,7 +209,7 @@ Nginx 配置修改后无需重启容器：
 docker compose exec web nginx -s reload
 ```
 
-> 首次部署时，如果 `D:/dockerData/warehouse-nginx/` 下没有配置文件，容器启动会自动从镜像内置模板复制。后续修改会持久化到宿主机目录。
+> 首次部署时，如果 `D:/dockerData/warehouse-nginx/` 下没有 `nginx.conf`，容器启动会自动从镜像内置模板复制。后续修改直接编辑宿主机目录里的文件即可。
 
 ### 常用运维
 
