@@ -1,0 +1,27 @@
+# 生产环境配置（Docker 部署用）
+spring:
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      # Docker 内网地址，使用 mysql 容器名
+      url: jdbc:mysql://mysql:3306/warehouse?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
+      username: root
+      password: 123456
+      max-active: 50
+      max-wait: 10000
+      initial-size: 5
+      filters: stat,wall
+      validation-query: SELECT 'X'
+      enable: true
+      # Druid 监控页面（生产环境关闭）
+      stat-view-servlet:
+        enabled: false
+
+# 生产环境关闭 SQL 日志
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# 端口
+server:
+  port: 8899

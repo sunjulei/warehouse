@@ -127,7 +127,7 @@ cd warehouse-frontend
 npm install
 npm run dev
 ```
-前端运行在 `http://localhost:5173`，自动代理 `/api/*` 到后端。
+前端运行在 `http://localhost:8888`，自动代理 `/api/*` 到后端。
 
 ### 📦 生产构建
 ```bash
@@ -136,6 +136,101 @@ npm run build
 # 产物在 warehouse-frontend/dist/
 ```
 
+## 🐳 Docker 部署
+
+所有 Docker 配置集中在 `docker/` 目录，数据挂载到宿主机，方便持久化和随时修改配置。
+
+### 目录结构
+
+```
+docker/
+├── docker-compose.yml      # 容器编排
+├── .env                    # 数据挂载根目录配置
+├── .env.example            # 环境变量模板
+├── backend/Dockerfile      # 后端多阶段构建
+├── web/Dockerfile          # 前端+Nginx 合并构建
+└── nginx/                  # Nginx 配置模板
+
+sql/
+└── warehouse.sql           # 数据库初始化脚本
+```
+
+### 首次部署
+
+```bash
+# 1. 打开目录
+cd docker
+
+# 2. 按需修改 .env（默认 DATA_ROOT=D:/dockerData）
+vim .env
+
+# 3. 创建数据目录（Windows 会自动创建，Linux/macOS 需手动）
+mkdir -p D:/dockerData/mysql D:/dockerData/warehouse-nginx D:/dockerData/warehouse/back
+
+# 4. 启动全部服务（Nginx 配置首次会自动从镜像模板复制到挂载目录）
+docker compose up -d --build
+```
+
+访问：
+- 前端：`http://localhost:8888`
+- 后端 API：`http://localhost:8888/api/...`
+- MySQL：`localhost:3306`（root/123456）
+
+### 更新部署（改代码后）
+
+```bash
+cd docker
+
+# 前后端都改了
+docker compose up -d --build
+
+# 只改后端
+docker compose up -d --build backend
+
+# 只改前端
+docker compose up -d --build web
+```
+
+> 后端 Dockerfile 使用 `warehouse-*.jar` 通配符，改 `pom.xml` 版本号后无需修改 Dockerfile。
+
+### 修改配置
+
+后端配置走外部挂载文件，改完重启生效：
+
+```bash
+# 编辑 D:/dockerData/warehouse/back/application-pro.yml
+# 然后重启后端
+docker compose restart backend
+```
+
+Nginx 配置修改后无需重启容器：
+
+```bash
+docker compose exec web nginx -s reload
+```
+
+> 首次部署时，如果 `D:/dockerData/warehouse-nginx/` 下没有配置文件，容器启动会自动从镜像内置模板复制。后续修改会持久化到宿主机目录。
+
+### 常用运维
+
+```bash
+# 查看日志
+docker compose logs -f
+
+# 查看单个服务日志
+docker compose logs -f backend
+
+# 停止全部
+docker compose down
+
+# 完全重建（清空数据库）
+docker compose down
+rm -rf D:/dockerData/mysql/*
+docker compose up -d --build
+
+# 备份数据库
+docker compose exec mysql mysqldump -uroot -p123456 warehouse > backup.sql
+```
 
 ## 📄 许可证
 

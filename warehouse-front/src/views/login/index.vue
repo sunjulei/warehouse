@@ -108,7 +108,7 @@ const refreshCaptcha = async () => {
       responseType: 'blob',
       timeout: 10000
     })
-    captchaUrl.value = URL.createObjectURL(res)
+    captchaUrl.value = URL.createObjectURL(res.data as Blob)
   } catch {
     // fallback
     captchaUrl.value = '/api/login/getCode?t=' + Date.now()

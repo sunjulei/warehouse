@@ -32,3 +32,6 @@ build/
 
 ### MCP ###
 .mcp.json
+
+
+.CLAUDE.md

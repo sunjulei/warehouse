@@ -23,6 +23,8 @@
 		<hutool.version>5.8.25</hutool.version>
 		<pinyin4j.version>2.5.1</pinyin4j.version>
 		<fastjson.version>1.2.83</fastjson.version>
+		<!-- 默认激活 dev 环境 -->
+		<spring.profiles.active>dev</spring.profiles.active>
 	</properties>
 
 	<dependencies>
@@ -149,6 +151,13 @@
 	</dependencies>
 
 	<build>
+		<!-- 资源过滤，使 application.yml 中的 @spring.profiles.active@ 占位符能被 Maven 替换 -->
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -170,5 +179,27 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<!-- Maven 多环境配置 -->
+	<profiles>
+		<!-- 开发环境（默认） -->
+		<profile>
+			<id>dev</id>
+			<properties>
+				<spring.profiles.active>dev</spring.profiles.active>
+			</properties>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+		</profile>
+
+		<!-- 生产环境 -->
+		<profile>
+			<id>pro</id>
+			<properties>
+				<spring.profiles.active>pro</spring.profiles.active>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>
