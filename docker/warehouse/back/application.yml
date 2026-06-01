@@ -1,0 +1,5 @@
+# 容器外部挂载的配置文件，优先级高于 JAR 内配置
+# 修改后重启 backend 容器即可生效
+spring:
+  profiles:
+    active: pro
