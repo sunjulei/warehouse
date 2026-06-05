@@ -178,6 +178,12 @@ const router = createRouter({
           name: 'ProfitAnalysis',
           component: () => import('@/views/business/profit-analysis/index.vue'),
           meta: { title: '利润分析' }
+        },
+        {
+          path: 'business/stocktake',
+          name: 'StocktakeManager',
+          component: () => import('@/views/business/stocktake/index.vue'),
+          meta: { title: '盘点管理' }
         }
       ]
     }
