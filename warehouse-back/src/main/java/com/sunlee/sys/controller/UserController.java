@@ -19,10 +19,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p>
@@ -32,6 +34,7 @@ import java.util.Map;
  * @author sunlee
  * @since 2026-01-15
  */
+@Slf4j
 @RestController
 @RequestMapping("user")
 public class UserController {
@@ -153,7 +156,7 @@ public class UserController {
             userService.save(userVo);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.ADD_ERROR;
         }
     }
@@ -179,7 +182,7 @@ public class UserController {
             userService.updateById(userVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
         }
     }
@@ -195,7 +198,7 @@ public class UserController {
             userService.removeById(id);
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
     }
@@ -255,7 +258,7 @@ public class UserController {
             userService.saveUserRole(uid,ids);
             return ResultObj.DISPATCH_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DISPATCH_ERROR;
         }
     }
@@ -356,7 +359,7 @@ public class UserController {
             userService.updateById(userVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
         }
     }

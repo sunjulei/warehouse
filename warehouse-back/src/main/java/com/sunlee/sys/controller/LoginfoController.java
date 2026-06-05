@@ -13,10 +13,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p>
@@ -26,6 +28,7 @@ import java.util.Collection;
  * @author sunlee
  * @since 2026-02-01
  */
+@Slf4j
 @RestController
 @RequestMapping("loginfo")
 public class LoginfoController {
@@ -67,7 +70,7 @@ public class LoginfoController {
             loginfoService.removeById(id);
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
     }
@@ -88,7 +91,7 @@ public class LoginfoController {
             this.loginfoService.removeByIds(idList);
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
     }

@@ -14,6 +14,7 @@ import com.sunlee.sys.service.IPermissionService;
 import com.sunlee.sys.service.IRoleService;
 import com.sunlee.sys.service.IUserService;
 import com.sunlee.sys.vo.UserVo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +30,7 @@ import java.util.*;
  * @Author: sunlee
  * @Date: 2026/01/15 21:33
  */
+@Slf4j
 @RestController
 @RequestMapping("login")
 public class LoginController {
@@ -137,7 +139,7 @@ public class LoginController {
             lineCaptcha.write(outputStream);
             outputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("验证码输出失败: {}", e.getMessage(), e);
         }
     }
 
@@ -228,7 +230,7 @@ public class LoginController {
             }
             map.put("permissions", permissions);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("获取用户信息失败: {}", e.getMessage(), e);
             map.put("code", -1);
             map.put("msg", "获取用户信息失败: " + e.getMessage());
         }

@@ -6,11 +6,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @Author: sunlee
@@ -30,7 +32,7 @@ public class AppFileUtils {
         try {
             properties.load(stream);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
         }
         String property = properties.getProperty("filepath");
         if (null != property) {
@@ -66,7 +68,7 @@ public class AppFileUtils {
             try {
                 bytes = FileUtil.readBytes(file);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("操作失败: {}", e.getMessage(), e);
             }
             //创建封装响应头信息的对象
             HttpHeaders header = new HttpHeaders();

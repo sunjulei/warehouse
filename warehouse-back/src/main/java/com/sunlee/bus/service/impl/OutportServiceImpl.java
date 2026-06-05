@@ -12,6 +12,7 @@ import com.sunlee.sys.common.WebUtils;
 import com.sunlee.sys.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
@@ -24,6 +25,7 @@ import java.util.Date;
  * @since 2026-04-10
  */
 @Service
+@Transactional
 public class OutportServiceImpl extends ServiceImpl<OutportMapper, Outport> implements IOutportService {
 
     @Autowired

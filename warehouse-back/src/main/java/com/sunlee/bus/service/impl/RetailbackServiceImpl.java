@@ -12,10 +12,12 @@ import com.sunlee.sys.common.WebUtils;
 import com.sunlee.sys.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
 @Service
+@Transactional
 public class RetailbackServiceImpl extends ServiceImpl<RetailbackMapper, Retailback> implements IRetailbackService {
 
     @Autowired

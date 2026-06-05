@@ -6,6 +6,7 @@ import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
 import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 拼音工具类
@@ -36,7 +37,7 @@ public class PinyinUtils {
                     }
                 }
             } catch (BadHanyuPinyinOutputFormatCombination e) {
-                e.printStackTrace();
+                log.error("操作失败: {}", e.getMessage(), e);
             }
         } else {
             return "*";

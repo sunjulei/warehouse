@@ -17,10 +17,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p>
@@ -30,6 +32,7 @@ import java.util.List;
  * @author sunlee
  * @since 2026-03-01
  */
+@Slf4j
 @RestController
 @RequestMapping("/role")
 public class RoleController {
@@ -73,7 +76,7 @@ public class RoleController {
             roleService.save(roleVo);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.ADD_ERROR;
         }
     }
@@ -90,7 +93,7 @@ public class RoleController {
             roleService.updateById(roleVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
         }
     }
@@ -107,7 +110,7 @@ public class RoleController {
             this.roleService.removeById(id);
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
     }
@@ -164,7 +167,7 @@ public class RoleController {
             roleService.saveRolePermission(rid, ids);
             return ResultObj.DISPATCH_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DISPATCH_ERROR;
         }
 

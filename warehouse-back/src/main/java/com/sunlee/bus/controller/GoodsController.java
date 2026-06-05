@@ -7,23 +7,22 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunlee.bus.entity.*;
 import com.sunlee.bus.service.*;
 import com.sunlee.bus.vo.GoodsVo;
+import com.sunlee.sys.annotation.OperationLog;
 import com.sunlee.sys.common.AppFileUtils;
 import com.sunlee.sys.common.Constast;
 import com.sunlee.sys.common.DataGridView;
 import com.sunlee.sys.common.ResultObj;
 import com.sunlee.sys.common.WebUtils;
 import com.sunlee.sys.entity.User;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -33,6 +32,7 @@ import java.util.Map;
  * @author sunlee
  * @since 2026-03-20
  */
+@Slf4j
 @RestController
 @RequestMapping("/goods")
 public class GoodsController {
@@ -58,166 +58,121 @@ public class GoodsController {
     @Autowired
     private ISalesbackService salesbackService;
 
-    @Autowired
-    private IOperationLogService operationLogService;
-
     /**
-     * 查询商品
-     * @param goodsVo
-     * @return
+     * 查询商品（批量查询供应商和分类，避免 N+1）
      */
     @RequestMapping("loadAllGoods")
     public DataGridView loadAllGoods(GoodsVo goodsVo){
-        IPage<Goods> page = new Page<Goods>(goodsVo.getPage(),goodsVo.getLimit());
-        QueryWrapper<Goods> queryWrapper = new QueryWrapper<Goods>();
-        queryWrapper.eq(goodsVo.getProviderid()!=null&&goodsVo.getProviderid()!=0,"providerid",goodsVo.getProviderid());
-        queryWrapper.eq(goodsVo.getCategoryid()!=null&&goodsVo.getCategoryid()!=0,"categoryid",goodsVo.getCategoryid());
-        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getGoodsname()),"goodsname",goodsVo.getGoodsname());
-        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getProductcode()),"productcode",goodsVo.getProductcode());
-        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getPromitcode()),"promitcode",goodsVo.getPromitcode());
-        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getDescription()),"description",goodsVo.getDescription());
-        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getSize()),"size",goodsVo.getSize());
-        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getAttribute()),"attribute",goodsVo.getAttribute());
-
+        IPage<Goods> page = new Page<>(goodsVo.getPage(), goodsVo.getLimit());
+        QueryWrapper<Goods> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(goodsVo.getProviderid()!=null && goodsVo.getProviderid()!=0, "providerid", goodsVo.getProviderid());
+        queryWrapper.eq(goodsVo.getCategoryid()!=null && goodsVo.getCategoryid()!=0, "categoryid", goodsVo.getCategoryid());
+        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getGoodsname()), "goodsname", goodsVo.getGoodsname());
+        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getProductcode()), "productcode", goodsVo.getProductcode());
+        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getPromitcode()), "promitcode", goodsVo.getPromitcode());
+        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getDescription()), "description", goodsVo.getDescription());
+        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getSize()), "size", goodsVo.getSize());
+        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getAttribute()), "attribute", goodsVo.getAttribute());
         queryWrapper.orderByDesc("id");
-        goodsService.page(page,queryWrapper);
+        goodsService.page(page, queryWrapper);
+
+        // 批量查询供应商和分类，避免 N+1
         List<Goods> records = page.getRecords();
-        for (Goods goods : records) {
-            Provider provider = providerService.getById(goods.getProviderid());
-            if (null!=provider){
-                goods.setProvidername(provider.getProvidername());
-            }
-            if (goods.getCategoryid() != null) {
-                Category category = categoryService.getById(goods.getCategoryid());
-                if (category != null) {
-                    goods.setCategoryname(category.getCatename());
-                }
-            }
+        Set<Integer> providerIds = records.stream().map(Goods::getProviderid).filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<Integer> categoryIds = records.stream().map(Goods::getCategoryid).filter(Objects::nonNull).collect(Collectors.toSet());
+
+        Map<Integer, String> providerMap = new HashMap<>();
+        if (!providerIds.isEmpty()) {
+            providerService.listByIds(providerIds).forEach(p -> providerMap.put(p.getId(), p.getProvidername()));
         }
-        return new DataGridView(page.getTotal(),page.getRecords());
+        Map<Integer, String> categoryMap = new HashMap<>();
+        if (!categoryIds.isEmpty()) {
+            categoryService.listByIds(categoryIds).forEach(c -> categoryMap.put(c.getId(), c.getCatename()));
+        }
+
+        for (Goods goods : records) {
+            goods.setProvidername(providerMap.get(goods.getProviderid()));
+            goods.setCategoryname(categoryMap.get(goods.getCategoryid()));
+        }
+        return new DataGridView(page.getTotal(), records);
     }
 
     /**
      * 添加商品
-     * @param goodsVo
-     * @return
      */
+    @OperationLog(type = "添加", module = "商品管理", description = "#args[0].goodsname != null ? '添加商品: ' + #args[0].goodsname : '添加商品'")
     @RequestMapping("addGoods")
     public ResultObj addGoods(GoodsVo goodsVo){
         try {
-            if (goodsVo.getGoodsimg()!=null&&goodsVo.getGoodsimg().endsWith("_temp")){
+            if (goodsVo.getGoodsimg()!=null && goodsVo.getGoodsimg().endsWith("_temp")){
                 String newName = AppFileUtils.renameFile(goodsVo.getGoodsimg());
                 goodsVo.setGoodsimg(newName);
             }
-            //库存由进货和销售决定，新增商品时库存默认为0
             goodsVo.setNumber(0);
             goodsVo.setAvailable(Constast.AVAILABLE_TRUE);
             goodsService.save(goodsVo);
-            User user = (User) WebUtils.getSession().getAttribute("user");
-            OperationLog log = new OperationLog();
-            log.setType("添加");
-            log.setModule("商品管理");
-            log.setDescription("添加商品: " + goodsVo.getGoodsname());
-            log.setOperateperson(user != null ? user.getName() : "未知用户");
-            log.setOperatetime(new Date());
-            operationLogService.save(log);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("添加商品失败: {}", e.getMessage(), e);
             return ResultObj.ADD_ERROR;
         }
     }
 
     /**
      * 修改商品
-     * @param goodsVo
-     * @return
      */
+    @OperationLog(type = "修改", module = "商品管理", description = "#args[0].goodsname != null ? '修改商品: ' + #args[0].goodsname : '修改商品'")
     @RequestMapping("updateGoods")
     public ResultObj updateGoods(GoodsVo goodsVo){
         try {
-            //商品图片不是默认图片且是临时文件
             if (goodsVo.getGoodsimg()!=null
                     && !goodsVo.getGoodsimg().equals(Constast.DEFAULT_IMG_GOODS)
                     && goodsVo.getGoodsimg().endsWith("_temp")){
                 String newName = AppFileUtils.renameFile(goodsVo.getGoodsimg());
                 goodsVo.setGoodsimg(newName);
-                //删除原先的图片
                 String oldPath = goodsService.getById(goodsVo.getId()).getGoodsimg();
                 AppFileUtils.removeFileByPath(oldPath);
             }
-            //库存由进货和销售决定，编辑商品时保留原库存值
             Goods oldGoods = goodsService.getById(goodsVo.getId());
             goodsVo.setNumber(oldGoods.getNumber());
             goodsService.updateById(goodsVo);
-            User user = (User) WebUtils.getSession().getAttribute("user");
-            OperationLog log = new OperationLog();
-            log.setType("修改");
-            log.setModule("商品管理");
-            log.setDescription("修改商品: " + goodsVo.getGoodsname());
-            log.setOperateperson(user != null ? user.getName() : "未知用户");
-            log.setOperatetime(new Date());
-            operationLogService.save(log);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("修改商品失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
         }
     }
 
     /**
      * 商品上下架
-     * @param id 商品id
-     * @param available 状态 1上架 0下架
-     * @return
      */
+    @OperationLog(type = "#args[1] == 1 ? '上架' : '下架'", module = "商品管理", description = "#args[1] == 1 ? '上架商品ID: ' + #args[0] : '下架商品ID: ' + #args[0]")
     @RequestMapping("updateGoodsAvailable")
-    public ResultObj updateGoodsAvailable(Integer id,Integer available){
+    public ResultObj updateGoodsAvailable(Integer id, Integer available){
         try {
-            Goods oldGoods = goodsService.getById(id);
             Goods goods = new Goods();
             goods.setId(id);
             goods.setAvailable(available);
             goodsService.updateById(goods);
-            User user = (User) WebUtils.getSession().getAttribute("user");
-            OperationLog log = new OperationLog();
-            log.setType(available.equals(Constast.AVAILABLE_TRUE) ? "上架" : "下架");
-            log.setModule("商品管理");
-            log.setDescription((available.equals(Constast.AVAILABLE_TRUE) ? "上架" : "下架") + "商品: " + oldGoods.getGoodsname());
-            log.setOperateperson(user != null ? user.getName() : "未知用户");
-            log.setOperatetime(new Date());
-            operationLogService.save(log);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("商品上下架失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
         }
     }
 
     /**
      * 删除商品
-     * @param id 商品id
-     * @return
      */
+    @OperationLog(type = "删除", module = "商品管理", description = "'删除商品ID: ' + #args[0]")
     @RequestMapping("deleteGoods")
-    public ResultObj deleteGoods(Integer id,String goodsimg){
+    public ResultObj deleteGoods(Integer id, String goodsimg){
         try {
-            Goods goods = goodsService.getById(id);
-            //删除商品的图片
             AppFileUtils.removeFileByPath(goodsimg);
-//            goodsService.removeById(id);
             goodsService.deleteGoodsById(id);
-            User user = (User) WebUtils.getSession().getAttribute("user");
-            OperationLog log = new OperationLog();
-            log.setType("删除");
-            log.setModule("商品管理");
-            log.setDescription("删除商品: " + (goods != null ? goods.getGoodsname() : "ID=" + id));
-            log.setOperateperson(user != null ? user.getName() : "未知用户");
-            log.setOperatetime(new Date());
-            operationLogService.save(log);
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("删除商品失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
     }

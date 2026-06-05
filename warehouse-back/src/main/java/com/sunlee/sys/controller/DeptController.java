@@ -15,8 +15,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p>
@@ -26,6 +28,7 @@ import java.util.*;
  * @author sunlee
  * @since 2026-02-20
  */
+@Slf4j
 @RestController
 @RequestMapping("/dept")
 public class DeptController {
@@ -89,7 +92,7 @@ public class DeptController {
             deptService.save(deptVo);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.ADD_ERROR;
         }
     }
@@ -124,7 +127,7 @@ public class DeptController {
             deptService.updateById(deptVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
         }
     }
@@ -159,7 +162,7 @@ public class DeptController {
             deptService.removeById(deptVo.getId());
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
     }

@@ -15,13 +15,16 @@ import com.sunlee.sys.vo.PermissionVo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p>
@@ -31,6 +34,7 @@ import java.util.Map;
  * @author sunlee
  * @since 2026-01-20
  */
+@Slf4j
 @RestController
 @RequestMapping("permission")
 public class PermissionController {
@@ -95,7 +99,7 @@ public class PermissionController {
             permissionService.save(permissionVo);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.ADD_ERROR;
         }
     }
@@ -130,7 +134,7 @@ public class PermissionController {
             permissionService.updateById(permissionVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
         }
     }
@@ -165,7 +169,7 @@ public class PermissionController {
             permissionService.removeById(permissionVo.getId());
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
     }

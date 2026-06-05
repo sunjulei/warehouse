@@ -17,13 +17,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @Author: sunlee
  * @Date: 2026/01/20 15:35
  */
+@Slf4j
 @RestController
 @RequestMapping("/menu")
 public class MenuController {
@@ -162,7 +165,7 @@ public class MenuController {
             permissionService.save(permissionVo);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.ADD_ERROR;
         }
     }
@@ -197,7 +200,7 @@ public class MenuController {
             permissionService.updateById(permissionVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
         }
     }
@@ -232,7 +235,7 @@ public class MenuController {
             permissionService.removeById(permissionVo.getId());
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
     }

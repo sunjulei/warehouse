@@ -6,17 +6,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @Author: sunlee
  * @Date: 2026/04/10 23:46
  */
+@Slf4j
 @RestController
 @RequestMapping("file")
 public class FileController {
@@ -47,7 +50,7 @@ public class FileController {
         try {
             mf.transferTo(file);
         } catch (IllegalStateException | IOException e) {
-            e.printStackTrace();
+            log.error("操作失败: {}", e.getMessage(), e);
         }
         Map<String,Object> map=new HashMap<String, Object>();
         map.put("path",dirName+"/"+newName+"_temp");
