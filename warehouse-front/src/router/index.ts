@@ -184,6 +184,12 @@ const router = createRouter({
           name: 'StocktakeManager',
           component: () => import('@/views/business/stocktake/index.vue'),
           meta: { title: '盘点管理' }
+        },
+        {
+          path: 'business/member',
+          name: 'MemberManager',
+          component: () => import('@/views/business/member/index.vue'),
+          meta: { title: '会员管理' }
         }
       ]
     }
