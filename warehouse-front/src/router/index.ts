@@ -190,6 +190,12 @@ const router = createRouter({
           name: 'MemberManager',
           component: () => import('@/views/business/member/index.vue'),
           meta: { title: '会员管理' }
+        },
+        {
+          path: 'business/performance',
+          name: 'PerformanceRanking',
+          component: () => import('@/views/business/performance/index.vue'),
+          meta: { title: '业绩排名' }
         }
       ]
     }
