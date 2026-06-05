@@ -67,5 +67,11 @@ public class Goods implements Serializable {
     @TableField(exist = false)
     private String categoryname;
 
+    /** 商品名称拼音 */
+    private String pinyin;
+
+    /** 商品名称拼音首字母简写 */
+    private String abbreviation;
+
 
 }

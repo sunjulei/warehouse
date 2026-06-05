@@ -142,6 +142,8 @@ CREATE TABLE `bus_goods`
     `goodsimg`     varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
     `available`    int                                                           DEFAULT NULL,
     `attribute`    varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci        DEFAULT NULL,
+    `pinyin`       varchar(500) DEFAULT NULL COMMENT '商品名称拼音',
+    `abbreviation` varchar(100) DEFAULT NULL COMMENT '商品名称拼音首字母简写',
     PRIMARY KEY (`id`) USING BTREE,
     KEY `FK_sq0btr2v2lq8gt8b4gb8tlk0i` (`providerid`) USING BTREE,
     CONSTRAINT `bus_goods_ibfk_1` FOREIGN KEY (`providerid`) REFERENCES `bus_provider` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT

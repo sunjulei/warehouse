@@ -11,6 +11,7 @@ import com.sunlee.sys.annotation.OperationLog;
 import com.sunlee.sys.common.AppFileUtils;
 import com.sunlee.sys.common.Constast;
 import com.sunlee.sys.common.DataGridView;
+import com.sunlee.sys.common.PinyinUtils;
 import com.sunlee.sys.common.ResultObj;
 import com.sunlee.sys.common.WebUtils;
 import com.sunlee.sys.entity.User;
@@ -59,7 +60,7 @@ public class GoodsController {
     private ISalesbackService salesbackService;
 
     /**
-     * 查询商品（批量查询供应商和分类，避免 N+1）
+     * 查询商品（支持名称、拼音、简写搜索，批量查询避免 N+1）
      */
     @RequestMapping("loadAllGoods")
     public DataGridView loadAllGoods(GoodsVo goodsVo){
@@ -67,7 +68,15 @@ public class GoodsController {
         QueryWrapper<Goods> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(goodsVo.getProviderid()!=null && goodsVo.getProviderid()!=0, "providerid", goodsVo.getProviderid());
         queryWrapper.eq(goodsVo.getCategoryid()!=null && goodsVo.getCategoryid()!=0, "categoryid", goodsVo.getCategoryid());
-        queryWrapper.like(StringUtils.isNotBlank(goodsVo.getGoodsname()), "goodsname", goodsVo.getGoodsname());
+        // 支持商品名称、拼音、简写模糊搜索
+        if (StringUtils.isNotBlank(goodsVo.getGoodsname())) {
+            String keyword = goodsVo.getGoodsname().trim();
+            queryWrapper.and(w -> w
+                .like("goodsname", keyword)
+                .or().like("pinyin", keyword)
+                .or().like("abbreviation", keyword)
+            );
+        }
         queryWrapper.like(StringUtils.isNotBlank(goodsVo.getProductcode()), "productcode", goodsVo.getProductcode());
         queryWrapper.like(StringUtils.isNotBlank(goodsVo.getPromitcode()), "promitcode", goodsVo.getPromitcode());
         queryWrapper.like(StringUtils.isNotBlank(goodsVo.getDescription()), "description", goodsVo.getDescription());
@@ -110,6 +119,11 @@ public class GoodsController {
             }
             goodsVo.setNumber(0);
             goodsVo.setAvailable(Constast.AVAILABLE_TRUE);
+            // 自动生成拼音和简写
+            if (StringUtils.isNotBlank(goodsVo.getGoodsname())) {
+                goodsVo.setPinyin(PinyinUtils.getPingYin(goodsVo.getGoodsname()));
+                goodsVo.setAbbreviation(PinyinUtils.getAbbreviation(goodsVo.getGoodsname()));
+            }
             goodsService.save(goodsVo);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
@@ -135,6 +149,11 @@ public class GoodsController {
             }
             Goods oldGoods = goodsService.getById(goodsVo.getId());
             goodsVo.setNumber(oldGoods.getNumber());
+            // 更新拼音和简写
+            if (StringUtils.isNotBlank(goodsVo.getGoodsname())) {
+                goodsVo.setPinyin(PinyinUtils.getPingYin(goodsVo.getGoodsname()));
+                goodsVo.setAbbreviation(PinyinUtils.getAbbreviation(goodsVo.getGoodsname()));
+            }
             goodsService.updateById(goodsVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
@@ -347,6 +366,29 @@ public class GoodsController {
         }
 
         return new DataGridView((long) allOps.size(), allOps);
+    }
+
+    /**
+     * 批量生成已有商品的拼音和简写（数据迁移用）
+     */
+    @RequestMapping("regeneratePinyin")
+    public ResultObj regeneratePinyin() {
+        try {
+            List<Goods> allGoods = goodsService.list();
+            int count = 0;
+            for (Goods goods : allGoods) {
+                if (StringUtils.isNotBlank(goods.getGoodsname())) {
+                    goods.setPinyin(PinyinUtils.getPingYin(goods.getGoodsname()));
+                    goods.setAbbreviation(PinyinUtils.getAbbreviation(goods.getGoodsname()));
+                    goodsService.updateById(goods);
+                    count++;
+                }
+            }
+            return new ResultObj(200, "成功更新 " + count + " 个商品的拼音");
+        } catch (Exception e) {
+            log.error("批量生成拼音失败: {}", e.getMessage(), e);
+            return new ResultObj(-1, "生成拼音失败");
+        }
     }
 
 }

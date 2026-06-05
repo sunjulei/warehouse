@@ -17,32 +17,65 @@ import lombok.extern.slf4j.Slf4j;
 public class PinyinUtils {
 
     /**
-     *  返回一个拼音字符串，并且首字母大写
+     *  返回一个拼音字符串
      */
     public static String getPingYin(String inputString) {
         HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
         format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
         format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
         format.setVCharType(HanyuPinyinVCharType.WITH_V);
-        String output = "";
+        StringBuilder output = new StringBuilder();
         if (inputString != null && inputString.length() > 0 && !"null".equals(inputString)) {
             char[] input = inputString.trim().toCharArray();
             try {
-                for (int i = 0; i < input.length; i++) {
-                    if (java.lang.Character.toString(input[i]).matches("[\\u4E00-\\u9FA5]+")) {
-                        String[] temp = PinyinHelper.toHanyuPinyinStringArray(input[i], format);
-                        output += temp[0];
+                for (char c : input) {
+                    if (Character.toString(c).matches("[\\u4E00-\\u9FA5]+")) {
+                        String[] temp = PinyinHelper.toHanyuPinyinStringArray(c, format);
+                        if (temp != null && temp.length > 0) {
+                            output.append(temp[0]);
+                        }
                     } else {
-                        output += java.lang.Character.toString(input[i]);
+                        output.append(c);
                     }
                 }
             } catch (BadHanyuPinyinOutputFormatCombination e) {
-                log.error("操作失败: {}", e.getMessage(), e);
+                log.error("拼音转换失败: {}", e.getMessage(), e);
             }
         } else {
-            return "*";
+            return "";
         }
-        return output;
+        return output.toString();
+    }
+
+    /**
+     * 获取拼音首字母简写（如 "可口可乐" → "kkkl"）
+     */
+    public static String getAbbreviation(String inputString) {
+        HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
+        format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
+        format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+        format.setVCharType(HanyuPinyinVCharType.WITH_V);
+        StringBuilder output = new StringBuilder();
+        if (inputString != null && inputString.length() > 0 && !"null".equals(inputString)) {
+            char[] input = inputString.trim().toCharArray();
+            try {
+                for (char c : input) {
+                    if (Character.toString(c).matches("[\\u4E00-\\u9FA5]+")) {
+                        String[] temp = PinyinHelper.toHanyuPinyinStringArray(c, format);
+                        if (temp != null && temp.length > 0) {
+                            output.append(temp[0].charAt(0));
+                        }
+                    } else {
+                        output.append(Character.toLowerCase(c));
+                    }
+                }
+            } catch (BadHanyuPinyinOutputFormatCombination e) {
+                log.error("拼音简写转换失败: {}", e.getMessage(), e);
+            }
+        } else {
+            return "";
+        }
+        return output.toString();
     }
 
     public static void main(String[] args) {
