@@ -196,6 +196,12 @@ const router = createRouter({
           name: 'PerformanceRanking',
           component: () => import('@/views/business/performance/index.vue'),
           meta: { title: '业绩排名' }
+        },
+        {
+          path: 'business/commission',
+          name: 'CommissionManager',
+          component: () => import('@/views/business/commission/index.vue'),
+          meta: { title: '店员提成' }
         }
       ]
     }

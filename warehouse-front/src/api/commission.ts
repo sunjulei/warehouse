@@ -1,0 +1,21 @@
+import request from '@/utils/request'
+
+export function loadAllRules() {
+  return request.get('/commission/loadAllRules')
+}
+
+export function saveRule(data: any) {
+  return request.post('/commission/saveRule', data)
+}
+
+export function calculate(data: any) {
+  return request.post('/commission/calculate', data)
+}
+
+export function loadRecords(params: any) {
+  return request.get('/commission/loadRecords', { params })
+}
+
+export function confirmRecord(data: any) {
+  return request.post('/commission/confirmRecord', data)
+}
