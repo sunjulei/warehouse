@@ -64,50 +64,31 @@ defineExpose({ loadData, treeRef })
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-base);
   overflow: hidden;
-  position: relative;
 }
 
 .tree-panel:hover {
   box-shadow: var(--shadow-md);
-  border-color: rgba(var(--primary-rgb), 0.2);
 }
 
 .tree-header {
   padding: var(--spacing-md) var(--spacing-lg);
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  background: var(--bg-primary);
   border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   flex-shrink: 0;
-  position: relative;
-}
-
-.tree-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.3) 0%, transparent 100%);
 }
 
 .tree-icon {
   color: var(--primary-color);
   font-size: 18px;
-  transition: transform var(--transition-fast);
-}
-
-.tree-panel:hover .tree-icon {
-  transform: scale(1.05);
 }
 
 .tree-title {
   font-weight: 600;
   font-size: var(--font-size-base);
   color: var(--text-primary);
-  letter-spacing: 0.3px;
 }
 
 .tree-scrollbar {
@@ -121,27 +102,20 @@ defineExpose({ loadData, treeRef })
 }
 
 :deep(.el-tree-node__content) {
-  height: 38px;
-  border-radius: var(--border-radius-md);
+  height: 36px;
+  border-radius: var(--border-radius-sm);
   margin: 2px 0;
   transition: all var(--transition-fast);
-  padding-right: var(--spacing-sm);
-  position: relative;
 }
 
 :deep(.el-tree-node__content:hover) {
-  background-color: rgba(var(--primary-rgb), 0.06);
-}
-
-:deep(.el-tree-node__content:active) {
-  background-color: rgba(var(--primary-rgb), 0.08);
+  background-color: var(--primary-subtle);
 }
 
 :deep(.el-tree-node.is-current > .el-tree-node__content) {
-  background-color: rgba(var(--primary-rgb), 0.1);
+  background-color: var(--primary-subtle);
   color: var(--primary-color);
   font-weight: 500;
-  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.2) inset;
   position: relative;
 }
 
@@ -152,7 +126,7 @@ defineExpose({ loadData, treeRef })
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  height: 20px;
+  height: 18px;
   background: var(--primary-gradient);
   border-radius: 0 2px 2px 0;
 }
@@ -164,11 +138,6 @@ defineExpose({ loadData, treeRef })
 }
 
 :deep(.el-tree-node__expand-icon:hover) {
-  color: var(--primary-color);
-}
-
-:deep(.el-tree-node__expand-icon.expanded) {
-  transform: rotate(90deg);
   color: var(--primary-color);
 }
 

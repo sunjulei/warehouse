@@ -98,8 +98,8 @@ defineExpose({ open, formData })
 }
 
 .dialog-header-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--border-radius-md);
   display: flex;
   align-items: center;
@@ -110,12 +110,10 @@ defineExpose({ open, formData })
 
 .dialog-header-icon.add {
   background: var(--primary-gradient);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 
 .dialog-header-icon.edit {
   background: var(--accent-gradient);
-  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 }
 
 .dialog-header-text {
@@ -124,13 +122,13 @@ defineExpose({ open, formData })
 }
 
 .dialog-title {
-  font-size: 16px;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .dialog-subtitle {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--text-placeholder);
   margin-top: 2px;
 }
@@ -150,7 +148,7 @@ defineExpose({ open, formData })
   padding: 16px 24px;
   margin: 0;
   border-bottom: 1px solid var(--border-light);
-  background: var(--bg-tertiary);
+  background: var(--bg-primary);
 }
 
 :deep(.el-dialog__headerbtn) {
@@ -163,8 +161,8 @@ defineExpose({ open, formData })
 }
 
 :deep(.el-dialog__headerbtn:hover) {
-  background: rgba(220, 38, 38, 0.08);
-  transform: rotate(90deg);
+  background: var(--danger-bg);
+  color: var(--danger-color);
 }
 
 :deep(.el-dialog__body) {
@@ -177,7 +175,7 @@ defineExpose({ open, formData })
 :deep(.el-dialog__footer) {
   padding: 14px 24px;
   border-top: 1px solid var(--border-light);
-  background: var(--bg-tertiary);
+  background: var(--bg-primary);
 }
 
 :deep(.el-form-item) {
@@ -192,59 +190,6 @@ defineExpose({ open, formData })
   font-weight: 500;
   color: var(--text-primary);
   font-size: 13px;
-}
-
-:deep(.el-input__wrapper) {
-  border-radius: var(--border-radius-sm);
-  transition: all 0.15s;
-  box-shadow: 0 0 0 1px var(--border-color) inset;
-}
-
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--primary-light) inset;
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
-}
-
-:deep(.el-select) {
-  width: 100%;
-}
-
-:deep(.el-select__wrapper) {
-  border-radius: var(--border-radius-sm);
-  transition: all 0.15s;
-  box-shadow: 0 0 0 1px var(--border-color) inset;
-}
-
-:deep(.el-select__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--primary-light) inset;
-}
-
-:deep(.el-select__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
-}
-
-:deep(.el-input-number) {
-  width: 100%;
-}
-
-:deep(.el-input-number .el-input__wrapper) {
-  border-radius: var(--border-radius-sm);
-}
-
-:deep(.el-textarea__inner) {
-  border-radius: var(--border-radius-sm);
-  transition: all 0.15s;
-}
-
-:deep(.el-textarea__inner:hover) {
-  box-shadow: 0 0 0 1px var(--primary-light) inset;
-}
-
-:deep(.el-textarea__inner:focus) {
-  box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
 }
 
 .dialog-footer {
@@ -276,12 +221,11 @@ defineExpose({ open, formData })
   display: flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 
 .submit-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.4);
+  box-shadow: 0 4px 12px var(--primary-shadow);
 }
 
 .submit-btn:active {

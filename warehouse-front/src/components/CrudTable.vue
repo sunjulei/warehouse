@@ -113,14 +113,9 @@ defineExpose({ reload, loadData, selectedRows, pagination })
 }
 
 .data-table {
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
   transition: all var(--transition-base);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.data-table:hover {
-  box-shadow: var(--shadow-md);
 }
 
 .table-pagination {
@@ -128,17 +123,19 @@ defineExpose({ reload, loadData, selectedRows, pagination })
   display: flex;
   justify-content: flex-end;
   padding: var(--spacing-md) 0;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--border-lighter);
 }
 
 :deep(.el-table__header-wrapper) {
   th {
-    background-color: var(--bg-secondary) !important;
-    color: var(--text-primary);
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-secondary);
     font-weight: 600;
-    font-size: var(--font-size-sm);
-    padding: 14px 0;
-    border-bottom: 2px solid rgba(var(--primary-rgb), 0.1);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-light);
   }
 }
 
@@ -147,11 +144,11 @@ defineExpose({ reload, loadData, selectedRows, pagination })
     transition: all var(--transition-fast);
 
     &:hover > td {
-      background-color: rgba(var(--primary-rgb), 0.04) !important;
+      background-color: var(--primary-subtle) !important;
     }
 
     td {
-      padding: 12px 0;
+      padding: 10px 0;
       transition: background-color var(--transition-fast);
     }
   }
@@ -161,46 +158,21 @@ defineExpose({ reload, loadData, selectedRows, pagination })
   background-color: var(--bg-tertiary);
 }
 
-:deep(.el-table--striped .el-table__body tr.el-table__row--striped:hover > td) {
-  background-color: rgba(var(--primary-rgb), 0.06) !important;
-}
-
 :deep(.el-table--border) {
-  border-color: var(--border-light);
+  border-color: var(--border-lighter);
 
   th.el-table__cell,
   td.el-table__cell {
-    border-right-color: var(--border-light);
-  }
-
-  &::after,
-  &::before {
-    background-color: var(--border-light);
+    border-right-color: var(--border-lighter);
   }
 }
 
 :deep(.el-table__empty-block) {
-  min-height: 240px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 200px;
 }
 
 :deep(.el-table__empty-text) {
-  color: var(--text-secondary);
+  color: var(--text-placeholder);
   font-size: var(--font-size-base);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-:deep(.el-table__empty-text::before) {
-  content: '';
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%);
-  border-radius: 50%;
-  margin-bottom: var(--spacing-xs);
 }
 </style>
