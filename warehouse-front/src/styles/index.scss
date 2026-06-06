@@ -3,6 +3,7 @@
 // ============================================
 
 @use './variables';
+@use './themes';
 @use './animations';
 @use './element-overrides';
 
@@ -155,22 +156,22 @@ img {
 
 .page-container {
   padding: var(--spacing-lg);
-  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .page-header {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 
   .page-header-title {
     font-size: var(--font-size-3xl);
-    font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
     letter-spacing: var(--letter-spacing-tight);
     line-height: var(--line-height-tight);
   }
 
   .page-header-desc {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
     color: var(--text-secondary);
     margin-top: var(--spacing-xs);
   }
@@ -178,21 +179,17 @@ img {
 
 .search-container {
   background: var(--bg-primary);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   border-radius: var(--border-radius-lg);
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-light);
-  transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .table-container {
   background: var(--bg-primary);
   border-radius: var(--border-radius-lg);
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-light);
-  transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .toolbar {
