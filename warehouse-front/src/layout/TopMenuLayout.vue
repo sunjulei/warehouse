@@ -68,6 +68,18 @@
         </el-scrollbar>
 
         <div class="top-header-right">
+          <!-- Theme Color Switcher -->
+          <div class="color-switcher">
+            <button
+              v-for="color in themeColors"
+              :key="color.value"
+              class="color-dot"
+              :class="{ active: themeStore.themeColor === color.value }"
+              :style="{ background: color.hex }"
+              :title="color.label"
+              @click="themeStore.setThemeColor(color.value)"
+            />
+          </div>
           <button class="icon-btn" @click="themeStore.toggle()" :title="isDark ? '日间模式' : '夜间模式'">
             <transition name="theme-icon" mode="out-in">
               <el-icon v-if="isDark" key="moon"><Moon /></el-icon>
@@ -122,6 +134,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import type { ThemeColor } from '@/stores/theme'
 import { getImageUrl } from '@/api/file'
 import TabsBar from './components/TabsBar.vue'
 
@@ -129,6 +142,13 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
+
+const themeColors: { value: ThemeColor; hex: string; label: string }[] = [
+  { value: 'rose', hex: '#e11d48', label: '玫瑰红' },
+  { value: 'indigo', hex: '#4f46e5', label: '靛蓝' },
+  { value: 'emerald', hex: '#059669', label: '翡翠绿' },
+  { value: 'navy', hex: '#1e3a5f', label: '藏青' }
+]
 
 const currentRoute = computed(() => route.path)
 const isDark = computed(() => themeStore.mode === 'dark')
@@ -188,42 +208,30 @@ const handleCommand = async (command: string) => {
   flex-direction: column;
 }
 
-/* ─── Top Header ─────────────────────────── */
 .top-header {
-  background: var(--sidebar-bg);
+  background: var(--bg-primary);
   padding: 0;
   flex-shrink: 0;
   position: relative;
   z-index: 10;
-}
-
-.top-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.3), transparent);
-  pointer-events: none;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .top-header-inner {
   display: flex;
   align-items: center;
   height: 52px;
-  padding: 0 var(--spacing-md);
+  padding: 0 var(--spacing-lg);
   gap: var(--spacing-sm);
 }
 
-/* ─── Logo ───────────────────────────────── */
 .top-logo {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
   padding-right: var(--spacing-md);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--border-light);
   margin-right: var(--spacing-xs);
 }
 
@@ -234,8 +242,7 @@ const handleCommand = async (command: string) => {
   width: 32px;
   height: 32px;
   background: var(--primary-gradient);
-  border-radius: var(--border-radius-xs);
-  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.4);
+  border-radius: var(--border-radius-sm);
   flex-shrink: 0;
 }
 
@@ -246,14 +253,13 @@ const handleCommand = async (command: string) => {
 }
 
 .logo-text {
-  color: #fafaf9;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 2px;
   white-space: nowrap;
 }
 
-/* ─── Horizontal Menu ────────────────────── */
 .top-menu-scrollbar {
   flex: 1;
   overflow: hidden;
@@ -264,10 +270,10 @@ const handleCommand = async (command: string) => {
   border-bottom: none;
   background: transparent;
   --el-menu-bg-color: transparent;
-  --el-menu-hover-bg-color: var(--sidebar-hover);
-  --el-menu-text-color: var(--sidebar-text);
-  --el-menu-active-color: var(--sidebar-text-active);
-  --el-menu-hover-text-color: var(--sidebar-text-active);
+  --el-menu-hover-bg-color: var(--bg-tertiary);
+  --el-menu-text-color: var(--text-secondary);
+  --el-menu-active-color: var(--primary-color);
+  --el-menu-hover-text-color: var(--text-primary);
   height: 52px;
 }
 
@@ -294,8 +300,8 @@ const handleCommand = async (command: string) => {
 }
 
 .top-menu-item.is-active {
-  background: var(--sidebar-active) !important;
-  color: var(--sidebar-text-active) !important;
+  background: var(--primary-subtle) !important;
+  color: var(--primary-color) !important;
   font-weight: 500;
 }
 
@@ -304,28 +310,24 @@ const handleCommand = async (command: string) => {
 }
 
 .top-menu-item:hover {
-  background: var(--sidebar-hover) !important;
-  color: var(--sidebar-text-active) !important;
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
 }
 
 :deep(.el-sub-menu__title) {
   height: 52px;
   line-height: 52px;
-  color: var(--sidebar-text);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 :deep(.el-sub-menu__title:hover) {
-  background: var(--sidebar-hover) !important;
-  color: var(--sidebar-text-active) !important;
-}
-
-:deep(.el-sub-menu.is-opened > .el-sub-menu__title) {
-  color: var(--sidebar-text-active) !important;
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
 }
 
 :deep(.el-menu--horizontal .el-sub-menu .el-menu) {
-  background: var(--bg-elevated);
+  background: var(--bg-primary);
   border: 1px solid var(--border-light);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-xl);
@@ -334,8 +336,8 @@ const handleCommand = async (command: string) => {
 }
 
 :deep(.el-menu--horizontal .el-sub-menu .el-menu .el-menu-item) {
-  height: 40px;
-  line-height: 40px;
+  height: 36px;
+  line-height: 36px;
   border-radius: var(--border-radius-sm);
   color: var(--text-regular);
   font-size: 13px;
@@ -346,20 +348,46 @@ const handleCommand = async (command: string) => {
   color: var(--primary-color);
 }
 
-:deep(.el-menu--horizontal .el-sub-menu .el-menu .el-menu-item.is-active) {
-  color: var(--primary-color);
-  font-weight: 500;
-}
-
-/* ─── Header Right ───────────────────────── */
 .top-header-right {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   flex-shrink: 0;
   padding-left: var(--spacing-sm);
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 1px solid var(--border-light);
   margin-left: var(--spacing-xs);
+}
+
+.color-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--border-radius-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+}
+
+.color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  padding: 0;
+  font-family: inherit;
+  position: relative;
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+}
+
+.color-dot.active {
+  border-color: var(--bg-primary);
+  box-shadow: 0 0 0 2px var(--text-primary);
 }
 
 .icon-btn {
@@ -368,10 +396,10 @@ const handleCommand = async (command: string) => {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-light);
   border-radius: var(--border-radius-sm);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--sidebar-text);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
   font-size: 16px;
@@ -380,8 +408,8 @@ const handleCommand = async (command: string) => {
 }
 
 .icon-btn:hover {
-  background: var(--sidebar-hover);
-  color: var(--sidebar-text-active);
+  background: var(--primary-subtle);
+  color: var(--primary-color);
   border-color: rgba(var(--primary-rgb), 0.2);
 }
 
@@ -389,14 +417,14 @@ const handleCommand = async (command: string) => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--sidebar-text);
+  color: var(--text-secondary);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   font-family: var(--font-family-mono);
   padding: 4px 8px;
   border-radius: var(--border-radius-sm);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
 }
 
 .time-icon {
@@ -415,11 +443,11 @@ const handleCommand = async (command: string) => {
 }
 
 .user-info:hover {
-  background: var(--sidebar-hover);
+  background: var(--primary-subtle);
 }
 
 .user-avatar {
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid var(--border-light);
   background: var(--primary-gradient);
 }
 
@@ -429,7 +457,7 @@ const handleCommand = async (command: string) => {
 
 .username {
   font-size: 13px;
-  color: var(--sidebar-text);
+  color: var(--text-primary);
   font-weight: 500;
   max-width: 80px;
   overflow: hidden;
@@ -439,25 +467,23 @@ const handleCommand = async (command: string) => {
 }
 
 .user-info:hover .username {
-  color: var(--sidebar-text-active);
+  color: var(--primary-color);
 }
 
 .arrow-icon {
-  color: var(--sidebar-text);
+  color: var(--text-placeholder);
   transition: all var(--transition-fast);
   font-size: 12px;
-  opacity: 0.5;
 }
 
 .user-info:hover .arrow-icon {
   transform: rotate(180deg);
-  opacity: 1;
+  color: var(--primary-color);
 }
 
-/* ─── Main Content ───────────────────────── */
 .layout-main {
   background: var(--bg-secondary);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   overflow-y: auto;
   flex: 1;
   transition: background-color var(--transition-base);
@@ -473,15 +499,10 @@ const handleCommand = async (command: string) => {
 }
 
 .layout-main::-webkit-scrollbar-thumb {
-  background: rgba(var(--primary-rgb), 0.15);
+  background: rgba(var(--primary-rgb), 0.12);
   border-radius: 3px;
 }
 
-.layout-main::-webkit-scrollbar-thumb:hover {
-  background: rgba(var(--primary-rgb), 0.3);
-}
-
-/* ─── Transitions ────────────────────────── */
 .theme-icon-enter-active,
 .theme-icon-leave-active {
   transition: all 0.2s ease;
