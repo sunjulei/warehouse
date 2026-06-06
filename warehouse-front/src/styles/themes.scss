@@ -1,0 +1,64 @@
+// ============================================
+// Theme Color System
+// 4 accent color themes with CSS custom properties
+// Activated via [data-theme-color] attribute on <html>
+// ============================================
+
+// Default theme: Rose
+:root {
+  --accent: #e11d48;
+  --accent-light: #f43f5e;
+  --accent-dark: #be123c;
+  --accent-rgb: 225, 29, 72;
+  --accent-subtle: rgba(225, 29, 72, 0.06);
+  --accent-bg: #fef2f4;
+  --accent-gradient: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+}
+
+// Indigo
+[data-theme-color="indigo"] {
+  --accent: #4f46e5;
+  --accent-light: #6366f1;
+  --accent-dark: #4338ca;
+  --accent-rgb: 79, 70, 229;
+  --accent-subtle: rgba(79, 70, 229, 0.06);
+  --accent-bg: #eef2ff;
+  --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+}
+
+// Emerald
+[data-theme-color="emerald"] {
+  --accent: #059669;
+  --accent-light: #10b981;
+  --accent-dark: #047857;
+  --accent-rgb: 5, 150, 105;
+  --accent-subtle: rgba(5, 150, 105, 0.06);
+  --accent-bg: #ecfdf5;
+  --accent-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+}
+
+// Navy
+[data-theme-color="navy"] {
+  --accent: #1e3a5f;
+  --accent-light: #2563eb;
+  --accent-dark: #1e3a5f;
+  --accent-rgb: 30, 58, 95;
+  --accent-subtle: rgba(30, 58, 95, 0.06);
+  --accent-bg: #eff6ff;
+  --accent-gradient: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+}
+
+// ============================================
+// Map accent variables to primary variables
+// The rest of the system uses --primary-* everywhere
+// ============================================
+
+:root,
+[data-theme-color] {
+  --primary-color: var(--accent);
+  --primary-light: var(--accent-light);
+  --primary-dark: var(--accent-dark);
+  --primary-rgb: var(--accent-rgb);
+  --primary-subtle: var(--accent-subtle);
+  --primary-gradient: var(--accent-gradient);
+}
