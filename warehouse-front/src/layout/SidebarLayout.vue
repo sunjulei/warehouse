@@ -35,23 +35,12 @@ const isCollapse = ref(false)
 }
 
 .layout-aside {
-  background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-light) 100%);
-  transition: width var(--transition-base), box-shadow var(--transition-base);
+  background: var(--bg-primary);
+  transition: width var(--transition-base);
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  border-right: 1px solid var(--border-light);
   position: relative;
   z-index: 10;
-}
-
-.layout-aside::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.2) 0%, rgba(var(--primary-rgb), 0.05) 50%, rgba(var(--primary-rgb), 0.2) 100%);
-  pointer-events: none;
 }
 
 .layout-wrapper {
@@ -63,31 +52,18 @@ const isCollapse = ref(false)
 
 .layout-header {
   background: var(--bg-primary);
-  box-shadow: var(--shadow-sm);
-  padding: 0 var(--spacing-lg);
+  padding: 0 var(--spacing-xl);
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--border-light);
   position: relative;
   z-index: 5;
-  backdrop-filter: blur(8px);
-  transition: background-color var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
-}
-
-.layout-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(var(--primary-rgb), 0.15) 20%, rgba(var(--primary-rgb), 0.3) 50%, rgba(var(--primary-rgb), 0.15) 80%, transparent 100%);
-  pointer-events: none;
+  transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .layout-main {
   background: var(--bg-secondary);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   overflow-y: auto;
   flex: 1;
   transition: background-color var(--transition-base);
@@ -103,12 +79,11 @@ const isCollapse = ref(false)
 }
 
 .layout-main::-webkit-scrollbar-thumb {
-  background: rgba(var(--primary-rgb), 0.15);
+  background: rgba(var(--primary-rgb), 0.12);
   border-radius: 3px;
-  transition: background var(--transition-fast);
 }
 
 .layout-main::-webkit-scrollbar-thumb:hover {
-  background: rgba(var(--primary-rgb), 0.3);
+  background: rgba(var(--primary-rgb), 0.25);
 }
 </style>
