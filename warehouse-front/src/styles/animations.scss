@@ -1,8 +1,8 @@
 // ============================================
-// 动画定义 — 精工雅致
+// Animations — 仓储脉搏
 // ============================================
 
-// 页面切换动画
+// Page transitions
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all var(--transition-base);
@@ -18,7 +18,6 @@
   transform: translateX(20px);
 }
 
-// 淡入动画
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity var(--transition-base);
@@ -29,11 +28,11 @@
   opacity: 0;
 }
 
-// 淡入上升动画
+// Keyframes
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -41,11 +40,10 @@
   }
 }
 
-// 淡入下降动画
 @keyframes fadeInDown {
   from {
     opacity: 0;
-    transform: translateY(-24px);
+    transform: translateY(-20px);
   }
   to {
     opacity: 1;
@@ -53,11 +51,10 @@
   }
 }
 
-// 淡入左移动画
 @keyframes fadeInLeft {
   from {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translateX(-20px);
   }
   to {
     opacity: 1;
@@ -65,11 +62,10 @@
   }
 }
 
-// 淡入右移动画
 @keyframes fadeInRight {
   from {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
@@ -77,7 +73,6 @@
   }
 }
 
-// 缩放动画
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -89,98 +84,49 @@
   }
 }
 
-// 脉冲动画
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-// 旋转动画
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-// 摇晃动画
 @keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  10%, 30%, 50%, 70%, 90% {
-    transform: translateX(-4px);
-  }
-  20%, 40%, 60%, 80% {
-    transform: translateX(4px);
-  }
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
 }
 
-// 弹跳动画
 @keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
-// 渐变背景动画
 @keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-// 浮动动画
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  33% {
-    transform: translateY(-12px) rotate(2deg);
-  }
-  66% {
-    transform: translateY(6px) rotate(-1deg);
-  }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1deg); }
+  66% { transform: translateY(5px) rotate(-1deg); }
 }
 
-// 光泽扫过动画
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-// 涟漪动画
 @keyframes ripple {
-  0% {
-    transform: scale(0);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(4);
-    opacity: 0;
-  }
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
 }
 
-// 滑入展开动画
 @keyframes slideExpand {
   from {
     opacity: 0;
@@ -192,7 +138,7 @@
   }
 }
 
-// 动画工具类
+// Utility classes
 .animate-fade-in-up {
   animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -230,13 +176,14 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.4) 50%, transparent 75%);
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.3) 50%, transparent 75%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
-// 延迟动画
+// Delay utilities
 .delay-100 { animation-delay: 0.1s; opacity: 0; }
+.delay-150 { animation-delay: 0.15s; opacity: 0; }
 .delay-200 { animation-delay: 0.2s; opacity: 0; }
 .delay-300 { animation-delay: 0.3s; opacity: 0; }
 .delay-400 { animation-delay: 0.4s; opacity: 0; }
@@ -245,7 +192,7 @@
 .delay-700 { animation-delay: 0.7s; opacity: 0; }
 .delay-800 { animation-delay: 0.8s; opacity: 0; }
 
-// 过渡工具类
+// Transition utilities
 .transition-all {
   transition: all var(--transition-base);
 }
@@ -258,13 +205,13 @@
   transition: all var(--transition-slow);
 }
 
-// hover 效果
+// Hover effects
 .hover-lift {
   transition: transform var(--transition-base), box-shadow var(--transition-base);
 
   &:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-xl);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
   }
 }
 
@@ -272,7 +219,7 @@
   transition: transform var(--transition-fast);
 
   &:hover {
-    transform: scale(1.03);
+    transform: scale(1.02);
   }
 }
 
@@ -284,7 +231,7 @@
   }
 }
 
-// 交错入场动画容器
+// Stagger children
 .stagger-children {
   & > * {
     opacity: 0;

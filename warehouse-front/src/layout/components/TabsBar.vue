@@ -8,6 +8,7 @@
         :class="{ active: tab.path === route.path }"
         @click="router.push(tab.path)"
       >
+        <span class="tab-dot" v-if="tab.path === route.path"></span>
         <span class="tab-title">{{ tab.title }}</span>
         <el-icon v-if="tab.path !== '/dashboard'" class="tab-close" @click.stop="closeTab(tab.path)">
           <Close />
@@ -49,7 +50,6 @@ const loadTabs = (): Tab[] => {
 
 const tabs = ref<Tab[]>(loadTabs())
 
-// 确保首页始终存在
 if (!tabs.value.find(t => t.path === '/dashboard')) {
   tabs.value.unshift({ path: '/dashboard', title: '首页' })
 }
@@ -99,8 +99,9 @@ watch(() => route.path, addTab, { immediate: true })
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-light);
   padding: 0 8px;
-  height: 34px;
+  height: 36px;
   flex-shrink: 0;
+  transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .tabs-scroll {
@@ -120,10 +121,10 @@ watch(() => route.path, addTab, { immediate: true })
 .tab-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 0 12px;
   height: 26px;
-  border-radius: 4px;
+  border-radius: 5px;
   font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
@@ -131,17 +132,28 @@ watch(() => route.path, addTab, { immediate: true })
   flex-shrink: 0;
   transition: all 0.15s;
   border: 1px solid transparent;
+  position: relative;
+}
+
+.tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .tab-item:hover {
   color: var(--primary-color);
-  background: rgba(var(--primary-rgb), 0.06);
+  background: var(--primary-subtle);
 }
 
 .tab-item.active {
-  color: #fff;
-  background: var(--primary-color);
-  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--primary-subtle);
+  border-color: rgba(var(--primary-rgb), 0.2);
+  font-weight: 500;
 }
 
 .tab-close {
@@ -152,12 +164,12 @@ watch(() => route.path, addTab, { immediate: true })
 }
 
 .tab-close:hover {
-  background: rgba(0, 0, 0, 0.15);
-  color: inherit;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary-color);
 }
 
 .tab-item.active .tab-close:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(var(--primary-rgb), 0.2);
 }
 
 .tabs-action {
@@ -176,6 +188,11 @@ watch(() => route.path, addTab, { immediate: true })
 
 .tabs-action-icon:hover {
   color: var(--primary-color);
-  background: rgba(var(--primary-rgb), 0.06);
+  background: var(--primary-subtle);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 </style>

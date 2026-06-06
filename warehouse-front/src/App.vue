@@ -3,8 +3,9 @@
 </template>
 
 <script setup lang="ts">
+// Theme is initialized in main.ts via useThemeStore()
 </script>
 
 <style>
-/* 全局样式已在 main.ts 中通过 index.scss 引入 */
+/* Global styles imported via main.ts → index.scss */
 </style>

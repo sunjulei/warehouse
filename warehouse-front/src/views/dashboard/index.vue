@@ -1,19 +1,18 @@
 <template>
   <div class="dashboard">
     <div class="welcome-banner animate-fade-in-up">
-      <div class="banner-pattern"></div>
-      <div class="banner-mesh-overlay"></div>
+      <div class="banner-grid"></div>
+      <div class="banner-mesh"></div>
       <div class="welcome-content">
         <p class="welcome-greeting">{{ greeting }}</p>
         <h2 class="welcome-title">{{ authStore.user?.name || '管理员' }}</h2>
-        <p class="welcome-desc">仓库管理系统 · 实时数据概览</p>
+        <p class="welcome-desc">仓储脉搏 · 实时数据概览</p>
       </div>
       <div class="welcome-decoration">
-        <div class="deco-shape deco-1"></div>
-        <div class="deco-shape deco-2"></div>
-        <div class="deco-shape deco-3"></div>
-        <div class="deco-ring deco-4"></div>
-        <div class="deco-ring deco-5"></div>
+        <div class="deco-ring deco-1"></div>
+        <div class="deco-ring deco-2"></div>
+        <div class="deco-block deco-3"></div>
+        <div class="deco-block deco-4"></div>
       </div>
     </div>
 
@@ -26,6 +25,7 @@
           <span class="stat-number">{{ goodsTotal }}</span>
           <span class="stat-label">商品总数</span>
         </div>
+        <div class="stat-bar stat-bar-total"></div>
       </div>
       <div class="stat-card stat-warning">
         <div class="stat-icon-wrap stat-icon-warning">
@@ -35,6 +35,7 @@
           <span class="stat-number">{{ warningGoods.length }}</span>
           <span class="stat-label">低库存预警</span>
         </div>
+        <div class="stat-bar stat-bar-warning"></div>
       </div>
       <div class="stat-card stat-inport">
         <div class="stat-icon-wrap stat-icon-inport">
@@ -44,6 +45,7 @@
           <span class="stat-number">{{ todayInport }}</span>
           <span class="stat-label">今日入库</span>
         </div>
+        <div class="stat-bar stat-bar-inport"></div>
       </div>
       <div class="stat-card stat-sales">
         <div class="stat-icon-wrap stat-icon-sales">
@@ -53,6 +55,7 @@
           <span class="stat-number">{{ todaySales }}</span>
           <span class="stat-label">今日销售</span>
         </div>
+        <div class="stat-bar stat-bar-sales"></div>
       </div>
     </div>
 
@@ -130,7 +133,7 @@
               size="small"
               stripe
               class="ops-table"
-              :header-cell-style="{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: '600' }"
+              :header-cell-style="{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontWeight: '600' }"
             >
               <el-table-column prop="type" label="类型" width="70" align="center">
                 <template #default="{ row }">
@@ -192,7 +195,7 @@
             size="small"
             stripe
             class="warning-table"
-            :header-cell-style="{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: '600' }"
+            :header-cell-style="{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontWeight: '600' }"
           >
             <el-table-column prop="goodsname" label="商品名称" min-width="100">
               <template #default="{ row }">
@@ -222,10 +225,10 @@
 
     <!-- 公告详情弹窗 -->
     <el-dialog v-model="noticeDialogVisible" :title="currentNotice?.title" width="520px">
-      <div style="color: #909399; font-size: 13px; margin-bottom: 16px;">
+      <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
         <el-icon><Clock /></el-icon> {{ currentNotice?.createtime }} · {{ currentNotice?.opername }}
       </div>
-      <div style="line-height: 1.8; font-size: 14px; color: #303133; white-space: pre-wrap;">{{ currentNotice?.content || '暂无内容' }}</div>
+      <div style="line-height: 1.8; font-size: 14px; color: var(--text-regular); white-space: pre-wrap;">{{ currentNotice?.content || '暂无内容' }}</div>
       <template #footer>
         <el-button type="primary" @click="noticeDialogVisible = false">知道了</el-button>
       </template>
@@ -321,36 +324,36 @@ function handleNoticeClick(item: any) {
   padding: var(--spacing-xs);
 }
 
+/* ─── Welcome Banner ─────────────────────── */
 .welcome-banner {
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 30%, #6366f1 60%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--primary-darker) 0%, var(--primary-color) 40%, var(--primary-light) 100%);
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-2xl) var(--spacing-xl);
   margin-bottom: var(--spacing-lg);
   position: relative;
   overflow: hidden;
   color: #fff;
-  min-height: 180px;
+  min-height: 160px;
   display: flex;
   align-items: center;
 }
 
-.banner-pattern {
+.banner-grid {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 32px 32px, 48px 48px;
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
   z-index: 1;
 }
 
-.banner-mesh-overlay {
+.banner-mesh {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 10% 20%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 80%, rgba(59, 130, 246, 0.25) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+    radial-gradient(ellipse at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(0, 0, 0, 0.1) 0%, transparent 50%);
   z-index: 1;
 }
 
@@ -361,10 +364,9 @@ function handleNoticeClick(item: any) {
 
 .welcome-greeting {
   font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.65);
   margin: 0 0 var(--spacing-xs);
   letter-spacing: 1px;
-  text-transform: uppercase;
   font-weight: 500;
 }
 
@@ -379,7 +381,7 @@ function handleNoticeClick(item: any) {
 
 .welcome-desc {
   font-size: var(--font-size-base);
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.55);
   margin: 0;
   letter-spacing: 0.5px;
 }
@@ -389,67 +391,61 @@ function handleNoticeClick(item: any) {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 55%;
+  width: 50%;
   overflow: hidden;
   z-index: 2;
-}
-
-.deco-shape {
-  position: absolute;
-  border-radius: 50%;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.deco-1 {
-  width: 200px;
-  height: 200px;
-  top: -50px;
-  right: -30px;
-  animation: float 8s ease-in-out infinite;
-}
-
-.deco-2 {
-  width: 140px;
-  height: 140px;
-  bottom: -40px;
-  right: 120px;
-  animation: float 10s ease-in-out infinite reverse;
-}
-
-.deco-3 {
-  width: 90px;
-  height: 90px;
-  top: 20px;
-  right: 240px;
-  animation: float 6s ease-in-out infinite 1s;
 }
 
 .deco-ring {
   position: absolute;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.deco-1 {
+  width: 180px;
+  height: 180px;
+  top: -40px;
+  right: -20px;
+  animation: float 10s ease-in-out infinite;
+}
+
+.deco-2 {
+  width: 120px;
+  height: 120px;
+  bottom: -30px;
+  right: 100px;
+  animation: float 12s ease-in-out infinite reverse;
+}
+
+.deco-block {
+  position: absolute;
+  border-radius: var(--border-radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(4px);
+}
+
+.deco-3 {
+  width: 100px;
+  height: 60px;
+  top: 20px;
+  right: 200px;
+  transform: rotate(-8deg);
+  animation: float 8s ease-in-out infinite 1s;
 }
 
 .deco-4 {
-  width: 160px;
-  height: 160px;
-  top: -20px;
-  right: 160px;
-  animation: float 12s ease-in-out infinite 0.5s;
-}
-
-.deco-5 {
-  width: 100px;
-  height: 100px;
-  bottom: -10px;
-  right: 30px;
-  border-width: 1px;
+  width: 70px;
+  height: 70px;
+  bottom: 10px;
+  right: 40px;
+  border-radius: var(--border-radius-lg);
+  transform: rotate(12deg);
   animation: float 9s ease-in-out infinite 2s;
 }
 
+/* ─── Stat Cards ─────────────────────────── */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -470,20 +466,19 @@ function handleNoticeClick(item: any) {
   overflow: hidden;
 }
 
-.stat-card::before {
-  content: '';
+.stat-bar {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
   height: 3px;
-  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  opacity: 0.6;
 }
 
-.stat-total::before { background: var(--primary-gradient); }
-.stat-warning::before { background: linear-gradient(135deg, #f59e0b, #ef4444); }
-.stat-inport::before { background: linear-gradient(135deg, #10b981, #059669); }
-.stat-sales::before { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+.stat-bar-total { background: var(--primary-gradient); }
+.stat-bar-warning { background: linear-gradient(135deg, #d97706, #dc2626); }
+.stat-bar-inport { background: linear-gradient(135deg, #059669, #10b981); }
+.stat-bar-sales { background: linear-gradient(135deg, #0284c7, #0ea5e9); }
 
 .stat-card:hover {
   transform: translateY(-3px);
@@ -491,8 +486,8 @@ function handleNoticeClick(item: any) {
 }
 
 .stat-icon-wrap {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   border-radius: var(--border-radius-md);
   display: flex;
   align-items: center;
@@ -507,16 +502,16 @@ function handleNoticeClick(item: any) {
 
 .stat-icon-warning {
   background: rgba(var(--accent-rgb), 0.1);
-  color: var(--accent-color);
+  color: var(--warning-color);
 }
 
 .stat-icon-inport {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(5, 150, 105, 0.1);
   color: var(--success-color);
 }
 
 .stat-icon-sales {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(2, 132, 199, 0.1);
   color: var(--info-color);
 }
 
@@ -536,6 +531,7 @@ function handleNoticeClick(item: any) {
   color: var(--text-primary);
   line-height: 1.1;
   letter-spacing: var(--letter-spacing-tight);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
@@ -544,6 +540,7 @@ function handleNoticeClick(item: any) {
   font-weight: 500;
 }
 
+/* ─── Dashboard Cards ────────────────────── */
 .dashboard-card {
   border-radius: var(--border-radius-lg);
   overflow: hidden;
@@ -568,9 +565,9 @@ function handleNoticeClick(item: any) {
 }
 
 .header-icon-wrap {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--border-radius-md);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--border-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -578,18 +575,18 @@ function handleNoticeClick(item: any) {
 }
 
 .notice-icon-wrap {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(99, 102, 241, 0.15));
+  background: rgba(var(--primary-rgb), 0.1);
   color: var(--primary-color);
 }
 
 .ops-icon-wrap {
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.15), rgba(99, 102, 241, 0.15));
+  background: rgba(var(--primary-rgb), 0.1);
   color: var(--primary-color);
 }
 
 .warning-icon-wrap {
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15), rgba(239, 68, 68, 0.12));
-  color: var(--accent-color);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--warning-color);
 }
 
 .header-icon {
@@ -620,25 +617,10 @@ function handleNoticeClick(item: any) {
   letter-spacing: 0.3px;
 }
 
+/* ─── Notice List ────────────────────────── */
 .notice-list {
   display: flex;
   flex-direction: column;
-}
-
-.ops-table {
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-}
-
-.ops-time {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-}
-
-.ops-pagination {
-  display: flex;
-  justify-content: center;
-  padding-top: var(--spacing-sm);
 }
 
 .notice-item {
@@ -662,7 +644,7 @@ function handleNoticeClick(item: any) {
 }
 
 .notice-item:hover {
-  background: rgba(var(--primary-rgb), 0.04);
+  background: var(--primary-subtle);
   padding-left: calc(var(--spacing-lg) + 4px);
 }
 
@@ -675,7 +657,7 @@ function handleNoticeClick(item: any) {
   height: 6px;
   border-radius: 50%;
   background: var(--primary-color);
-  opacity: 0.5;
+  opacity: 0.4;
   transition: all var(--transition-fast);
 }
 
@@ -712,7 +694,7 @@ function handleNoticeClick(item: any) {
 }
 
 .notice-arrow {
-  color: var(--text-secondary);
+  color: var(--text-placeholder);
   transition: all var(--transition-fast);
   opacity: 0;
   transform: translateX(-4px);
@@ -725,50 +707,21 @@ function handleNoticeClick(item: any) {
   color: var(--primary-color);
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-2xl) var(--spacing-lg);
-  gap: var(--spacing-sm);
+/* ─── Tables ─────────────────────────────── */
+.ops-table {
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
 }
 
-.empty-icon-wrap {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(var(--primary-rgb), 0.06);
-  margin-bottom: var(--spacing-xs);
-}
-
-.empty-icon-wrap.empty-icon-success {
-  background: rgba(16, 185, 129, 0.08);
-}
-
-.empty-icon {
-  font-size: 32px;
-  color: var(--text-placeholder);
-  opacity: 0.6;
-}
-
-.empty-icon-wrap.empty-icon-success .empty-icon {
-  color: var(--success-color);
-  opacity: 0.8;
-}
-
-.empty-text {
-  font-size: var(--font-size-base);
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.empty-sub-text {
+.ops-time {
   font-size: var(--font-size-xs);
-  color: var(--text-placeholder);
+  color: var(--text-secondary);
+}
+
+.ops-pagination {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-sm);
 }
 
 .warning-table {
@@ -792,12 +745,60 @@ function handleNoticeClick(item: any) {
   font-weight: 600;
 }
 
+/* ─── Empty State ────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  gap: var(--spacing-sm);
+}
+
+.empty-icon-wrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-subtle);
+  margin-bottom: var(--spacing-xs);
+}
+
+.empty-icon-wrap.empty-icon-success {
+  background: var(--success-bg);
+}
+
+.empty-icon {
+  font-size: 30px;
+  color: var(--text-placeholder);
+  opacity: 0.6;
+}
+
+.empty-icon-wrap.empty-icon-success .empty-icon {
+  color: var(--success-color);
+  opacity: 0.8;
+}
+
+.empty-text {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.empty-sub-text {
+  font-size: var(--font-size-xs);
+  color: var(--text-placeholder);
+}
+
+/* ─── Deep Overrides ─────────────────────── */
 :deep(.el-table__row) {
   transition: all var(--transition-fast);
 }
 
 :deep(.el-table__row:hover > td) {
-  background-color: rgba(var(--primary-rgb), 0.04) !important;
+  background-color: var(--primary-subtle) !important;
 }
 
 :deep(.el-card__header) {

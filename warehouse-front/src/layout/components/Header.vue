@@ -11,6 +11,15 @@
       </el-breadcrumb>
     </div>
     <div class="header-right">
+      <el-tooltip content="切换顶部菜单布局" placement="bottom">
+        <button class="layout-switch-btn" @click="themeStore.toggleLayout()">
+          <el-icon><Grid /></el-icon>
+        </button>
+      </el-tooltip>
+      <div class="header-time">
+        <el-icon class="time-icon"><Clock /></el-icon>
+        <span class="time-text">{{ currentTime }}</span>
+      </div>
       <el-dropdown @command="handleCommand" trigger="click">
         <span class="user-info">
           <el-avatar :size="32" :src="userAvatar" class="user-avatar">
@@ -41,13 +50,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import { getImageUrl } from '@/api/file'
 
 defineProps<{ isCollapse: boolean }>()
 defineEmits(['toggleCollapse'])
+
+const themeStore = useThemeStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -56,6 +68,26 @@ const authStore = useAuthStore()
 const userAvatar = computed(() => {
   const imgpath = authStore.user?.imgpath
   return imgpath ? getImageUrl(imgpath) : ''
+})
+
+const currentTime = ref('')
+let timer: ReturnType<typeof setInterval> | null = null
+
+const updateTime = () => {
+  const now = new Date()
+  const h = String(now.getHours()).padStart(2, '0')
+  const m = String(now.getMinutes()).padStart(2, '0')
+  const s = String(now.getSeconds()).padStart(2, '0')
+  currentTime.value = `${h}:${m}:${s}`
+}
+
+onMounted(() => {
+  updateTime()
+  timer = setInterval(updateTime, 1000)
+})
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
 })
 
 const handleCommand = async (command: string) => {
@@ -86,46 +118,72 @@ const handleCommand = async (command: string) => {
 }
 
 .collapse-btn {
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   color: var(--text-secondary);
   transition: all var(--transition-fast);
-  padding: 8px;
+  padding: 6px;
   border-radius: var(--border-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-}
-
-.collapse-btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--primary-gradient);
-  opacity: 0;
-  transition: opacity var(--transition-fast);
 }
 
 .collapse-btn:hover {
   color: var(--primary-color);
-  background: rgba(var(--primary-rgb), 0.08);
-  transform: scale(1.05);
-}
-
-.collapse-btn:hover::after {
-  opacity: 0.08;
+  background: var(--primary-subtle);
 }
 
 .collapse-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.92);
+}
+
+.layout-switch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+}
+
+.layout-switch-btn:hover {
+  color: var(--primary-color);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  background: var(--primary-subtle);
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
+}
+
+.header-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-family-mono);
+  padding: 4px 10px;
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+}
+
+.time-icon {
+  font-size: 14px;
+  opacity: 0.6;
 }
 
 .user-info {
@@ -133,42 +191,24 @@ const handleCommand = async (command: string) => {
   align-items: center;
   gap: var(--spacing-sm);
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: var(--border-radius-md);
   transition: all var(--transition-fast);
-  position: relative;
-}
-
-.user-info::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--bg-secondary);
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-}
-
-.user-info:hover::before {
-  opacity: 1;
 }
 
 .user-info:hover {
-  transform: translateY(-1px);
+  background: var(--primary-subtle);
 }
 
 .user-avatar {
   border: 2px solid var(--border-light);
   transition: all var(--transition-base);
   background: var(--primary-gradient);
-  position: relative;
-  z-index: 1;
 }
 
 .user-info:hover .user-avatar {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15), 0 2px 8px rgba(var(--primary-rgb), 0.2);
-  transform: scale(1.05);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.15);
 }
 
 .username {
@@ -179,8 +219,6 @@ const handleCommand = async (command: string) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  position: relative;
-  z-index: 1;
   transition: color var(--transition-fast);
 }
 
@@ -189,11 +227,9 @@ const handleCommand = async (command: string) => {
 }
 
 .arrow-icon {
-  color: var(--text-secondary);
+  color: var(--text-placeholder);
   transition: all var(--transition-fast);
   font-size: 12px;
-  position: relative;
-  z-index: 1;
 }
 
 .user-info:hover .arrow-icon {
@@ -216,36 +252,15 @@ const handleCommand = async (command: string) => {
   color: var(--text-secondary);
   transition: all var(--transition-fast);
   font-size: var(--font-size-base);
-  position: relative;
-}
-
-:deep(.el-breadcrumb__inner::after) {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: var(--primary-gradient);
-  transition: width var(--transition-fast);
 }
 
 :deep(.el-breadcrumb__inner:hover) {
   color: var(--primary-color);
 }
 
-:deep(.el-breadcrumb__inner:hover::after) {
-  width: 100%;
-}
-
 :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 14px;
-}
-
-:deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner::after) {
-  display: none;
 }
 
 :deep(.el-dropdown) {
@@ -258,7 +273,7 @@ const handleCommand = async (command: string) => {
   border: 1px solid var(--border-light);
   padding: 4px;
   backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-primary);
 }
 
 :deep(.el-dropdown-menu__item) {
@@ -268,10 +283,11 @@ const handleCommand = async (command: string) => {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--text-regular);
 }
 
 :deep(.el-dropdown-menu__item:hover) {
-  background: rgba(var(--primary-rgb), 0.08);
+  background: var(--primary-subtle);
   color: var(--primary-color);
 }
 

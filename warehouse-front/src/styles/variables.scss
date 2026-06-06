@@ -1,70 +1,72 @@
 // ============================================
-// CSS 变量定义 — 精工雅致主题
+// CSS Variables — 仓储脉搏 (Warehouse Pulse)
+// Industrial precision meets warm refinement
 // ============================================
 
-:root {
-  // 主色调 - 深邃靛蓝
-  --primary-color: #3b82f6;
-  --primary-light: #60a5fa;
-  --primary-dark: #2563eb;
-  --primary-darker: #1d4ed8;
-  --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-  --primary-gradient-hover: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-  --primary-rgb: 59, 130, 246;
-  --primary-subtle: rgba(59, 130, 246, 0.06);
+:root,
+[data-theme="light"] {
+  // ─── Primary: Deep Teal ────────────────────
+  --primary-color: #0d9488;
+  --primary-light: #14b8a6;
+  --primary-dark: #0f766e;
+  --primary-darker: #115e59;
+  --primary-gradient: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #0f766e 0%, #0e7490 100%);
+  --primary-rgb: 13, 148, 136;
+  --primary-subtle: rgba(13, 148, 136, 0.06);
 
-  // 强调色 - 琥珀金
+  // ─── Accent: Warm Amber ────────────────────
   --accent-color: #f59e0b;
   --accent-light: #fbbf24;
   --accent-dark: #d97706;
   --accent-rgb: 245, 158, 11;
-  --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
 
-  // 功能色
-  --success-color: #10b981;
+  // ─── Semantic Colors ───────────────────────
+  --success-color: #059669;
   --success-light: #34d399;
-  --success-bg: rgba(16, 185, 129, 0.08);
-  --warning-color: #f59e0b;
+  --success-bg: rgba(5, 150, 105, 0.08);
+  --warning-color: #d97706;
   --warning-light: #fbbf24;
-  --warning-bg: rgba(245, 158, 11, 0.08);
-  --danger-color: #ef4444;
+  --warning-bg: rgba(217, 119, 6, 0.08);
+  --danger-color: #dc2626;
   --danger-light: #f87171;
-  --danger-bg: rgba(239, 68, 68, 0.08);
-  --info-color: #6366f1;
-  --info-light: #818cf8;
-  --info-bg: rgba(99, 102, 241, 0.08);
+  --danger-bg: rgba(220, 38, 38, 0.08);
+  --info-color: #0284c7;
+  --info-light: #38bdf8;
+  --info-bg: rgba(2, 132, 199, 0.08);
 
-  // 文本色
-  --text-primary: #0f172a;
-  --text-regular: #334155;
-  --text-secondary: #64748b;
-  --text-placeholder: #94a3b8;
-  --text-disabled: #cbd5e1;
+  // ─── Text ──────────────────────────────────
+  --text-primary: #1c1917;
+  --text-regular: #292524;
+  --text-secondary: #78716c;
+  --text-placeholder: #a8a29e;
+  --text-disabled: #d6d3d1;
 
-  // 背景色
+  // ─── Background ────────────────────────────
   --bg-primary: #ffffff;
-  --bg-secondary: #f1f5f9;
-  --bg-tertiary: #f8fafc;
+  --bg-secondary: #f5f5f4;
+  --bg-tertiary: #fafaf9;
   --bg-elevated: #ffffff;
-  --bg-overlay: rgba(15, 23, 42, 0.6);
-  --bg-glass: rgba(255, 255, 255, 0.72);
-  --bg-pattern: #f8fafc;
+  --bg-overlay: rgba(28, 25, 23, 0.6);
+  --bg-glass: rgba(255, 255, 255, 0.78);
+  --bg-pattern: #fafaf9;
 
-  // 侧边栏 - 深邃午夜
-  --sidebar-bg: #0f172a;
-  --sidebar-bg-light: #1e293b;
-  --sidebar-hover: rgba(59, 130, 246, 0.12);
-  --sidebar-active: rgba(59, 130, 246, 0.2);
-  --sidebar-text: #94a3b8;
+  // ─── Sidebar ───────────────────────────────
+  --sidebar-bg: #1c1917;
+  --sidebar-bg-light: #292524;
+  --sidebar-hover: rgba(13, 148, 136, 0.12);
+  --sidebar-active: rgba(13, 148, 136, 0.22);
+  --sidebar-text: #a8a29e;
   --sidebar-text-active: #ffffff;
-  --sidebar-divider: rgba(148, 163, 184, 0.1);
+  --sidebar-divider: rgba(168, 162, 158, 0.1);
   --sidebar-width: 240px;
   --sidebar-collapsed-width: 68px;
 
-  // 边框
-  --border-color: #e2e8f0;
-  --border-light: #f1f5f9;
-  --border-dark: #cbd5e1;
+  // ─── Border ────────────────────────────────
+  --border-color: #e7e5e4;
+  --border-light: #f5f5f4;
+  --border-dark: #d6d3d1;
   --border-focus: var(--primary-color);
   --border-radius-xs: 4px;
   --border-radius-sm: 6px;
@@ -73,25 +75,25 @@
   --border-radius-xl: 20px;
   --border-radius-2xl: 28px;
 
-  // 阴影 - 层次更丰富
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
-  --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.2);
+  // ─── Shadow ────────────────────────────────
+  --shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(28, 25, 23, 0.08), 0 2px 4px -2px rgba(28, 25, 23, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(28, 25, 23, 0.08), 0 4px 6px -4px rgba(28, 25, 23, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(28, 25, 23, 0.1), 0 8px 10px -6px rgba(28, 25, 23, 0.06);
+  --shadow-2xl: 0 25px 50px -12px rgba(28, 25, 23, 0.2);
   --shadow-primary: 0 4px 14px 0 rgba(var(--primary-rgb), 0.3);
   --shadow-primary-lg: 0 8px 24px rgba(var(--primary-rgb), 0.35);
-  --shadow-inner: inset 0 2px 4px 0 rgba(15, 23, 42, 0.04);
+  --shadow-inner: inset 0 2px 4px 0 rgba(28, 25, 23, 0.04);
 
-  // 动画 - 更流畅
+  // ─── Transition ────────────────────────────
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   --transition-bounce: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  // 间距
+  // ─── Spacing ───────────────────────────────
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
@@ -100,8 +102,8 @@
   --spacing-2xl: 48px;
   --spacing-3xl: 64px;
 
-  // 字体 - 更具辨识度
-  --font-family: 'DM Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', system-ui, sans-serif;
+  // ─── Typography ────────────────────────────
+  --font-family: 'Plus Jakarta Sans', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   --font-size-xs: 12px;
   --font-size-sm: 13px;
@@ -124,10 +126,10 @@
   --letter-spacing-wide: 0.025em;
   --letter-spacing-wider: 0.05em;
 
-  // 头部高度
+  // ─── Layout ────────────────────────────────
   --header-height: 60px;
 
-  // 层级
+  // ─── Z-index ───────────────────────────────
   --z-dropdown: 1000;
   --z-sticky: 1020;
   --z-fixed: 1030;
@@ -135,4 +137,75 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
+}
+
+// ============================================
+// Dark Theme — 深夜仓管
+// ============================================
+
+[data-theme="dark"] {
+  --primary-color: #2dd4bf;
+  --primary-light: #5eead4;
+  --primary-dark: #14b8a6;
+  --primary-darker: #0d9488;
+  --primary-gradient: linear-gradient(135deg, #2dd4bf 0%, #22d3ee 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+  --primary-rgb: 45, 212, 191;
+  --primary-subtle: rgba(45, 212, 191, 0.08);
+
+  --accent-color: #fbbf24;
+  --accent-light: #fcd34d;
+  --accent-dark: #f59e0b;
+  --accent-rgb: 251, 191, 36;
+  --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
+
+  --success-color: #34d399;
+  --success-light: #6ee7b7;
+  --success-bg: rgba(52, 211, 153, 0.12);
+  --warning-color: #fbbf24;
+  --warning-light: #fde68a;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --danger-color: #f87171;
+  --danger-light: #fca5a5;
+  --danger-bg: rgba(248, 113, 113, 0.12);
+  --info-color: #38bdf8;
+  --info-light: #7dd3fc;
+  --info-bg: rgba(56, 189, 248, 0.12);
+
+  --text-primary: #fafaf9;
+  --text-regular: #e7e5e4;
+  --text-secondary: #a8a29e;
+  --text-placeholder: #78716c;
+  --text-disabled: #57534e;
+
+  --bg-primary: #1c1917;
+  --bg-secondary: #171412;
+  --bg-tertiary: #292524;
+  --bg-elevated: #292524;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-glass: rgba(28, 25, 23, 0.82);
+  --bg-pattern: #1c1917;
+
+  --sidebar-bg: #0c0a09;
+  --sidebar-bg-light: #1c1917;
+  --sidebar-hover: rgba(45, 212, 191, 0.1);
+  --sidebar-active: rgba(45, 212, 191, 0.18);
+  --sidebar-text: #78716c;
+  --sidebar-text-active: #fafaf9;
+  --sidebar-divider: rgba(120, 113, 108, 0.12);
+
+  --border-color: #44403c;
+  --border-light: #292524;
+  --border-dark: #57534e;
+  --border-focus: var(--primary-color);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --shadow-primary: 0 4px 14px 0 rgba(var(--primary-rgb), 0.25);
+  --shadow-primary-lg: 0 8px 24px rgba(var(--primary-rgb), 0.3);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
 }

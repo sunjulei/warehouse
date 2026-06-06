@@ -1,8 +1,8 @@
 // ============================================
-// Element Plus 主题覆盖 — 精工雅致
+// Element Plus Theme Overrides — 仓储脉搏
 // ============================================
 
-// 按钮样式增强
+// ─── Button ───────────────────────────────────
 .el-button {
   border-radius: var(--border-radius-md);
   font-weight: var(--font-weight-medium);
@@ -31,7 +31,7 @@
   &--success {
     &:hover,
     &:focus {
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
       transform: translateY(-1px);
     }
   }
@@ -39,7 +39,7 @@
   &--danger {
     &:hover,
     &:focus {
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
       transform: translateY(-1px);
     }
   }
@@ -47,7 +47,7 @@
   &--warning {
     &:hover,
     &:focus {
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
       transform: translateY(-1px);
     }
   }
@@ -61,13 +61,14 @@
   }
 }
 
-// 卡片样式增强
+// ─── Card ─────────────────────────────────────
 .el-card {
   border-radius: var(--border-radius-lg);
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-base);
   overflow: hidden;
+  background-color: var(--bg-primary);
 
   &:hover {
     box-shadow: var(--shadow-md);
@@ -76,13 +77,25 @@
   &__header {
     border-bottom-color: var(--border-light);
     padding: var(--spacing-md) var(--spacing-lg);
+    background-color: var(--bg-primary);
+  }
+
+  &__body {
+    background-color: var(--bg-primary);
   }
 }
 
-// 表格样式增强
+// ─── Table ────────────────────────────────────
 .el-table {
   border-radius: var(--border-radius-md);
   overflow: hidden;
+  --el-table-bg-color: var(--bg-primary);
+  --el-table-tr-bg-color: var(--bg-primary);
+  --el-table-header-bg-color: var(--bg-tertiary);
+  --el-table-row-hover-bg-color: var(--primary-subtle);
+  --el-table-border-color: var(--border-light);
+  --el-table-text-color: var(--text-regular);
+  --el-table-header-text-color: var(--text-primary);
 
   th.el-table__cell {
     background-color: var(--bg-tertiary) !important;
@@ -96,6 +109,7 @@
   td.el-table__cell {
     border-bottom-color: var(--border-light);
     transition: background-color var(--transition-fast);
+    color: var(--text-regular);
   }
 
   .el-table__row {
@@ -118,13 +132,18 @@
       border-right-color: var(--border-light);
     }
   }
+
+  &__empty-text {
+    color: var(--text-placeholder);
+  }
 }
 
-// 对话框样式增强
+// ─── Dialog ───────────────────────────────────
 .el-dialog {
   border-radius: var(--border-radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-2xl);
+  background-color: var(--bg-primary);
 
   &__header {
     background: var(--bg-tertiary);
@@ -150,13 +169,14 @@
 
     &:hover {
       transform: rotate(90deg);
-      background: rgba(239, 68, 68, 0.08);
+      background: rgba(220, 38, 38, 0.08);
       color: var(--danger-color);
     }
   }
 
   &__body {
     padding: var(--spacing-lg);
+    color: var(--text-regular);
   }
 
   &__footer {
@@ -166,12 +186,13 @@
   }
 }
 
-// 输入框样式增强
+// ─── Input ────────────────────────────────────
 .el-input {
   &__wrapper {
     border-radius: var(--border-radius-md);
     transition: all var(--transition-fast);
     box-shadow: 0 0 0 1px var(--border-color) inset;
+    background-color: var(--bg-primary);
 
     &:hover {
       box-shadow: 0 0 0 1px var(--primary-light) inset;
@@ -181,13 +202,23 @@
       box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
     }
   }
+
+  &__inner {
+    color: var(--text-primary);
+
+    &::placeholder {
+      color: var(--text-placeholder);
+    }
+  }
 }
 
-// 文本域样式增强
+// ─── Textarea ─────────────────────────────────
 .el-textarea {
   &__inner {
     border-radius: var(--border-radius-md);
     transition: all var(--transition-fast);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 
     &:hover {
       box-shadow: 0 0 0 1px var(--primary-light) inset;
@@ -199,7 +230,7 @@
   }
 }
 
-// 选择器样式增强
+// ─── Select ───────────────────────────────────
 .el-select {
   width: 180px;
 
@@ -208,7 +239,6 @@
   }
 }
 
-// 搜索表单中的选择器
 .search-form {
   .el-select {
     width: 200px;
@@ -219,7 +249,7 @@
   }
 }
 
-// 表单样式增强
+// ─── Form ─────────────────────────────────────
 .el-form-item {
   &__label {
     font-weight: var(--font-weight-medium);
@@ -227,15 +257,19 @@
   }
 }
 
-// 分页样式增强
+// ─── Pagination ───────────────────────────────
 .el-pagination {
   --el-pagination-button-bg-color: var(--bg-primary);
   --el-pagination-hover-color: var(--primary-color);
+  --el-pagination-text-color: var(--text-regular);
+  --el-pagination-bg-color: var(--bg-primary);
 
   .el-pager li {
     border-radius: var(--border-radius-sm);
     transition: all var(--transition-fast);
     font-weight: var(--font-weight-medium);
+    background: var(--bg-primary);
+    color: var(--text-regular);
 
     &:hover {
       color: var(--primary-color);
@@ -250,6 +284,8 @@
 
   button {
     border-radius: var(--border-radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-regular);
 
     &:hover {
       color: var(--primary-color);
@@ -257,8 +293,10 @@
   }
 }
 
-// 树形控件样式增强
+// ─── Tree ─────────────────────────────────────
 .el-tree {
+  background-color: var(--bg-primary);
+
   .el-tree-node {
     &__content {
       border-radius: var(--border-radius-sm);
@@ -279,19 +317,33 @@
   }
 }
 
-// 消息框样式增强
+// ─── MessageBox ───────────────────────────────
 .el-message-box {
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-2xl);
+  background-color: var(--bg-primary);
+  border-color: var(--border-light);
+
+  &__title {
+    color: var(--text-primary);
+  }
+
+  &__content {
+    color: var(--text-regular);
+  }
+
+  &__headerbtn .el-message-box__close {
+    color: var(--text-secondary);
+  }
 }
 
-// 标签样式增强
+// ─── Tag ──────────────────────────────────────
 .el-tag {
   border-radius: var(--border-radius-sm);
   font-weight: var(--font-weight-medium);
 }
 
-// 滚动条样式
+// ─── Scrollbar ────────────────────────────────
 .el-scrollbar {
   .el-scrollbar__bar {
     &.is-vertical {
@@ -303,17 +355,17 @@
     }
 
     .el-scrollbar__thumb {
-      background-color: rgba(15, 23, 42, 0.15);
+      background-color: rgba(var(--primary-rgb), 0.15);
       border-radius: 3px;
 
       &:hover {
-        background-color: rgba(15, 23, 42, 0.25);
+        background-color: rgba(var(--primary-rgb), 0.3);
       }
     }
   }
 }
 
-// 菜单样式增强
+// ─── Menu ─────────────────────────────────────
 .el-menu {
   border-right: none;
 
@@ -339,7 +391,7 @@
   }
 }
 
-// 面包屑样式增强
+// ─── Breadcrumb ───────────────────────────────
 .el-breadcrumb {
   &__inner {
     color: var(--text-secondary);
@@ -354,9 +406,13 @@
     color: var(--text-primary);
     font-weight: var(--font-weight-medium);
   }
+
+  &__separator {
+    color: var(--text-placeholder);
+  }
 }
 
-// 头像样式增强
+// ─── Avatar ───────────────────────────────────
 .el-avatar {
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-fast);
@@ -367,17 +423,19 @@
   }
 }
 
-// 下拉菜单样式增强
+// ─── Dropdown ─────────────────────────────────
 .el-dropdown-menu {
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--border-light);
   padding: 4px;
+  background-color: var(--bg-primary);
 
   .el-dropdown-menu__item {
     border-radius: var(--border-radius-sm);
     padding: 8px 16px;
     transition: all var(--transition-fast);
+    color: var(--text-regular);
 
     &:hover {
       background-color: var(--primary-subtle);
@@ -386,33 +444,163 @@
   }
 }
 
-// 图片预览样式增强
+// ─── Image ────────────────────────────────────
 .el-image {
   border-radius: var(--border-radius-sm);
   overflow: hidden;
 }
 
-// 上传组件样式增强
+// ─── Upload ───────────────────────────────────
 .el-upload {
   border-radius: var(--border-radius-md);
 }
 
-// Loading 遮罩增强
+// ─── Loading ──────────────────────────────────
 .el-loading-mask {
   border-radius: var(--border-radius-md);
   backdrop-filter: blur(2px);
+  background-color: var(--bg-overlay);
 }
 
-// 消息提示增强
+// ─── Message ──────────────────────────────────
 .el-message {
   border-radius: var(--border-radius-md) !important;
   box-shadow: var(--shadow-lg) !important;
   border: none !important;
+  background-color: var(--bg-elevated) !important;
 }
 
-// 通知增强
+// ─── Notification ─────────────────────────────
 .el-notification {
   border-radius: var(--border-radius-lg) !important;
   box-shadow: var(--shadow-xl) !important;
   border: 1px solid var(--border-light) !important;
+  background-color: var(--bg-elevated) !important;
+
+  &__title {
+    color: var(--text-primary) !important;
+  }
+
+  &__content {
+    color: var(--text-regular) !important;
+  }
+}
+
+// ─── Popover ──────────────────────────────────
+.el-popover {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-light) !important;
+  color: var(--text-regular) !important;
+}
+
+// ─── Tooltip ──────────────────────────────────
+.el-tooltip__popper {
+  border-radius: var(--border-radius-sm);
+}
+
+// ─── Switch ───────────────────────────────────
+.el-switch {
+  &__core {
+    border-color: var(--border-color);
+  }
+}
+
+// ─── DatePicker ───────────────────────────────
+.el-date-editor {
+  .el-input__wrapper {
+    border-radius: var(--border-radius-md);
+  }
+}
+
+// ─── Radio ────────────────────────────────────
+.el-radio {
+  &__label {
+    color: var(--text-regular);
+  }
+}
+
+// ─── Checkbox ─────────────────────────────────
+.el-checkbox {
+  &__label {
+    color: var(--text-regular);
+  }
+}
+
+// ─── Tabs ─────────────────────────────────────
+.el-tabs {
+  &__item {
+    color: var(--text-secondary);
+
+    &.is-active {
+      color: var(--primary-color);
+    }
+
+    &:hover {
+      color: var(--primary-color);
+    }
+  }
+
+  &__active-bar {
+    background-color: var(--primary-color);
+  }
+}
+
+// ─── Steps ────────────────────────────────────
+.el-step {
+  &__title {
+    color: var(--text-primary);
+  }
+
+  &__description {
+    color: var(--text-secondary);
+  }
+}
+
+// ─── Empty ────────────────────────────────────
+.el-empty {
+  &__description p {
+    color: var(--text-placeholder);
+  }
+}
+
+// ─── Descriptions ─────────────────────────────
+.el-descriptions {
+  &__label {
+    color: var(--text-secondary) !important;
+  }
+
+  &__content {
+    color: var(--text-primary) !important;
+  }
+}
+
+// ─── Transfer ─────────────────────────────────
+.el-transfer-panel {
+  background-color: var(--bg-primary);
+  border-color: var(--border-light);
+
+  &__header {
+    background-color: var(--bg-tertiary);
+    border-bottom-color: var(--border-light);
+  }
+}
+
+// ─── Collapse ─────────────────────────────────
+.el-collapse {
+  border-color: var(--border-light);
+
+  &-item__header {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-bottom-color: var(--border-light);
+  }
+
+  &-item__wrap {
+    background-color: var(--bg-primary);
+    border-bottom-color: var(--border-light);
+  }
+
+  &-item__content {
+    color: var(--text-regular);
+  }
 }

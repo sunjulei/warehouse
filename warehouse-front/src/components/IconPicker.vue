@@ -72,13 +72,13 @@ const handleSelect = (name: string) => {
   border: 1px solid transparent;
 }
 .icon-picker-item:hover {
-  background: rgba(64, 158, 255, 0.1);
-  color: #409eff;
-  border-color: #409eff;
+  background: var(--primary-subtle);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 .icon-picker-item.active {
-  background: #409eff;
+  background: var(--primary-color);
   color: #fff;
-  border-color: #409eff;
+  border-color: var(--primary-color);
 }
 </style>

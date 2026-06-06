@@ -90,7 +90,6 @@ defineExpose({ open, formData })
 </script>
 
 <style scoped>
-/* Header */
 .dialog-header {
   display: flex;
   align-items: center;
@@ -101,7 +100,7 @@ defineExpose({ open, formData })
 .dialog-header-icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--border-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,13 +109,13 @@ defineExpose({ open, formData })
 }
 
 .dialog-header-icon.add {
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  background: var(--primary-gradient);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 
 .dialog-header-icon.edit {
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  background: var(--accent-gradient);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 }
 
 .dialog-header-text {
@@ -127,31 +126,31 @@ defineExpose({ open, formData })
 .dialog-title {
   font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .dialog-subtitle {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-placeholder);
   margin-top: 2px;
 }
 
-/* Form */
 .dialog-form {
   padding: 8px 0;
 }
 
 :deep(.el-dialog) {
-  border-radius: 16px;
+  border-radius: var(--border-radius-xl);
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.2);
+  box-shadow: var(--shadow-2xl);
+  background-color: var(--bg-primary);
 }
 
 :deep(.el-dialog__header) {
   padding: 16px 24px;
   margin: 0;
-  border-bottom: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-tertiary);
 }
 
 :deep(.el-dialog__headerbtn) {
@@ -159,12 +158,12 @@ defineExpose({ open, formData })
   right: 16px;
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
   transition: all 0.15s;
 }
 
 :deep(.el-dialog__headerbtn:hover) {
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(220, 38, 38, 0.08);
   transform: rotate(90deg);
 }
 
@@ -172,15 +171,15 @@ defineExpose({ open, formData })
   padding: 20px 24px;
   max-height: 60vh;
   overflow-y: auto;
+  color: var(--text-regular);
 }
 
 :deep(.el-dialog__footer) {
   padding: 14px 24px;
-  border-top: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-tertiary);
 }
 
-/* Form items */
 :deep(.el-form-item) {
   margin-bottom: 18px;
 }
@@ -191,68 +190,63 @@ defineExpose({ open, formData })
 
 :deep(.el-form-item__label) {
   font-weight: 500;
-  color: #334155;
+  color: var(--text-primary);
   font-size: 13px;
 }
 
-/* Inputs */
 :deep(.el-input__wrapper) {
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
   transition: all 0.15s;
-  box-shadow: 0 0 0 1px #e2e8f0 inset;
+  box-shadow: 0 0 0 1px var(--border-color) inset;
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #3b82f6 inset;
+  box-shadow: 0 0 0 1px var(--primary-light) inset;
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #3b82f6 inset, 0 0 0 3px rgba(59, 130, 246, 0.1) inset;
+  box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
 }
 
-/* Select */
 :deep(.el-select) {
   width: 100%;
 }
 
 :deep(.el-select__wrapper) {
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
   transition: all 0.15s;
-  box-shadow: 0 0 0 1px #e2e8f0 inset;
+  box-shadow: 0 0 0 1px var(--border-color) inset;
 }
 
 :deep(.el-select__wrapper:hover) {
-  box-shadow: 0 0 0 1px #3b82f6 inset;
+  box-shadow: 0 0 0 1px var(--primary-light) inset;
 }
 
 :deep(.el-select__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #3b82f6 inset, 0 0 0 3px rgba(59, 130, 246, 0.1) inset;
+  box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
 }
 
-/* Input number */
 :deep(.el-input-number) {
   width: 100%;
 }
 
 :deep(.el-input-number .el-input__wrapper) {
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
 }
 
-/* Textarea */
 :deep(.el-textarea__inner) {
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
   transition: all 0.15s;
 }
 
 :deep(.el-textarea__inner:hover) {
-  box-shadow: 0 0 0 1px #3b82f6 inset;
+  box-shadow: 0 0 0 1px var(--primary-light) inset;
 }
 
 :deep(.el-textarea__inner:focus) {
-  box-shadow: 0 0 0 1px #3b82f6 inset, 0 0 0 3px rgba(59, 130, 246, 0.1) inset;
+  box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
 }
 
-/* Footer buttons */
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -260,7 +254,7 @@ defineExpose({ open, formData })
 }
 
 .cancel-btn {
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
   padding: 8px 20px;
   font-weight: 500;
   display: flex;
@@ -269,25 +263,25 @@ defineExpose({ open, formData })
 }
 
 .cancel-btn:hover {
-  color: #3b82f6;
-  border-color: #3b82f6;
+  color: var(--primary-color);
+  border-color: var(--primary-light);
 }
 
 .submit-btn {
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm);
   padding: 8px 24px;
   font-weight: 500;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  background: var(--primary-gradient);
   border: none;
   display: flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
 }
 
 .submit-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.4);
 }
 
 .submit-btn:active {

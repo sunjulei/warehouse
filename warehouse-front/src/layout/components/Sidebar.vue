@@ -3,10 +3,16 @@
     <div class="sidebar-noise"></div>
     <div class="sidebar-logo">
       <div class="logo-icon">
-        <el-icon :size="isCollapse ? 24 : 28"><Box /></el-icon>
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo-svg">
+          <path d="M20 7L12 3L4 7V17L12 21L20 17V7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M12 12L20 7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M12 12V21" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 12L4 7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M8 5L16 9" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+        </svg>
       </div>
       <transition name="fade">
-        <span v-if="!isCollapse" class="logo-text">仓库管理系统</span>
+        <span v-if="!isCollapse" class="logo-text">仓储脉搏</span>
       </transition>
     </div>
     <el-scrollbar class="sidebar-scrollbar">
@@ -19,11 +25,10 @@
       >
         <el-menu-item index="/dashboard" class="menu-item">
           <el-icon><HomeFilled /></el-icon>
-          <template #title>后台首页</template>
+          <template #title>控制台</template>
         </el-menu-item>
 
         <template v-for="menu in authStore.menus" :key="menu.id">
-          <!-- 有 href 的菜单项：提升为顶层可点击项 -->
           <el-menu-item
             v-if="menu.href"
             :index="menu.href"
@@ -32,7 +37,6 @@
             <el-icon v-if="isElementIcon(menu.icon)"><component :is="menu.icon" /></el-icon>
             <template #title>{{ menu.title }}</template>
           </el-menu-item>
-          <!-- 无 href 的菜单项：作为分组，展示子菜单 -->
           <el-sub-menu
             v-else-if="menu.children && menu.children.length > 0"
             :index="menu.id + ''"
@@ -52,7 +56,6 @@
               <template #title>{{ child.title }}</template>
             </el-menu-item>
           </el-sub-menu>
-          <!-- 无 href 无子菜单：作为普通菜单项 -->
           <el-menu-item
             v-else
             :index="menu.href"
@@ -64,11 +67,30 @@
         </template>
       </el-menu>
     </el-scrollbar>
-    <transition name="fade">
-      <div v-if="!isCollapse" class="sidebar-footer">
-        <span class="version-text">v1.0.0</span>
+    <div class="sidebar-bottom">
+      <div class="bottom-actions">
+        <button class="theme-toggle" @click="themeStore.toggle()" :title="isDark ? '切换至日间模式' : '切换至夜间模式'">
+          <transition name="theme-icon" mode="out-in">
+            <el-icon v-if="isDark" key="moon"><Moon /></el-icon>
+            <el-icon v-else key="sunny"><Sunny /></el-icon>
+          </transition>
+          <transition name="fade">
+            <span v-if="!isCollapse" class="theme-label">{{ isDark ? '夜间模式' : '日间模式' }}</span>
+          </transition>
+        </button>
+        <button class="theme-toggle layout-toggle" @click="themeStore.toggleLayout()" title="切换顶部菜单布局">
+          <el-icon><Grid /></el-icon>
+          <transition name="fade">
+            <span v-if="!isCollapse" class="theme-label">顶部布局</span>
+          </transition>
+        </button>
       </div>
-    </transition>
+      <transition name="fade">
+        <div v-if="!isCollapse" class="sidebar-footer">
+          <span class="version-text">v1.0.0</span>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
@@ -76,16 +98,18 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 
 defineProps<{ isCollapse: boolean }>()
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 
 const currentRoute = computed(() => route.path)
+const isDark = computed(() => themeStore.mode === 'dark')
 
-// Element Plus 图标组件名都是 PascalCase（如 Menu、User），旧数据库存储的是 LayUI 格式
 const isElementIcon = (icon: string | undefined | null): boolean => {
   if (!icon) return false
   return /^[A-Z][a-zA-Z]*$/.test(icon)
@@ -126,17 +150,16 @@ const handleMenuSelect = (index: string) => {
   justify-content: center;
   gap: 10px;
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding: 0 16px;
   flex-shrink: 0;
   transition: all var(--transition-base);
   position: relative;
   z-index: 2;
+  letter-spacing: 1px;
 }
 
 .sidebar-logo::before {
@@ -146,35 +169,38 @@ const handleMenuSelect = (index: string) => {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.3), transparent);
 }
 
 .logo-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   background: var(--primary-gradient);
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.4);
   flex-shrink: 0;
   transition: all var(--transition-base);
 }
 
+.logo-svg {
+  width: 20px;
+  height: 20px;
+  color: #fff;
+}
+
 .sidebar-logo:hover .logo-icon {
   transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.5);
 }
 
 .logo-text {
   white-space: nowrap;
   overflow: hidden;
-  background: linear-gradient(135deg, #fff 0%, #c7d2fe 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 1px;
+  color: #fafaf9;
+  letter-spacing: 2px;
 }
 
 .sidebar-scrollbar {
@@ -192,10 +218,10 @@ const handleMenuSelect = (index: string) => {
 
 .menu-item {
   margin: 2px 0;
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-sm);
   transition: all var(--transition-fast);
-  height: 44px;
-  line-height: 44px;
+  height: 42px;
+  line-height: 42px;
   position: relative;
   overflow: hidden;
 }
@@ -207,7 +233,7 @@ const handleMenuSelect = (index: string) => {
   top: 50%;
   transform: translateY(-50%) scaleY(0);
   width: 3px;
-  height: 60%;
+  height: 55%;
   background: var(--primary-gradient);
   border-radius: 0 2px 2px 0;
   transition: transform var(--transition-fast);
@@ -215,15 +241,12 @@ const handleMenuSelect = (index: string) => {
 
 .menu-item:hover {
   background: var(--sidebar-hover) !important;
-  backdrop-filter: blur(8px);
 }
 
 .menu-item.is-active {
   background: var(--sidebar-active) !important;
   color: var(--sidebar-text-active) !important;
   font-weight: 500;
-  box-shadow: 0 0 12px rgba(var(--primary-rgb), 0.2);
-  backdrop-filter: blur(8px);
 }
 
 .menu-item.is-active::before {
@@ -235,16 +258,15 @@ const handleMenuSelect = (index: string) => {
 }
 
 :deep(.el-sub-menu__title) {
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-sm);
   transition: all var(--transition-fast);
-  height: 44px;
-  line-height: 44px;
+  height: 42px;
+  line-height: 42px;
   position: relative;
 }
 
 :deep(.el-sub-menu__title:hover) {
   background: var(--sidebar-hover) !important;
-  backdrop-filter: blur(8px);
 }
 
 :deep(.el-menu--collapse .el-sub-menu__title span),
@@ -271,30 +293,77 @@ const handleMenuSelect = (index: string) => {
 }
 
 :deep(.el-sub-menu .el-menu) {
-  background: rgba(0, 0, 0, 0.1) !important;
-  border-radius: var(--border-radius-md);
+  background: rgba(0, 0, 0, 0.12) !important;
+  border-radius: var(--border-radius-sm);
   margin: 4px 8px;
-  backdrop-filter: blur(4px);
 }
 
 :deep(.el-sub-menu .el-menu .el-menu-item) {
   padding-left: 48px !important;
-  height: 40px;
-  line-height: 40px;
+  height: 38px;
+  line-height: 38px;
   font-size: 13px;
 }
 
-.sidebar-footer {
-  padding: 12px 16px;
-  text-align: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+.sidebar-bottom {
   position: relative;
   z-index: 2;
+  flex-shrink: 0;
+}
+
+.bottom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.layout-toggle {
+  margin: 0;
+  width: 100%;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--sidebar-text);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.theme-toggle:hover {
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-active);
+  border-color: rgba(var(--primary-rgb), 0.2);
+}
+
+.theme-toggle .el-icon {
+  font-size: 16px;
+}
+
+.theme-label {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-footer {
+  padding: 10px 16px 12px;
+  text-align: center;
 }
 
 .version-text {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.25);
   letter-spacing: 0.5px;
 }
 
@@ -306,5 +375,20 @@ const handleMenuSelect = (index: string) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.theme-icon-enter-active,
+.theme-icon-leave-active {
+  transition: all 0.2s ease;
+}
+
+.theme-icon-enter-from {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.6);
+}
+
+.theme-icon-leave-to {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.6);
 }
 </style>

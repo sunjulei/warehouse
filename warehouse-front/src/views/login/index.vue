@@ -3,21 +3,27 @@
     <div class="login-background">
       <div class="grid-overlay"></div>
       <div class="noise-overlay"></div>
+      <!-- Warehouse rack silhouettes -->
+      <div class="rack rack-1"></div>
+      <div class="rack rack-2"></div>
+      <div class="rack rack-3"></div>
       <div class="shape shape-1"></div>
       <div class="shape shape-2"></div>
       <div class="shape shape-3"></div>
-      <div class="shape shape-4"></div>
-      <div class="shape shape-5"></div>
-      <div class="shape shape-6"></div>
     </div>
     <el-card class="login-card animate-scale-in">
       <div class="login-header">
-        <div class="header-decoration"></div>
+        <div class="header-mesh"></div>
         <div class="logo-wrapper">
-          <el-icon :size="36" color="#fff"><Box /></el-icon>
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo-svg">
+            <path d="M20 7L12 3L4 7V17L12 21L20 17V7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M12 12L20 7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M12 12V21" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M12 12L4 7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <h2 class="login-title">仓库管理系统</h2>
-        <p class="login-subtitle">Warehouse Management System</p>
+        <h2 class="login-title">仓储脉搏</h2>
+        <p class="login-subtitle">Warehouse Pulse</p>
       </div>
       <el-form ref="formRef" :model="form" :rules="rules" @keyup.enter="handleLogin" class="login-form">
         <el-form-item prop="loginname" class="animate-item-1">
@@ -71,7 +77,7 @@
         </el-form-item>
       </el-form>
       <div class="login-footer">
-        <span>仓库管理系统 &copy; {{ new Date().getFullYear() }}</span>
+        <span>仓储脉搏管理系统 &copy; {{ new Date().getFullYear() }}</span>
       </div>
     </el-card>
   </div>
@@ -110,7 +116,6 @@ const refreshCaptcha = async () => {
     })
     captchaUrl.value = URL.createObjectURL(res.data as Blob)
   } catch {
-    // fallback
     captchaUrl.value = '/api/login/getCode?t=' + Date.now()
   }
 }
@@ -149,7 +154,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #1e1b4b 60%, #312e81 100%);
+  background: linear-gradient(160deg, #0c0a09 0%, #1c1917 30%, #1a1a2e 60%, #16213e 100%);
   background-size: 400% 400%;
   animation: gradientShift 20s ease infinite;
   position: relative;
@@ -172,9 +177,9 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-image:
+    linear-gradient(rgba(13, 148, 136, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13, 148, 136, 0.04) 1px, transparent 1px);
   background-size: 60px 60px;
   z-index: 1;
 }
@@ -185,156 +190,114 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  opacity: 0.15;
+  opacity: 0.12;
   z-index: 2;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
 }
 
+/* Warehouse rack silhouettes */
+.rack {
+  position: absolute;
+  z-index: 3;
+  opacity: 0.06;
+}
+
+.rack-1 {
+  left: -20px;
+  bottom: 0;
+  width: 200px;
+  height: 350px;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(13, 148, 136, 0.3) 60px, rgba(13, 148, 136, 0.3) 62px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(13, 148, 136, 0.2) 80px, rgba(13, 148, 136, 0.2) 82px);
+  transform: perspective(400px) rotateY(10deg);
+}
+
+.rack-2 {
+  right: -10px;
+  bottom: 0;
+  width: 180px;
+  height: 300px;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(13, 148, 136, 0.25) 50px, rgba(13, 148, 136, 0.25) 52px),
+    repeating-linear-gradient(90deg, transparent, transparent 70px, rgba(13, 148, 136, 0.15) 70px, rgba(13, 148, 136, 0.15) 72px);
+  transform: perspective(400px) rotateY(-8deg);
+}
+
+.rack-3 {
+  left: 15%;
+  top: 0;
+  width: 160px;
+  height: 120px;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 35px, rgba(13, 148, 136, 0.2) 35px, rgba(13, 148, 136, 0.2) 37px),
+    repeating-linear-gradient(90deg, transparent, transparent 55px, rgba(13, 148, 136, 0.15) 55px, rgba(13, 148, 136, 0.15) 57px);
+}
+
 .shape {
   position: absolute;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(13, 148, 136, 0.1);
   z-index: 3;
 }
 
 .shape-1 {
   width: 200px;
   height: 200px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-  border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-  top: 10%;
-  left: 10%;
-  animation: float1 8s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  top: 15%;
+  right: 15%;
+  animation: float1 12s ease-in-out infinite;
 }
 
 .shape-2 {
-  width: 150px;
-  height: 150px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
-  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-  top: 60%;
-  right: 10%;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  bottom: 20%;
+  left: 20%;
   animation: float2 10s ease-in-out infinite;
 }
 
 .shape-3 {
-  width: 100px;
-  height: 100px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
-  border-radius: 50%;
-  bottom: 10%;
-  left: 30%;
-  animation: float3 7s ease-in-out infinite;
-}
-
-.shape-4 {
-  width: 120px;
-  height: 120px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%);
-  border-radius: 40% 60% 60% 40% / 40% 40% 60% 60%;
-  top: 30%;
-  right: 30%;
-  animation: float4 9s ease-in-out infinite;
-}
-
-.shape-5 {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%);
   border-radius: 50%;
-  top: 50%;
-  left: 20%;
-  animation: float5 11s ease-in-out infinite;
-}
-
-.shape-6 {
-  width: 160px;
-  height: 160px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(59, 130, 246, 0.12) 100%);
-  border-radius: 30% 70% 50% 50% / 50% 50% 70% 30%;
-  bottom: 20%;
-  right: 20%;
-  animation: float6 12s ease-in-out infinite;
+  top: 40%;
+  left: 10%;
+  animation: float3 8s ease-in-out infinite;
 }
 
 @keyframes float1 {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg) scale(1);
-  }
-  33% {
-    transform: translate(30px, -30px) rotate(120deg) scale(1.05);
-  }
-  66% {
-    transform: translate(-20px, 20px) rotate(240deg) scale(0.95);
-  }
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-20px, -30px) scale(1.1); }
 }
 
 @keyframes float2 {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate(-40px, -30px) rotate(180deg);
-  }
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(25px, -20px); }
 }
 
 @keyframes float3 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(20px, -40px) scale(1.1);
-  }
-}
-
-@keyframes float4 {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  25% {
-    transform: translate(-20px, -20px) rotate(90deg);
-  }
-  50% {
-    transform: translate(10px, -30px) rotate(180deg);
-  }
-  75% {
-    transform: translate(30px, -10px) rotate(270deg);
-  }
-}
-
-@keyframes float5 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(-30px, 20px) scale(1.15);
-  }
-}
-
-@keyframes float6 {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  33% {
-    transform: translate(20px, -20px) rotate(60deg);
-  }
-  66% {
-    transform: translate(-15px, 15px) rotate(120deg);
-  }
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(15px, -25px) scale(1.15); }
 }
 
 .login-card {
-  width: 440px;
+  width: 420px;
   padding: 0;
-  border-radius: var(--border-radius-2xl);
-  box-shadow: var(--shadow-2xl), 0 0 80px rgba(99, 102, 241, 0.15);
-  background: rgba(255, 255, 255, 0.98);
+  border-radius: 16px;
+  box-shadow: var(--shadow-2xl), 0 0 60px rgba(13, 148, 136, 0.1);
+  background: rgba(28, 25, 23, 0.85);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(13, 148, 136, 0.15);
   position: relative;
   z-index: 10;
   overflow: hidden;
@@ -347,9 +310,9 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: var(--border-radius-2xl);
+  border-radius: 16px;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.1));
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.3), rgba(13, 148, 136, 0.05));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -361,94 +324,78 @@ onMounted(() => {
 }
 
 .login-header {
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
-  padding: 36px var(--spacing-xl) 32px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.15) 0%, rgba(13, 148, 136, 0.05) 100%);
+  padding: 32px var(--spacing-xl) 28px;
   text-align: center;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid rgba(13, 148, 136, 0.1);
 }
 
-.login-header::before {
-  content: '';
+.header-mesh {
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at 30% 50%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
-  animation: headerGlow 6s ease-in-out infinite;
-}
-
-.login-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-}
-
-.header-decoration {
-  position: absolute;
-  top: -30px;
-  right: -30px;
-  width: 120px;
-  height: 120px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: pulse 4s ease-in-out infinite;
+  bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(13, 148, 136, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 80% 20%, rgba(13, 148, 136, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px, 32px 32px;
 }
 
 .logo-wrapper {
-  width: 68px;
-  height: 68px;
+  width: 60px;
+  height: 60px;
   margin: 0 auto var(--spacing-md);
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  background: var(--primary-gradient);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4);
   position: relative;
   z-index: 1;
-  transform: rotate(-5deg);
   transition: transform 0.3s ease;
 }
 
 .logo-wrapper:hover {
-  transform: rotate(0deg) scale(1.05);
+  transform: rotate(-5deg) scale(1.05);
+}
+
+.logo-svg {
+  width: 30px;
+  height: 30px;
+  color: #fff;
 }
 
 .login-title {
-  color: #fff;
-  font-size: 24px;
+  color: #fafaf9;
+  font-size: 22px;
   font-weight: 700;
-  margin: 0 0 6px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin: 0 0 4px;
   position: relative;
   z-index: 1;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
 }
 
 .login-subtitle {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(168, 162, 158, 0.7);
   font-size: var(--font-size-sm);
   margin: 0;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   position: relative;
   z-index: 1;
   font-weight: 300;
+  text-transform: uppercase;
 }
 
 .login-form {
-  padding: 28px var(--spacing-xl) 20px;
+  padding: 24px var(--spacing-xl) 16px;
 }
 
 .login-form :deep(.el-form-item) {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .login-form :deep(.el-form-item:last-child) {
@@ -456,26 +403,25 @@ onMounted(() => {
 }
 
 .login-input :deep(.el-input__wrapper) {
-  border-radius: 12px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08) inset;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(68, 64, 60, 0.5) inset;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 8px 16px;
-  height: 48px;
-  background: rgba(248, 250, 252, 0.8);
+  height: 46px;
+  background: rgba(41, 37, 36, 0.6);
 }
 
 .login-input :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3) inset;
-  background: rgba(248, 250, 252, 1);
+  box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.4) inset;
 }
 
 .login-input :deep(.el-input__wrapper:focus-within) {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5) inset, 0 0 20px rgba(99, 102, 241, 0.1);
-  background: #fff;
+  box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.6) inset, 0 0 16px rgba(13, 148, 136, 0.1);
+  background: rgba(41, 37, 36, 0.8);
 }
 
 .login-input :deep(.el-input__prefix) {
-  color: #94a3b8;
+  color: rgba(168, 162, 158, 0.6);
   margin-right: 8px;
 }
 
@@ -484,12 +430,12 @@ onMounted(() => {
 }
 
 .login-input :deep(.el-input__inner) {
-  font-size: 15px;
-  color: #1e293b;
+  font-size: 14px;
+  color: #fafaf9;
 }
 
 .login-input :deep(.el-input__inner::placeholder) {
-  color: #94a3b8;
+  color: rgba(120, 113, 108, 0.8);
 }
 
 .captcha-row {
@@ -504,19 +450,19 @@ onMounted(() => {
 
 .captcha-wrapper {
   position: relative;
-  height: 48px;
-  min-width: 130px;
+  height: 46px;
+  min-width: 120px;
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(68, 64, 60, 0.5);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #f8fafc;
+  background: rgba(41, 37, 36, 0.6);
 }
 
 .captcha-wrapper:hover {
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  border-color: rgba(13, 148, 136, 0.5);
+  box-shadow: 0 0 16px rgba(13, 148, 136, 0.15);
   transform: scale(1.02);
 }
 
@@ -532,7 +478,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(99, 102, 241, 0.8));
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.85), rgba(13, 148, 136, 0.7));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -548,13 +494,13 @@ onMounted(() => {
 
 .login-btn {
   width: 100%;
-  height: 50px;
-  font-size: 16px;
+  height: 48px;
+  font-size: 15px;
   font-weight: 600;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+  border-radius: 10px;
+  background: var(--primary-gradient);
   border: none;
-  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.35);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 6px;
   position: relative;
@@ -568,13 +514,13 @@ onMounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
   transition: left 0.5s ease;
 }
 
 .login-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.45);
 }
 
 .login-btn:hover::before {
@@ -582,27 +528,15 @@ onMounted(() => {
 }
 
 .login-btn:active {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  transform: translateY(0);
 }
 
 .login-footer {
   text-align: center;
   padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-md);
   font-size: 12px;
-  color: #94a3b8;
+  color: rgba(120, 113, 108, 0.5);
   letter-spacing: 0.5px;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .animate-scale-in {
@@ -612,7 +546,7 @@ onMounted(() => {
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.85) translateY(20px);
+    transform: scale(0.88) translateY(20px);
   }
   to {
     opacity: 1;
@@ -620,53 +554,19 @@ onMounted(() => {
   }
 }
 
-@keyframes headerGlow {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.2);
-    opacity: 1;
-  }
-}
+.animate-item-1 { animation: fadeIn 0.5s ease-out 0.1s both; }
+.animate-item-2 { animation: fadeIn 0.5s ease-out 0.2s both; }
+.animate-item-3 { animation: fadeIn 0.5s ease-out 0.3s both; }
+.animate-item-4 { animation: fadeIn 0.5s ease-out 0.4s both; }
 
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-}
-
-.animate-item-1 {
-  animation: fadeIn 0.5s ease-out 0.1s both;
-}
-
-.animate-item-2 {
-  animation: fadeIn 0.5s ease-out 0.2s both;
-}
-
-.animate-item-3 {
-  animation: fadeIn 0.5s ease-out 0.3s both;
-}
-
-.animate-item-4 {
-  animation: fadeIn 0.5s ease-out 0.4s both;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 </style>
