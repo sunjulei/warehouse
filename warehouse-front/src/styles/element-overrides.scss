@@ -1,359 +1,622 @@
 // ============================================
-// Element Plus Theme Overrides — 仓储脉搏
+// Element Plus Overrides — Clean Minimal
 // ============================================
 
-// ─── Button ───────────────────────────────────
+// ─── Button ───
 .el-button {
-  border-radius: var(--border-radius-md);
+  border-radius: var(--border-radius-sm);
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-fast);
-  letter-spacing: var(--letter-spacing-wide);
-
-  &--primary {
-    background: var(--primary-gradient);
-    border-color: var(--primary-color);
-    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.25);
-
-    &:hover,
-    &:focus {
-      background: var(--primary-gradient-hover);
-      border-color: var(--primary-dark);
-      box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.35);
-      transform: translateY(-1px);
-    }
-
-    &:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 4px rgba(var(--primary-rgb), 0.25);
-    }
-  }
-
-  &--success {
-    &:hover,
-    &:focus {
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-      transform: translateY(-1px);
-    }
-  }
-
-  &--danger {
-    &:hover,
-    &:focus {
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-      transform: translateY(-1px);
-    }
-  }
-
-  &--warning {
-    &:hover,
-    &:focus {
-      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
-      transform: translateY(-1px);
-    }
-  }
-
-  &.is-link {
-    box-shadow: none;
-
-    &:hover {
-      transform: none;
-    }
-  }
+  height: 32px;
+  padding: 0 16px;
+  font-size: var(--font-size-base);
 }
 
-// ─── Card ─────────────────────────────────────
-.el-card {
-  border-radius: var(--border-radius-lg);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-  overflow: hidden;
-  background-color: var(--bg-primary);
+.el-button--primary {
+  background: var(--primary-gradient);
+  border: none;
+  box-shadow: 0 1px 3px var(--primary-shadow);
 
   &:hover {
-    box-shadow: var(--shadow-md);
+    background: var(--primary-gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--primary-shadow);
   }
 
-  &__header {
-    border-bottom-color: var(--border-light);
-    padding: var(--spacing-md) var(--spacing-lg);
-    background-color: var(--bg-primary);
-  }
-
-  &__body {
-    background-color: var(--bg-primary);
+  &:active {
+    transform: translateY(0);
   }
 }
 
-// ─── Table ────────────────────────────────────
-.el-table {
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  --el-table-bg-color: var(--bg-primary);
-  --el-table-tr-bg-color: var(--bg-primary);
-  --el-table-header-bg-color: var(--bg-tertiary);
-  --el-table-row-hover-bg-color: var(--primary-subtle);
-  --el-table-border-color: var(--border-light);
-  --el-table-text-color: var(--text-regular);
-  --el-table-header-text-color: var(--text-primary);
+.el-button--default {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 
-  th.el-table__cell {
-    background-color: var(--bg-tertiary) !important;
-    color: var(--text-primary);
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-sm);
-    border-bottom-color: var(--border-color);
-    letter-spacing: var(--letter-spacing-wide);
+  &:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-light);
+    background: var(--primary-subtle);
+  }
+}
+
+.el-button--danger {
+  background: var(--danger-color);
+  border-color: var(--danger-color);
+
+  &:hover {
+    background: var(--danger-light);
+    border-color: var(--danger-light);
+  }
+}
+
+.el-button--text {
+  border: none;
+  background: transparent;
+  color: var(--primary-color);
+  padding: 0 8px;
+
+  &:hover {
+    background: var(--primary-subtle);
+  }
+}
+
+.el-button--small {
+  height: 28px;
+  padding: 0 12px;
+  font-size: var(--font-size-sm);
+}
+
+.el-button--large {
+  height: 40px;
+  padding: 0 24px;
+  font-size: var(--font-size-md);
+}
+
+// ─── Input ───
+.el-input__wrapper {
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 0 0 1px var(--border-color) inset;
+  transition: all var(--transition-fast);
+  background: var(--bg-primary);
+
+  &:hover {
+    box-shadow: 0 0 0 1px var(--primary-light) inset;
   }
 
-  td.el-table__cell {
-    border-bottom-color: var(--border-light);
-    transition: background-color var(--transition-fast);
-    color: var(--text-regular);
+  &.is-focus {
+    box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.08) inset;
   }
+}
 
-  .el-table__row {
-    transition: background-color var(--transition-fast);
+.el-input__inner {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
 
-    &:hover > td {
-      background-color: var(--primary-subtle) !important;
-    }
-  }
-
-  &--striped .el-table__body tr.el-table__row--striped td {
-    background-color: var(--bg-tertiary);
-  }
-
-  &--border {
-    border-color: var(--border-light);
-
-    th.el-table__cell,
-    td.el-table__cell {
-      border-right-color: var(--border-light);
-    }
-  }
-
-  &__empty-text {
+  &::placeholder {
     color: var(--text-placeholder);
   }
 }
 
-// ─── Dialog ───────────────────────────────────
+.el-textarea__inner {
+  border-radius: var(--border-radius-sm);
+  border-color: var(--border-color);
+  font-size: var(--font-size-base);
+
+  &:hover {
+    border-color: var(--primary-light);
+  }
+
+  &:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.08);
+  }
+}
+
+// ─── Select ───
+.el-select__wrapper {
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 0 0 1px var(--border-color) inset;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    box-shadow: 0 0 0 1px var(--primary-light) inset;
+  }
+
+  &.is-focus {
+    box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.08) inset;
+  }
+}
+
+.el-select-dropdown {
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-xl);
+  padding: 4px;
+}
+
+.el-select-dropdown__item {
+  border-radius: var(--border-radius-xs);
+  padding: 8px 12px;
+  font-size: var(--font-size-base);
+  color: var(--text-regular);
+
+  &:hover {
+    background: var(--primary-subtle);
+    color: var(--primary-color);
+  }
+
+  &.is-selected {
+    color: var(--primary-color);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+// ─── Table ───
+.el-table {
+  --el-table-border-color: var(--border-lighter);
+  --el-table-header-bg-color: var(--bg-tertiary);
+  --el-table-tr-bg-color: var(--bg-primary);
+  --el-table-row-hover-bg-color: var(--primary-subtle);
+  font-size: var(--font-size-base);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.el-table td.el-table__cell {
+  padding: 10px 0;
+  color: var(--text-regular);
+  border-bottom-color: var(--border-lighter);
+}
+
+.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: var(--bg-tertiary);
+}
+
+.el-table--border {
+  border-color: var(--border-lighter);
+
+  th.el-table__cell,
+  td.el-table__cell {
+    border-right-color: var(--border-lighter);
+  }
+}
+
+.el-table__empty-block {
+  min-height: 200px;
+}
+
+.el-table__empty-text {
+  color: var(--text-placeholder);
+  font-size: var(--font-size-base);
+}
+
+// ─── Dialog ───
 .el-dialog {
   border-radius: var(--border-radius-xl);
-  overflow: hidden;
   box-shadow: var(--shadow-2xl);
-  background-color: var(--bg-primary);
+  background: var(--bg-primary);
+  overflow: hidden;
+}
 
-  &__header {
-    background: var(--bg-tertiary);
-    padding: var(--spacing-md) var(--spacing-lg);
-    margin: 0;
-    border-bottom: 1px solid var(--border-light);
-  }
+.el-dialog__header {
+  padding: 16px 24px;
+  margin: 0;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-primary);
+}
 
-  &__title {
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-primary);
-    font-size: var(--font-size-lg);
-  }
+.el-dialog__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
 
-  &__headerbtn {
-    transition: all var(--transition-fast);
-    width: 32px;
-    height: 32px;
-    border-radius: var(--border-radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.el-dialog__headerbtn {
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--border-radius-sm);
 
-    &:hover {
-      transform: rotate(90deg);
-      background: rgba(220, 38, 38, 0.08);
-      color: var(--danger-color);
-    }
-  }
-
-  &__body {
-    padding: var(--spacing-lg);
-    color: var(--text-regular);
-  }
-
-  &__footer {
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-top: 1px solid var(--border-light);
-    background: var(--bg-tertiary);
+  &:hover {
+    background: var(--danger-bg);
+    color: var(--danger-color);
   }
 }
 
-// ─── Input ────────────────────────────────────
-.el-input {
-  &__wrapper {
-    border-radius: var(--border-radius-md);
-    transition: all var(--transition-fast);
-    box-shadow: 0 0 0 1px var(--border-color) inset;
-    background-color: var(--bg-primary);
-
-    &:hover {
-      box-shadow: 0 0 0 1px var(--primary-light) inset;
-    }
-
-    &.is-focus {
-      box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
-    }
-  }
-
-  &__inner {
-    color: var(--text-primary);
-
-    &::placeholder {
-      color: var(--text-placeholder);
-    }
-  }
+.el-dialog__body {
+  padding: 20px 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+  color: var(--text-regular);
+  font-size: var(--font-size-base);
 }
 
-// ─── Textarea ─────────────────────────────────
-.el-textarea {
-  &__inner {
-    border-radius: var(--border-radius-md);
-    transition: all var(--transition-fast);
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-
-    &:hover {
-      box-shadow: 0 0 0 1px var(--primary-light) inset;
-    }
-
-    &:focus {
-      box-shadow: 0 0 0 1px var(--primary-color) inset, 0 0 0 3px rgba(var(--primary-rgb), 0.1) inset;
-    }
-  }
+.el-dialog__footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-primary);
 }
 
-// ─── Select ───────────────────────────────────
-.el-select {
-  width: 180px;
-
-  .el-input__wrapper {
-    border-radius: var(--border-radius-md);
-  }
+.el-overlay {
+  background-color: var(--bg-overlay);
+  backdrop-filter: blur(4px);
 }
 
-.search-form {
-  .el-select {
-    width: 200px;
-  }
-
-  .el-input {
-    width: 180px;
-  }
-}
-
-// ─── Form ─────────────────────────────────────
+// ─── Form ───
 .el-form-item {
-  &__label {
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
+  margin-bottom: 18px;
+
+  &:last-child {
+    margin-bottom: 0;
   }
 }
 
-// ─── Pagination ───────────────────────────────
+.el-form-item__label {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+// ─── Pagination ───
 .el-pagination {
   --el-pagination-button-bg-color: var(--bg-primary);
   --el-pagination-hover-color: var(--primary-color);
-  --el-pagination-text-color: var(--text-regular);
-  --el-pagination-bg-color: var(--bg-primary);
-
-  .el-pager li {
-    border-radius: var(--border-radius-sm);
-    transition: all var(--transition-fast);
-    font-weight: var(--font-weight-medium);
-    background: var(--bg-primary);
-    color: var(--text-regular);
-
-    &:hover {
-      color: var(--primary-color);
-    }
-
-    &.is-active {
-      background: var(--primary-gradient);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
-    }
-  }
-
-  button {
-    border-radius: var(--border-radius-sm);
-    background: var(--bg-primary);
-    color: var(--text-regular);
-
-    &:hover {
-      color: var(--primary-color);
-    }
-  }
+  font-size: var(--font-size-sm);
 }
 
-// ─── Tree ─────────────────────────────────────
-.el-tree {
-  background-color: var(--bg-primary);
-
-  .el-tree-node {
-    &__content {
-      border-radius: var(--border-radius-sm);
-      margin: 2px 4px;
-      transition: all var(--transition-fast);
-      height: 36px;
-
-      &:hover {
-        background-color: var(--primary-subtle);
-      }
-    }
-
-    &.is-current > .el-tree-node__content {
-      background-color: var(--sidebar-active);
-      color: var(--primary-color);
-      font-weight: var(--font-weight-medium);
-    }
-  }
-}
-
-// ─── MessageBox ───────────────────────────────
-.el-message-box {
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-2xl);
-  background-color: var(--bg-primary);
-  border-color: var(--border-light);
-
-  &__title {
-    color: var(--text-primary);
-  }
-
-  &__content {
-    color: var(--text-regular);
-  }
-
-  &__headerbtn .el-message-box__close {
-    color: var(--text-secondary);
-  }
-}
-
-// ─── Tag ──────────────────────────────────────
-.el-tag {
+.el-pager li {
   border-radius: var(--border-radius-sm);
+  min-width: 32px;
+  height: 32px;
+  line-height: 32px;
+  font-size: var(--font-size-sm);
+  color: var(--text-regular);
+  border: 1px solid var(--border-color);
+  margin: 0 2px;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-light);
+  }
+
+  &.is-active {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+  }
+}
+
+.el-pagination .btn-prev,
+.el-pagination .btn-next {
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+
+  &:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-light);
+  }
+}
+
+.el-pagination__sizes .el-select__wrapper {
+  border-radius: var(--border-radius-sm);
+}
+
+// ─── Menu (Sidebar) ───
+.el-menu {
+  border-right: none;
+  background: transparent;
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+  color: var(--sidebar-text);
+  transition: all var(--transition-fast);
+  height: 38px;
+  line-height: 38px;
+  font-size: var(--font-size-base);
+
+  &:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text-active);
+  }
+}
+
+.el-menu-item.is-active {
+  color: var(--sidebar-text-active);
+  background: var(--sidebar-active);
   font-weight: var(--font-weight-medium);
 }
 
-// ─── Scrollbar ────────────────────────────────
-.el-scrollbar {
-  .el-scrollbar__bar {
-    &.is-vertical {
-      width: 5px;
-    }
+.el-sub-menu .el-menu {
+  background: transparent;
+}
 
-    &.is-horizontal {
-      height: 5px;
-    }
+// ─── Tag ───
+.el-tag {
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border: none;
+  padding: 0 10px;
+  height: 22px;
+  line-height: 22px;
+}
 
+.el-tag--primary {
+  background: var(--accent-bg);
+  color: var(--primary-color);
+}
+
+.el-tag--success {
+  background: var(--success-bg);
+  color: var(--success-color);
+}
+
+.el-tag--warning {
+  background: var(--warning-bg);
+  color: var(--warning-color);
+}
+
+.el-tag--danger {
+  background: var(--danger-bg);
+  color: var(--danger-color);
+}
+
+.el-tag--info {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+// ─── Breadcrumb ───
+.el-breadcrumb__separator {
+  color: var(--text-placeholder);
+  font-weight: 400;
+  margin: 0 4px;
+}
+
+.el-breadcrumb__inner {
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+  font-size: var(--font-size-base);
+
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+.el-breadcrumb__item:last-child .el-breadcrumb__inner {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+// ─── Card ───
+.el-card {
+  border-radius: var(--border-radius-lg);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-primary);
+  transition: all var(--transition-base);
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.el-card__header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-primary);
+}
+
+.el-card__body {
+  padding: 16px 20px;
+}
+
+// ─── Dropdown ───
+.el-dropdown-menu {
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-light);
+  padding: 4px;
+  background: var(--bg-primary);
+}
+
+.el-dropdown-menu__item {
+  border-radius: var(--border-radius-sm);
+  padding: 8px 12px;
+  font-size: var(--font-size-base);
+  color: var(--text-regular);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--primary-subtle);
+    color: var(--primary-color);
+  }
+}
+
+// ─── Tree ───
+.el-tree-node__content {
+  height: 36px;
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--primary-subtle);
+  }
+}
+
+.el-tree-node.is-current > .el-tree-node__content {
+  background: var(--primary-subtle);
+  color: var(--primary-color);
+  font-weight: var(--font-weight-medium);
+}
+
+// ─── Message ───
+.el-message {
+  border-radius: var(--border-radius-md);
+  border: none;
+  box-shadow: var(--shadow-lg);
+  padding: 12px 20px;
+  font-size: var(--font-size-base);
+}
+
+// ─── Notification ───
+.el-notification {
+  border-radius: var(--border-radius-lg);
+  border: none;
+  box-shadow: var(--shadow-xl);
+}
+
+// ─── Tooltip ───
+.el-tooltip__popper {
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  padding: 6px 10px;
+}
+
+// ─── Popover ───
+.el-popover {
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-xl);
+}
+
+// ─── Upload ───
+.el-upload {
+  border-radius: var(--border-radius-md);
+  border: 1px dashed var(--border-color);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-subtle);
+  }
+}
+
+// ─── DatePicker ───
+.el-date-editor {
+  .el-input__wrapper {
+    border-radius: var(--border-radius-sm);
+  }
+}
+
+.el-picker-panel {
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-xl);
+}
+
+// ─── Tabs ───
+.el-tabs__item {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    color: var(--primary-color);
+  }
+
+  &.is-active {
+    color: var(--primary-color);
+  }
+}
+
+.el-tabs__active-bar {
+  background-color: var(--primary-color);
+  border-radius: 1px;
+}
+
+// ─── Switch ───
+.el-switch.is-checked .el-switch__core {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+// ─── Radio ───
+.el-radio-button__inner {
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+  transition: all var(--transition-fast);
+}
+
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+  box-shadow: -1px 0 0 0 var(--primary-color);
+}
+
+// ─── Checkbox ───
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+// ─── Steps ───
+.el-step__head.is-process {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.el-step__title.is-process {
+  color: var(--primary-color);
+  font-weight: var(--font-weight-semibold);
+}
+
+// ─── Transfer ───
+.el-transfer-panel {
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-light);
+}
+
+// ─── Collapse ───
+.el-collapse-item__header {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+// ─── Loading ───
+.el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(2px);
+}
+
+[data-theme="dark"] .el-loading-mask {
+  background-color: rgba(28, 25, 23, 0.8);
+}
+
+// ─── Descriptions ───
+.el-descriptions__label {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.el-descriptions__content {
+  color: var(--text-primary);
+}
+
+// ─── Scrollbar ───
+.el-scrollbar__bar {
+  &.is-vertical,
+  &.is-horizontal {
     .el-scrollbar__thumb {
       background-color: rgba(var(--primary-rgb), 0.15);
       border-radius: 3px;
@@ -365,242 +628,8 @@
   }
 }
 
-// ─── Menu ─────────────────────────────────────
-.el-menu {
-  border-right: none;
-
-  .el-menu-item,
-  .el-sub-menu__title {
-    transition: all var(--transition-fast);
-    border-radius: var(--border-radius-sm);
-    margin: 2px 8px;
-
-    &:hover {
-      background-color: var(--sidebar-hover);
-    }
-
-    &.is-active {
-      background-color: var(--sidebar-active);
-      color: var(--sidebar-text-active);
-      font-weight: var(--font-weight-medium);
-    }
-  }
-
-  .el-sub-menu .el-menu {
-    transition: all var(--transition-base);
-  }
-}
-
-// ─── Breadcrumb ───────────────────────────────
-.el-breadcrumb {
-  &__inner {
-    color: var(--text-secondary);
-    transition: color var(--transition-fast);
-
-    &:hover {
-      color: var(--primary-color);
-    }
-  }
-
-  &__item:last-child .el-breadcrumb__inner {
-    color: var(--text-primary);
-    font-weight: var(--font-weight-medium);
-  }
-
-  &__separator {
-    color: var(--text-placeholder);
-  }
-}
-
-// ─── Avatar ───────────────────────────────────
-.el-avatar {
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-fast);
-
-  &:hover {
-    transform: scale(1.05);
-    box-shadow: var(--shadow-md);
-  }
-}
-
-// ─── Dropdown ─────────────────────────────────
-.el-dropdown-menu {
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--border-light);
-  padding: 4px;
-  background-color: var(--bg-primary);
-
-  .el-dropdown-menu__item {
-    border-radius: var(--border-radius-sm);
-    padding: 8px 16px;
-    transition: all var(--transition-fast);
-    color: var(--text-regular);
-
-    &:hover {
-      background-color: var(--primary-subtle);
-      color: var(--primary-color);
-    }
-  }
-}
-
-// ─── Image ────────────────────────────────────
-.el-image {
-  border-radius: var(--border-radius-sm);
-  overflow: hidden;
-}
-
-// ─── Upload ───────────────────────────────────
-.el-upload {
-  border-radius: var(--border-radius-md);
-}
-
-// ─── Loading ──────────────────────────────────
-.el-loading-mask {
-  border-radius: var(--border-radius-md);
-  backdrop-filter: blur(2px);
-  background-color: var(--bg-overlay);
-}
-
-// ─── Message ──────────────────────────────────
-.el-message {
-  border-radius: var(--border-radius-md) !important;
-  box-shadow: var(--shadow-lg) !important;
-  border: none !important;
-  background-color: var(--bg-elevated) !important;
-}
-
-// ─── Notification ─────────────────────────────
-.el-notification {
-  border-radius: var(--border-radius-lg) !important;
-  box-shadow: var(--shadow-xl) !important;
-  border: 1px solid var(--border-light) !important;
-  background-color: var(--bg-elevated) !important;
-
-  &__title {
-    color: var(--text-primary) !important;
-  }
-
-  &__content {
-    color: var(--text-regular) !important;
-  }
-}
-
-// ─── Popover ──────────────────────────────────
-.el-popover {
-  background-color: var(--bg-primary) !important;
-  border-color: var(--border-light) !important;
-  color: var(--text-regular) !important;
-}
-
-// ─── Tooltip ──────────────────────────────────
-.el-tooltip__popper {
-  border-radius: var(--border-radius-sm);
-}
-
-// ─── Switch ───────────────────────────────────
-.el-switch {
-  &__core {
-    border-color: var(--border-color);
-  }
-}
-
-// ─── DatePicker ───────────────────────────────
-.el-date-editor {
-  .el-input__wrapper {
-    border-radius: var(--border-radius-md);
-  }
-}
-
-// ─── Radio ────────────────────────────────────
-.el-radio {
-  &__label {
-    color: var(--text-regular);
-  }
-}
-
-// ─── Checkbox ─────────────────────────────────
-.el-checkbox {
-  &__label {
-    color: var(--text-regular);
-  }
-}
-
-// ─── Tabs ─────────────────────────────────────
-.el-tabs {
-  &__item {
-    color: var(--text-secondary);
-
-    &.is-active {
-      color: var(--primary-color);
-    }
-
-    &:hover {
-      color: var(--primary-color);
-    }
-  }
-
-  &__active-bar {
-    background-color: var(--primary-color);
-  }
-}
-
-// ─── Steps ────────────────────────────────────
-.el-step {
-  &__title {
-    color: var(--text-primary);
-  }
-
-  &__description {
-    color: var(--text-secondary);
-  }
-}
-
-// ─── Empty ────────────────────────────────────
-.el-empty {
-  &__description p {
-    color: var(--text-placeholder);
-  }
-}
-
-// ─── Descriptions ─────────────────────────────
-.el-descriptions {
-  &__label {
-    color: var(--text-secondary) !important;
-  }
-
-  &__content {
-    color: var(--text-primary) !important;
-  }
-}
-
-// ─── Transfer ─────────────────────────────────
-.el-transfer-panel {
-  background-color: var(--bg-primary);
-  border-color: var(--border-light);
-
-  &__header {
-    background-color: var(--bg-tertiary);
-    border-bottom-color: var(--border-light);
-  }
-}
-
-// ─── Collapse ─────────────────────────────────
-.el-collapse {
-  border-color: var(--border-light);
-
-  &-item__header {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    border-bottom-color: var(--border-light);
-  }
-
-  &-item__wrap {
-    background-color: var(--bg-primary);
-    border-bottom-color: var(--border-light);
-  }
-
-  &-item__content {
-    color: var(--text-regular);
-  }
+// ─── Empty ───
+.el-empty__description p {
+  color: var(--text-placeholder);
+  font-size: var(--font-size-base);
 }
