@@ -1,176 +1,166 @@
 // ============================================
-// CSS Variables — 仓储脉搏 (Warehouse Pulse)
-// Industrial precision meets warm refinement
+// Design Tokens — 仓储管理系统 Clean Minimal
 // ============================================
 
 :root,
 [data-theme="light"] {
-  // ─── Primary: Deep Teal ────────────────────
-  --primary-color: #0d9488;
-  --primary-light: #14b8a6;
-  --primary-dark: #0f766e;
-  --primary-darker: #115e59;
-  --primary-gradient: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
-  --primary-gradient-hover: linear-gradient(135deg, #0f766e 0%, #0e7490 100%);
-  --primary-rgb: 13, 148, 136;
-  --primary-subtle: rgba(13, 148, 136, 0.06);
+  // ─── Primary (mapped from accent in themes.scss) ───
+  --primary-color: #e11d48;
+  --primary-light: #f43f5e;
+  --primary-dark: #be123c;
+  --primary-darker: #9f1239;
+  --primary-gradient: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #be123c 0%, #e11d48 100%);
+  --primary-rgb: 225, 29, 72;
+  --primary-subtle: rgba(225, 29, 72, 0.06);
+  --primary-shadow: rgba(225, 29, 72, 0.15);
 
-  // ─── Accent: Warm Amber ────────────────────
+  // ─── Accent (secondary highlight) ───
   --accent-color: #f59e0b;
   --accent-light: #fbbf24;
   --accent-dark: #d97706;
   --accent-rgb: 245, 158, 11;
   --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
 
-  // ─── Semantic Colors ───────────────────────
+  // ─── Semantic Colors ───
   --success-color: #059669;
   --success-light: #34d399;
-  --success-bg: rgba(5, 150, 105, 0.08);
+  --success-bg: #ecfdf5;
   --warning-color: #d97706;
   --warning-light: #fbbf24;
-  --warning-bg: rgba(217, 119, 6, 0.08);
+  --warning-bg: #fffbeb;
   --danger-color: #dc2626;
   --danger-light: #f87171;
-  --danger-bg: rgba(220, 38, 38, 0.08);
+  --danger-bg: #fef2f2;
   --info-color: #0284c7;
   --info-light: #38bdf8;
-  --info-bg: rgba(2, 132, 199, 0.08);
+  --info-bg: #f0f9ff;
 
-  // ─── Text ──────────────────────────────────
+  // ─── Text ───
   --text-primary: #1c1917;
   --text-regular: #292524;
   --text-secondary: #78716c;
   --text-placeholder: #a8a29e;
   --text-disabled: #d6d3d1;
 
-  // ─── Background ────────────────────────────
+  // ─── Background ───
   --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f4;
-  --bg-tertiary: #fafaf9;
+  --bg-secondary: #fafaf9;
+  --bg-tertiary: #f5f5f3;
   --bg-elevated: #ffffff;
-  --bg-overlay: rgba(28, 25, 23, 0.6);
-  --bg-glass: rgba(255, 255, 255, 0.78);
-  --bg-pattern: #fafaf9;
+  --bg-overlay: rgba(28, 25, 23, 0.4);
+  --bg-glass: rgba(255, 255, 255, 0.8);
 
-  // ─── Sidebar ───────────────────────────────
-  --sidebar-bg: #1c1917;
-  --sidebar-bg-light: #292524;
-  --sidebar-hover: rgba(13, 148, 136, 0.12);
-  --sidebar-active: rgba(13, 148, 136, 0.22);
-  --sidebar-text: #a8a29e;
-  --sidebar-text-active: #ffffff;
-  --sidebar-divider: rgba(168, 162, 158, 0.1);
-  --sidebar-width: 240px;
-  --sidebar-collapsed-width: 68px;
+  // ─── Sidebar (now light) ───
+  --sidebar-bg: #ffffff;
+  --sidebar-bg-light: #ffffff;
+  --sidebar-hover: #f5f5f3;
+  --sidebar-active: rgba(225, 29, 72, 0.06);
+  --sidebar-text: #78716c;
+  --sidebar-text-active: #1c1917;
+  --sidebar-width: 220px;
+  --sidebar-collapsed-width: 64px;
 
-  // ─── Border ────────────────────────────────
-  --border-color: #e7e5e4;
-  --border-light: #f5f5f4;
-  --border-dark: #d6d3d1;
-  --border-focus: var(--primary-color);
-  --border-radius-xs: 4px;
-  --border-radius-sm: 6px;
-  --border-radius-md: 10px;
-  --border-radius-lg: 14px;
-  --border-radius-xl: 20px;
-  --border-radius-2xl: 28px;
+  // ─── Header ───
+  --header-height: 52px;
 
-  // ─── Shadow ────────────────────────────────
-  --shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.04);
-  --shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(28, 25, 23, 0.08), 0 2px 4px -2px rgba(28, 25, 23, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(28, 25, 23, 0.08), 0 4px 6px -4px rgba(28, 25, 23, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(28, 25, 23, 0.1), 0 8px 10px -6px rgba(28, 25, 23, 0.06);
-  --shadow-2xl: 0 25px 50px -12px rgba(28, 25, 23, 0.2);
-  --shadow-primary: 0 4px 14px 0 rgba(var(--primary-rgb), 0.3);
-  --shadow-primary-lg: 0 8px 24px rgba(var(--primary-rgb), 0.35);
-  --shadow-inner: inset 0 2px 4px 0 rgba(28, 25, 23, 0.04);
+  // ─── Border ───
+  --border-color: #e8e5e0;
+  --border-light: #f0eeea;
+  --border-lighter: #f5f4f2;
 
-  // ─── Transition ────────────────────────────
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --transition-bounce: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  // ─── Spacing ───────────────────────────────
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
-
-  // ─── Typography ────────────────────────────
+  // ─── Typography ───
   --font-family: 'Plus Jakarta Sans', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  --font-size-xs: 12px;
-  --font-size-sm: 13px;
-  --font-size-base: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 18px;
-  --font-size-2xl: 20px;
-  --font-size-3xl: 24px;
-  --font-size-4xl: 30px;
-  --font-size-5xl: 36px;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 15px;
+  --font-size-xl: 16px;
+  --font-size-2xl: 18px;
+  --font-size-3xl: 20px;
+  --font-size-4xl: 24px;
+
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
-  --letter-spacing-tight: -0.025em;
+
+  --letter-spacing-tight: -0.02em;
   --letter-spacing-normal: 0;
-  --letter-spacing-wide: 0.025em;
-  --letter-spacing-wider: 0.05em;
+  --letter-spacing-wide: 0.05em;
 
-  // ─── Layout ────────────────────────────────
-  --header-height: 60px;
+  // ─── Spacing ───
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  --spacing-4xl: 40px;
+  --spacing-5xl: 48px;
+  --spacing-6xl: 64px;
 
-  // ─── Z-index ───────────────────────────────
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
-  --z-modal-backdrop: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
+  // ─── Border Radius ───
+  --border-radius-xs: 4px;
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 10px;
+  --border-radius-xl: 12px;
+  --border-radius-2xl: 16px;
+  --border-radius-full: 9999px;
+
+  // ─── Shadows ───
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 4px 16px rgba(0, 0, 0, 0.06), 0 12px 40px rgba(0, 0, 0, 0.06);
+  --shadow-2xl: 0 8px 32px rgba(0, 0, 0, 0.08), 0 16px 64px rgba(0, 0, 0, 0.08);
+  --shadow-primary: 0 4px 14px rgba(var(--primary-rgb), 0.25);
+
+  // ─── Transitions ───
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-// ============================================
-// Dark Theme — 深夜仓管
-// ============================================
-
+// ─── Dark Mode ───
 [data-theme="dark"] {
-  --primary-color: #2dd4bf;
-  --primary-light: #5eead4;
-  --primary-dark: #14b8a6;
-  --primary-darker: #0d9488;
-  --primary-gradient: linear-gradient(135deg, #2dd4bf 0%, #22d3ee 100%);
-  --primary-gradient-hover: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
-  --primary-rgb: 45, 212, 191;
-  --primary-subtle: rgba(45, 212, 191, 0.08);
+  --primary-color: #f43f5e;
+  --primary-light: #fb7185;
+  --primary-dark: #e11d48;
+  --primary-darker: #be123c;
+  --primary-gradient: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+  --primary-rgb: 244, 63, 94;
+  --primary-subtle: rgba(244, 63, 94, 0.1);
+  --primary-shadow: rgba(244, 63, 94, 0.2);
 
   --accent-color: #fbbf24;
   --accent-light: #fcd34d;
   --accent-dark: #f59e0b;
   --accent-rgb: 251, 191, 36;
-  --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
 
   --success-color: #34d399;
   --success-light: #6ee7b7;
-  --success-bg: rgba(52, 211, 153, 0.12);
+  --success-bg: rgba(52, 211, 153, 0.1);
   --warning-color: #fbbf24;
-  --warning-light: #fde68a;
-  --warning-bg: rgba(251, 191, 36, 0.12);
+  --warning-light: #fcd34d;
+  --warning-bg: rgba(251, 191, 36, 0.1);
   --danger-color: #f87171;
   --danger-light: #fca5a5;
-  --danger-bg: rgba(248, 113, 113, 0.12);
+  --danger-bg: rgba(248, 113, 113, 0.1);
   --info-color: #38bdf8;
   --info-light: #7dd3fc;
-  --info-bg: rgba(56, 189, 248, 0.12);
+  --info-bg: rgba(56, 189, 248, 0.1);
 
   --text-primary: #fafaf9;
   --text-regular: #e7e5e4;
@@ -182,30 +172,24 @@
   --bg-secondary: #171412;
   --bg-tertiary: #292524;
   --bg-elevated: #292524;
-  --bg-overlay: rgba(0, 0, 0, 0.7);
-  --bg-glass: rgba(28, 25, 23, 0.82);
-  --bg-pattern: #1c1917;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-glass: rgba(28, 25, 23, 0.85);
 
-  --sidebar-bg: #0c0a09;
+  --sidebar-bg: #1c1917;
   --sidebar-bg-light: #1c1917;
-  --sidebar-hover: rgba(45, 212, 191, 0.1);
-  --sidebar-active: rgba(45, 212, 191, 0.18);
-  --sidebar-text: #78716c;
+  --sidebar-hover: #292524;
+  --sidebar-active: rgba(244, 63, 94, 0.12);
+  --sidebar-text: #a8a29e;
   --sidebar-text-active: #fafaf9;
-  --sidebar-divider: rgba(120, 113, 108, 0.12);
 
-  --border-color: #44403c;
+  --border-color: #3a3633;
   --border-light: #292524;
-  --border-dark: #57534e;
-  --border-focus: var(--primary-color);
+  --border-lighter: #231f1d;
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  --shadow-primary: 0 4px 14px 0 rgba(var(--primary-rgb), 0.25);
-  --shadow-primary-lg: 0 8px 24px rgba(var(--primary-rgb), 0.3);
-  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 4px 16px rgba(0, 0, 0, 0.4), 0 12px 40px rgba(0, 0, 0, 0.3);
+  --shadow-2xl: 0 8px 32px rgba(0, 0, 0, 0.5), 0 16px 64px rgba(0, 0, 0, 0.4);
+  --shadow-primary: 0 4px 14px rgba(244, 63, 94, 0.2);
 }
