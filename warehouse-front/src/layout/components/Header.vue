@@ -11,6 +11,18 @@
       </el-breadcrumb>
     </div>
     <div class="header-right">
+      <!-- Theme Color Switcher -->
+      <div class="color-switcher">
+        <button
+          v-for="color in themeColors"
+          :key="color.value"
+          class="color-dot"
+          :class="{ active: themeStore.themeColor === color.value }"
+          :style="{ background: color.hex }"
+          :title="color.label"
+          @click="themeStore.setThemeColor(color.value)"
+        />
+      </div>
       <el-tooltip content="切换顶部菜单布局" placement="bottom">
         <button class="layout-switch-btn" @click="themeStore.toggleLayout()">
           <el-icon><Grid /></el-icon>
@@ -54,12 +66,20 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import type { ThemeColor } from '@/stores/theme'
 import { getImageUrl } from '@/api/file'
 
 defineProps<{ isCollapse: boolean }>()
 defineEmits(['toggleCollapse'])
 
 const themeStore = useThemeStore()
+
+const themeColors: { value: ThemeColor; hex: string; label: string }[] = [
+  { value: 'rose', hex: '#e11d48', label: '玫瑰红' },
+  { value: 'indigo', hex: '#4f46e5', label: '靛蓝' },
+  { value: 'emerald', hex: '#059669', label: '翡翠绿' },
+  { value: 'navy', hex: '#1e3a5f', label: '藏青' }
+]
 
 const route = useRoute()
 const router = useRouter()
@@ -138,6 +158,38 @@ const handleCommand = async (command: string) => {
   transform: scale(0.92);
 }
 
+.color-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--border-radius-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+}
+
+.color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  padding: 0;
+  font-family: inherit;
+  position: relative;
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+}
+
+.color-dot.active {
+  border-color: var(--bg-primary);
+  box-shadow: 0 0 0 2px var(--text-primary);
+}
+
 .layout-switch-btn {
   display: flex;
   align-items: center;
@@ -146,7 +198,7 @@ const handleCommand = async (command: string) => {
   height: 32px;
   border: 1px solid var(--border-light);
   border-radius: var(--border-radius-sm);
-  background: var(--bg-tertiary);
+  background: var(--bg-primary);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
