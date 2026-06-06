@@ -68,27 +68,7 @@
         </el-scrollbar>
 
         <div class="top-header-right">
-          <!-- Theme Color Switcher -->
-          <div class="color-switcher">
-            <button
-              v-for="color in themeColors"
-              :key="color.value"
-              class="color-dot"
-              :class="{ active: themeStore.themeColor === color.value }"
-              :style="{ background: color.hex }"
-              :title="color.label"
-              @click="themeStore.setThemeColor(color.value)"
-            />
-          </div>
-          <button class="icon-btn" @click="themeStore.toggle()" :title="isDark ? '日间模式' : '夜间模式'">
-            <transition name="theme-icon" mode="out-in">
-              <el-icon v-if="isDark" key="moon"><Moon /></el-icon>
-              <el-icon v-else key="sunny"><Sunny /></el-icon>
-            </transition>
-          </button>
-          <button class="icon-btn" @click="themeStore.toggleLayout()" title="切换侧边栏布局">
-            <el-icon><Grid /></el-icon>
-          </button>
+          <ThemeSettings />
           <div class="header-time">
             <el-icon class="time-icon"><Clock /></el-icon>
             <span class="time-text">{{ currentTime }}</span>
@@ -133,25 +113,15 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
-import type { ThemeColor } from '@/stores/theme'
 import { getImageUrl } from '@/api/file'
 import TabsBar from './components/TabsBar.vue'
+import ThemeSettings from './components/ThemeSettings.vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const themeStore = useThemeStore()
-
-const themeColors: { value: ThemeColor; hex: string; label: string }[] = [
-  { value: 'rose', hex: '#e11d48', label: '玫瑰红' },
-  { value: 'indigo', hex: '#4f46e5', label: '靛蓝' },
-  { value: 'emerald', hex: '#059669', label: '翡翠绿' },
-  { value: 'navy', hex: '#1e3a5f', label: '藏青' }
-]
 
 const currentRoute = computed(() => route.path)
-const isDark = computed(() => themeStore.mode === 'dark')
 
 const userAvatar = computed(() => {
   const imgpath = authStore.user?.imgpath
@@ -358,61 +328,6 @@ const handleCommand = async (command: string) => {
   margin-left: var(--spacing-xs);
 }
 
-.color-switcher {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: var(--border-radius-md);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-light);
-}
-
-.color-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  outline: none;
-  padding: 0;
-  font-family: inherit;
-  position: relative;
-}
-
-.color-dot:hover {
-  transform: scale(1.15);
-}
-
-.color-dot.active {
-  border-color: var(--bg-primary);
-  box-shadow: 0 0 0 2px var(--text-primary);
-}
-
-.icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-size: 16px;
-  font-family: inherit;
-  outline: none;
-}
-
-.icon-btn:hover {
-  background: var(--primary-subtle);
-  color: var(--primary-color);
-  border-color: rgba(var(--primary-rgb), 0.2);
-}
-
 .header-time {
   display: flex;
   align-items: center;
@@ -503,18 +418,4 @@ const handleCommand = async (command: string) => {
   border-radius: 3px;
 }
 
-.theme-icon-enter-active,
-.theme-icon-leave-active {
-  transition: all 0.2s ease;
-}
-
-.theme-icon-enter-from {
-  opacity: 0;
-  transform: rotate(-90deg) scale(0.6);
-}
-
-.theme-icon-leave-to {
-  opacity: 0;
-  transform: rotate(90deg) scale(0.6);
-}
 </style>
