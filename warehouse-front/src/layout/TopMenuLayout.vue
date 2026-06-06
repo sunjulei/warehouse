@@ -142,12 +142,17 @@ const handleMenuSelect = (index: string) => {
 const currentTime = ref('')
 let timer: ReturnType<typeof setInterval> | null = null
 
+const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 const updateTime = () => {
   const now = new Date()
+  const y = now.getFullYear()
+  const mo = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  const wd = weekdays[now.getDay()]
   const h = String(now.getHours()).padStart(2, '0')
   const m = String(now.getMinutes()).padStart(2, '0')
   const s = String(now.getSeconds()).padStart(2, '0')
-  currentTime.value = `${h}:${m}:${s}`
+  currentTime.value = `${y}/${mo}/${d} 周${wd} ${h}:${m}:${s}`
 }
 
 onMounted(() => {
