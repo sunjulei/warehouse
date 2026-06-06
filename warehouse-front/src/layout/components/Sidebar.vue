@@ -68,26 +68,9 @@
       </el-menu>
     </el-scrollbar>
     <div class="sidebar-bottom">
-      <div class="bottom-actions">
-        <button class="theme-toggle" @click="themeStore.toggle()" :title="isDark ? '切换至日间模式' : '切换至夜间模式'">
-          <transition name="theme-icon" mode="out-in">
-            <el-icon v-if="isDark" key="moon"><Moon /></el-icon>
-            <el-icon v-else key="sunny"><Sunny /></el-icon>
-          </transition>
-          <transition name="fade">
-            <span v-if="!isCollapse" class="theme-label">{{ isDark ? '夜间模式' : '日间模式' }}</span>
-          </transition>
-        </button>
-        <button class="theme-toggle layout-toggle" @click="themeStore.toggleLayout()" title="切换顶部菜单布局">
-          <el-icon><Grid /></el-icon>
-          <transition name="fade">
-            <span v-if="!isCollapse" class="theme-label">顶部布局</span>
-          </transition>
-        </button>
-      </div>
       <transition name="fade">
         <div v-if="!isCollapse" class="sidebar-footer">
-          <span class="version-text">v1.0.0</span>
+          <span class="version-text">v1.3.0</span>
         </div>
       </transition>
     </div>
@@ -98,17 +81,14 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
 
 defineProps<{ isCollapse: boolean }>()
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const themeStore = useThemeStore()
 
 const currentRoute = computed(() => route.path)
-const isDark = computed(() => themeStore.mode === 'dark')
 
 const isElementIcon = (icon: string | undefined | null): boolean => {
   if (!icon) return false
@@ -289,51 +269,6 @@ const handleMenuSelect = (index: string) => {
   border-top: 1px solid var(--border-light);
 }
 
-.bottom-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-}
-
-.layout-toggle {
-  margin: 0;
-  width: 100%;
-}
-
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 12px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-}
-
-.theme-toggle:hover {
-  background: var(--primary-subtle);
-  color: var(--primary-color);
-  border-color: rgba(var(--primary-rgb), 0.2);
-}
-
-.theme-toggle .el-icon {
-  font-size: 16px;
-}
-
-.theme-label {
-  white-space: nowrap;
-  overflow: hidden;
-}
-
 .sidebar-footer {
   padding: 8px 16px 10px;
   text-align: center;
@@ -355,18 +290,4 @@ const handleMenuSelect = (index: string) => {
   opacity: 0;
 }
 
-.theme-icon-enter-active,
-.theme-icon-leave-active {
-  transition: all 0.2s ease;
-}
-
-.theme-icon-enter-from {
-  opacity: 0;
-  transform: rotate(-90deg) scale(0.6);
-}
-
-.theme-icon-leave-to {
-  opacity: 0;
-  transform: rotate(90deg) scale(0.6);
-}
 </style>
