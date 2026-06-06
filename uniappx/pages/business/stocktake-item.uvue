@@ -1,0 +1,348 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 警告提示条 -->
+    <view class="warning-bar">
+      <text class="warning-text">⚠️ 请逐项录入实际库存数量</text>
+    </view>
+
+    <!-- 盘点明细列表 -->
+    <view v-if="items.length > 0" class="items-list">
+      <view
+        v-for="(item, index) in items"
+        :key="item.id"
+        class="item-card"
+      >
+        <!-- 商品名称 -->
+        <text class="item-goods-name">{{ item.goodsname ?? '未知商品' }}</text>
+
+        <!-- 系统库存 + 实际库存 -->
+        <view class="item-row">
+          <view class="info-col">
+            <text class="info-label">系统库存</text>
+            <text class="info-value">{{ item.systemNum ?? 0 }}</text>
+          </view>
+          <view class="info-col">
+            <text class="info-label">实际库存</text>
+            <input
+              class="real-input"
+              type="number"
+              placeholder="请输入"
+              :value="item.actualNum != null ? item.actualNum.toString() : ''"
+              @input="(e: UniInputEvent) => onActualInput(index, e)"
+            />
+          </view>
+          <view class="info-col">
+            <text class="info-label">差异</text>
+            <text
+              class="diff-value"
+              :style="{ color: getDiffColor(item) }"
+            >
+              {{ getDiffText(item) }}
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <EmptyState v-if="items.length === 0 && !loading" text="暂无盘点明细" />
+
+    <!-- 提交按钮 -->
+    <view v-if="items.length > 0" class="bottom-action">
+      <button
+        class="submit-btn"
+        :loading="submitting"
+        :disabled="submitting"
+        @tap="onSubmit"
+      >
+        {{ submitting ? '提交中...' : '提交盘点' }}
+      </button>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import { loadStocktakeItems, saveStocktakeItems, submitStocktake } from '../../api/stocktake'
+import EmptyState from '../../components/EmptyState.uvue'
+
+interface StocktakeItemData {
+  id : number
+  stocktakeId : number
+  goodsid : number
+  goodsname : string
+  systemNum : number
+  actualNum : number | null
+}
+
+const stocktakeId = ref(0)
+const items = ref<StocktakeItemData[]>([])
+const loading = ref(false)
+const submitting = ref(false)
+
+/**
+ * 获取差异颜色
+ */
+function getDiffColor(item : StocktakeItemData) : string {
+  if (item.actualNum == null) {
+    return '#909399'
+  }
+  const diff = item.actualNum! - item.systemNum
+  if (diff == 0) {
+    return '#67C23A'
+  }
+  return '#F56C6C'
+}
+
+/**
+ * 获取差异文本
+ */
+function getDiffText(item : StocktakeItemData) : string {
+  if (item.actualNum == null) {
+    return '-'
+  }
+  const diff = item.actualNum! - item.systemNum
+  if (diff > 0) {
+    return '+' + diff.toString()
+  }
+  return diff.toString()
+}
+
+/**
+ * 加载盘点明细
+ */
+function loadItems() : void {
+  loading.value = true
+  loadStocktakeItems({ stocktakeId: stocktakeId.value } as UTSJSONObject).then((res : any) => {
+    const result = res as UTSJSONObject
+    const dataList = result['data'] as UTSJSONObject[] | null
+    if (dataList != null) {
+      const list : StocktakeItemData[] = []
+      for (let i = 0; i < dataList!.length; i++) {
+        const d = dataList![i]
+        list.push({
+          id: (d['id'] as number) ?? 0,
+          stocktakeId: (d['stocktakeId'] as number) ?? stocktakeId.value,
+          goodsid: (d['goodsid'] as number) ?? 0,
+          goodsname: (d['goodsname'] as string) ?? '',
+          systemNum: (d['systemNum'] as number) ?? 0,
+          actualNum: d['actualNum'] as number | null
+        })
+      }
+      items.value = list
+    } else {
+      items.value = []
+    }
+    loading.value = false
+  }).catch((err : Error) => {
+    loading.value = false
+    items.value = []
+  })
+}
+
+/**
+ * 输入实际库存数量
+ */
+function onActualInput(index : number, e : UniInputEvent) : void {
+  const val = e.detail.value
+  if (val.length == 0) {
+    items.value[index].actualNum = null
+  } else {
+    const num = parseInt(val)
+    if (!isNaN(num)) {
+      items.value[index].actualNum = num
+    }
+  }
+}
+
+/**
+ * 提交盘点
+ */
+function onSubmit() : void {
+  // 检查是否有未录入的项
+  let hasEmpty = false
+  for (let i = 0; i < items.value.length; i++) {
+    if (items.value[i].actualNum == null) {
+      hasEmpty = true
+      break
+    }
+  }
+
+  if (hasEmpty) {
+    uni.showModal({
+      title: '确认提交',
+      content: '部分商品尚未录入实际库存数量，确定要提交吗？',
+      success: (res) => {
+        if (res.confirm) {
+          doSubmit()
+        }
+      }
+    })
+  } else {
+    doSubmit()
+  }
+}
+
+/**
+ * 执行提交
+ */
+function doSubmit() : void {
+  submitting.value = true
+  uni.showLoading({ title: '提交中...', mask: true })
+
+  // 构造保存数据
+  const saveData : UTSJSONObject[] = []
+  for (let i = 0; i < items.value.length; i++) {
+    const item = items.value[i]
+    const obj : UTSJSONObject = {}
+    obj['id'] = item.id
+    obj['stocktakeId'] = item.stocktakeId
+    obj['goodsid'] = item.goodsid
+    obj['systemNum'] = item.systemNum
+    if (item.actualNum != null) {
+      obj['actualNum'] = item.actualNum
+    }
+    saveData.push(obj)
+  }
+
+  // 1. 保存盘点明细
+  saveStocktakeItems(saveData).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      // 2. 提交盘点单
+      return submitStocktake({ id: stocktakeId.value } as UTSJSONObject)
+    } else {
+      const msg = result['msg'] as string ?? '保存失败'
+      throw new Error(msg)
+    }
+  }).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    uni.hideLoading()
+    submitting.value = false
+    if (code == 200) {
+      uni.showToast({ title: '盘点提交成功', icon: 'success' })
+      setTimeout(() => {
+        uni.navigateBack()
+      }, 1000)
+    } else {
+      const msg = result['msg'] as string ?? '提交失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err : Error) => {
+    uni.hideLoading()
+    submitting.value = false
+    uni.showToast({ title: err.message, icon: 'none' })
+  })
+}
+
+onLoad((options : UTSJSONObject) => {
+  const idStr = (options['id'] as string) ?? '0'
+  stocktakeId.value = parseInt(idStr) ?? 0
+  if (stocktakeId.value > 0) {
+    loadItems()
+  }
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+}
+
+/* 警告提示条 */
+.warning-bar {
+  background-color: #FDF6EC;
+  border-radius: 12rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.warning-text {
+  font-size: 26rpx;
+  color: #E6A23C;
+}
+
+/* 盘点明细列表 */
+.items-list {
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.item-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 28rpx;
+}
+
+.item-goods-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 20rpx;
+}
+
+.item-row {
+  flex-direction: row;
+  gap: 16rpx;
+}
+
+.info-col {
+  flex: 1;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.info-label {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.info-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.real-input {
+  height: 72rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+  font-size: 30rpx;
+}
+
+.diff-value {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+/* 底部操作区 */
+.bottom-action {
+  margin-top: 40rpx;
+  margin-bottom: 40rpx;
+}
+
+.submit-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #409EFF;
+  color: #FFFFFF;
+  font-size: 32rpx;
+  border-radius: 12rpx;
+  justify-content: center;
+  align-items: center;
+}
+</style>

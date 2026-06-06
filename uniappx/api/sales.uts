@@ -1,0 +1,9 @@
+import { get, post } from './request'
+
+export function loadAllSales(params: any) {
+  return get('/sales/loadAllSales', params)
+}
+
+export function addSales(data: any) {
+  return post('/sales/addSales', data)
+}

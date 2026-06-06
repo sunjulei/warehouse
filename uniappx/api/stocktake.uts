@@ -1,0 +1,21 @@
+import { get, post, postJson } from './request'
+
+export function loadAllStocktake(params: any) {
+  return get('/stocktake/loadAllStocktake', params)
+}
+
+export function createStocktake(data: any) {
+  return post('/stocktake/createStocktake', data)
+}
+
+export function loadStocktakeItems(params: any) {
+  return get('/stocktake/loadStocktakeItems', params)
+}
+
+export function saveStocktakeItems(data: any[]) {
+  return postJson('/stocktake/saveStocktakeItems', data)
+}
+
+export function submitStocktake(data: any) {
+  return post('/stocktake/submitStocktake', data)
+}

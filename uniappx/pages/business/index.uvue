@@ -1,0 +1,182 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 顶部标签栏 -->
+    <view class="tab-bar">
+      <view
+        v-for="(tab, index) in tabs"
+        :key="index"
+        class="tab-item"
+        @click="onTabClick(index)"
+      >
+        <text class="tab-text" :class="currentTab === index ? 'tab-text-active' : ''">{{ tab.title }}</text>
+        <view v-if="currentTab === index" class="tab-underline"></view>
+      </view>
+    </view>
+
+    <!-- 内容区域：商品 -->
+    <view v-if="currentTab === 0" class="tab-content">
+      <view class="content-card">
+        <text class="card-icon">📦</text>
+        <text class="card-title">商品管理</text>
+        <text class="card-desc">查看、搜索商品信息，掌握库存动态</text>
+        <view class="card-btn" @click="navigateTo('/pages/business/goods')">
+          <text class="card-btn-text">查看商品列表</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 内容区域：进货 -->
+    <view v-if="currentTab === 1" class="tab-content">
+      <view class="content-card">
+        <text class="card-icon">📥</text>
+        <text class="card-title">进货入库</text>
+        <text class="card-desc">录入进货单据，更新商品库存</text>
+        <view class="card-btn" @click="navigateTo('/pages/business/inport')">
+          <text class="card-btn-text">开始入库</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 内容区域：销售 -->
+    <view v-if="currentTab === 2" class="tab-content">
+      <view class="content-card">
+        <text class="card-icon">📤</text>
+        <text class="card-title">销售开单</text>
+        <text class="card-desc">创建销售订单，记录出库信息</text>
+        <view class="card-btn" @click="navigateTo('/pages/business/sales')">
+          <text class="card-btn-text">开始销售</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 内容区域：盘点 -->
+    <view v-if="currentTab === 3" class="tab-content">
+      <view class="content-card">
+        <text class="card-icon">📋</text>
+        <text class="card-title">盘点管理</text>
+        <text class="card-desc">库存盘点核对，确保账实相符</text>
+        <view class="card-btn" @click="navigateTo('/pages/business/stocktake')">
+          <text class="card-btn-text">盘点管理</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+
+interface TabItem {
+  title : string
+}
+
+const tabs = ref<TabItem[]>([
+  { title: '商品' },
+  { title: '进货' },
+  { title: '销售' },
+  { title: '盘点' }
+])
+
+const currentTab = ref(0)
+
+function onTabClick(index : number) : void {
+  currentTab.value = index
+}
+
+function navigateTo(url : string) : void {
+  uni.navigateTo({ url: url })
+}
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 标签栏 */
+.tab-bar {
+  flex-direction: row;
+  background-color: #FFFFFF;
+  padding: 0 16rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #F0F0F0;
+  border-bottom-style: solid;
+}
+
+.tab-item {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 0;
+  position: relative;
+}
+
+.tab-text {
+  font-size: 30rpx;
+  color: #666666;
+}
+
+.tab-text-active {
+  color: #409EFF;
+  font-weight: bold;
+}
+
+.tab-underline {
+  position: absolute;
+  bottom: 0;
+  width: 48rpx;
+  height: 6rpx;
+  background-color: #409EFF;
+  border-radius: 3rpx;
+}
+
+/* 内容卡片 */
+.tab-content {
+  padding: 32rpx 24rpx;
+}
+
+.content-card {
+  flex-direction: column;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 60rpx 40rpx;
+  gap: 20rpx;
+}
+
+.card-icon {
+  font-size: 80rpx;
+}
+
+.card-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.card-desc {
+  font-size: 26rpx;
+  color: #999999;
+  text-align: center;
+}
+
+.card-btn {
+  margin-top: 20rpx;
+  background-color: #409EFF;
+  border-radius: 12rpx;
+  padding: 20rpx 60rpx;
+}
+
+.card-btn-text {
+  font-size: 28rpx;
+  color: #FFFFFF;
+}
+</style>

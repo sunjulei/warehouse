@@ -1,0 +1,730 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 顶部模式切换 -->
+    <view class="mode-tabs">
+      <view
+        class="mode-tab"
+        :class="mode === 'retail' ? 'mode-tab-active' : ''"
+        @click="switchMode('retail')"
+      >
+        <text class="mode-tab-text" :class="mode === 'retail' ? 'mode-tab-text-active' : ''">散客零售</text>
+      </view>
+      <view
+        class="mode-tab"
+        :class="mode === 'wholesale' ? 'mode-tab-active' : ''"
+        @click="switchMode('wholesale')"
+      >
+        <text class="mode-tab-text" :class="mode === 'wholesale' ? 'mode-tab-text-active' : ''">批发销售</text>
+      </view>
+    </view>
+
+    <!-- 搜索区域 -->
+    <view class="search-section">
+      <SearchBar
+        :placeholder="'搜索商品名称...'"
+        v-model="keyword"
+        @search="onSearch"
+      />
+    </view>
+
+    <!-- 商品列表（选商品视图） -->
+    <view v-if="!showCart" class="goods-list">
+      <view v-if="filteredGoods.length === 0" class="goods-list">
+        <EmptyState :text="keyword.length > 0 ? '未找到匹配商品' : '暂无商品数据'" />
+      </view>
+      <view v-else>
+        <view
+          v-for="(item, index) in filteredGoods"
+          :key="item.id"
+          class="goods-row"
+        >
+          <view class="goods-info-box">
+            <text class="goods-name">{{ item.name }}</text>
+            <view class="goods-meta-row">
+              <text class="goods-stock">库存: {{ item.number }}</text>
+              <text class="goods-price">¥{{ formatPrice(item.outportprice) }}</text>
+            </view>
+          </view>
+          <view class="add-btn" @click="addToCart(item)">
+            <text class="add-btn-text">加入</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 购物车视图 -->
+    <view v-if="showCart" class="cart-section">
+      <view v-if="cart.length === 0" class="goods-list">
+        <EmptyState :text="'购物车为空'" />
+      </view>
+      <view v-else class="cart-card">
+        <!-- 清空按钮 -->
+        <view class="cart-header">
+          <text class="cart-title">已选商品</text>
+          <view class="clear-btn" @click="clearCart">
+            <text class="clear-btn-text">清空</text>
+          </view>
+        </view>
+
+        <!-- 购物车商品列表 -->
+        <view
+          v-for="(item, index) in cart"
+          :key="item.goodsid"
+          class="cart-item"
+        >
+          <view class="cart-item-info">
+            <text class="cart-item-name">{{ item.name }}</text>
+            <text class="cart-item-price">¥{{ formatPrice(item.price) }} × {{ item.quantity }}</text>
+          </view>
+          <view class="cart-item-right">
+            <text class="cart-item-subtotal">¥{{ formatPrice(item.price * item.quantity) }}</text>
+            <view class="qty-controls">
+              <view class="qty-btn" @click="decreaseQty(index)">
+                <text class="qty-btn-text">-</text>
+              </view>
+              <text class="qty-value">{{ item.quantity }}</text>
+              <view class="qty-btn" @click="increaseQty(index)">
+                <text class="qty-btn-text">+</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 合计 -->
+        <view class="cart-total">
+          <text class="total-label">合计: {{ totalQuantity }} 件</text>
+          <text class="total-amount">¥{{ formatPrice(totalAmount) }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <!-- 购物车图标 + 角标 -->
+    <view class="cart-badge-wrap" @click="toggleCartView">
+      <text class="cart-icon">🛒</text>
+      <view v-if="cart.length > 0" class="badge">
+        <text class="badge-text">{{ cart.length }}</text>
+      </view>
+    </view>
+
+    <!-- 继续选商品 / 确认结算 -->
+    <view v-if="showCart" class="back-btn" @click="toggleCartView">
+      <text class="back-btn-text">← 继续选商品</text>
+    </view>
+    <view v-else style="flex:1"></view>
+
+    <view
+      class="submit-btn"
+      :class="cart.length === 0 ? 'submit-btn-disabled' : ''"
+      @click="handleSubmit"
+    >
+      <text class="submit-btn-text">确认结算</text>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { loadAllGoods } from '../../api/goods'
+import { batchAddRetail } from '../../api/retail'
+import { addSales } from '../../api/sales'
+import SearchBar from '../../components/SearchBar.uvue'
+import EmptyState from '../../components/EmptyState.uvue'
+
+// 商品数据类型
+interface GoodsItem {
+  id : number
+  name : string
+  number : number
+  outportprice : number
+}
+
+// 购物车条目类型
+interface CartItem {
+  goodsid : number
+  name : string
+  price : number
+  quantity : number
+}
+
+// 模式: retail=散客零售, wholesale=批发销售
+const mode = ref('retail')
+
+// 搜索关键词
+const keyword = ref('')
+
+// 商品列表
+const goodsList = ref<GoodsItem[]>([])
+
+// 购物车
+const cart = ref<CartItem[]>([])
+
+// 是否显示购物车视图
+const showCart = ref(false)
+
+// 提交中状态
+const submitting = ref(false)
+
+// 过滤后的商品列表
+const filteredGoods = computed((): GoodsItem[] => {
+  if (keyword.value.trim().length === 0) {
+    return goodsList.value
+  }
+  const kw = keyword.value.trim().toLowerCase()
+  const result : GoodsItem[] = []
+  for (let i = 0; i < goodsList.value.length; i++) {
+    const g = goodsList.value[i]
+    if (g.name.toLowerCase().includes(kw)) {
+      result.push(g)
+    }
+  }
+  return result
+})
+
+// 购物车总数量
+const totalQuantity = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < cart.value.length; i++) {
+    sum += cart.value[i].quantity
+  }
+  return sum
+})
+
+// 购物车总金额
+const totalAmount = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < cart.value.length; i++) {
+    const item = cart.value[i]
+    sum += item.price * item.quantity
+  }
+  return sum
+})
+
+/**
+ * 格式化价格，保留两位小数
+ */
+function formatPrice(val : number) : string {
+  return val.toFixed(2)
+}
+
+/**
+ * 切换模式
+ */
+function switchMode(m : string) : void {
+  mode.value = m
+}
+
+/**
+ * 搜索回调
+ */
+function onSearch(val : string) : void {
+  keyword.value = val
+}
+
+/**
+ * 加入购物车
+ */
+function addToCart(goods : GoodsItem) : void {
+  // 检查库存
+  if (goods.number <= 0) {
+    uni.showToast({ title: '该商品库存不足', icon: 'none' })
+    return
+  }
+
+  // 检查是否已在购物车
+  for (let i = 0; i < cart.value.length; i++) {
+    if (cart.value[i].goodsid === goods.id) {
+      // 已在购物车，检查库存上限
+      if (cart.value[i].quantity >= goods.number) {
+        uni.showToast({ title: '已达到库存上限', icon: 'none' })
+        return
+      }
+      cart.value[i].quantity += 1
+      uni.showToast({ title: '已更新数量', icon: 'none', duration: 800 })
+      return
+    }
+  }
+
+  // 新增到购物车
+  const newItem : CartItem = {
+    goodsid: goods.id,
+    name: goods.name,
+    price: goods.outportprice,
+    quantity: 1
+  }
+  cart.value.push(newItem)
+  uni.showToast({ title: '已加入购物车', icon: 'none', duration: 800 })
+}
+
+/**
+ * 增加数量
+ */
+function increaseQty(index : number) : void {
+  const item = cart.value[index]
+  // 查找对应商品的库存
+  const goods = findGoodsById(item.goodsid)
+  if (goods != null && item.quantity >= goods.number) {
+    uni.showToast({ title: '已达到库存上限', icon: 'none' })
+    return
+  }
+  item.quantity += 1
+}
+
+/**
+ * 减少数量
+ */
+function decreaseQty(index : number) : void {
+  const item = cart.value[index]
+  if (item.quantity <= 1) {
+    // 数量为1时再减则移除
+    cart.value.splice(index, 1)
+  } else {
+    item.quantity -= 1
+  }
+}
+
+/**
+ * 根据ID查找商品
+ */
+function findGoodsById(id : number) : GoodsItem | null {
+  for (let i = 0; i < goodsList.value.length; i++) {
+    if (goodsList.value[i].id === id) {
+      return goodsList.value[i]
+    }
+  }
+  return null
+}
+
+/**
+ * 清空购物车
+ */
+function clearCart() : void {
+  cart.value = []
+  uni.showToast({ title: '购物车已清空', icon: 'none', duration: 800 })
+}
+
+/**
+ * 切换购物车视图
+ */
+function toggleCartView() : void {
+  showCart.value = !showCart.value
+}
+
+/**
+ * 提交结算
+ */
+function handleSubmit() : void {
+  if (cart.value.length === 0) {
+    uni.showToast({ title: '请先添加商品', icon: 'none' })
+    return
+  }
+
+  if (submitting.value) {
+    return
+  }
+
+  submitting.value = true
+  uni.showLoading({ title: '提交中...', mask: true })
+
+  if (mode.value === 'retail') {
+    // 散客零售：批量提交
+    const data : UTSJSONObject[] = []
+    for (let i = 0; i < cart.value.length; i++) {
+      const item = cart.value[i]
+      const obj : UTSJSONObject = {}
+      obj['goodsid'] = item.goodsid
+      obj['number'] = item.quantity
+      data.push(obj)
+    }
+    batchAddRetail(data).then((res: any) => {
+      const result = res as UTSJSONObject
+      const resCode = result['code'] as number
+      uni.hideLoading()
+      submitting.value = false
+      if (resCode == 200) {
+        uni.showToast({ title: '结算成功', icon: 'success' })
+        cart.value = []
+        showCart.value = false
+        loadGoods()
+      } else {
+        const msg = (result['msg'] as string) ?? '结算失败'
+        uni.showToast({ title: msg, icon: 'none' })
+      }
+    }).catch((err: Error) => {
+      uni.hideLoading()
+      submitting.value = false
+    })
+  } else {
+    // 批发销售：逐条提交
+    submitWholesaleItems(0)
+  }
+}
+
+/**
+ * 逐条提交批发销售（递归串行）
+ */
+function submitWholesaleItems(index : number) : void {
+  if (index >= cart.value.length) {
+    // 全部提交完成
+    uni.hideLoading()
+    submitting.value = false
+    uni.showToast({ title: '结算成功', icon: 'success' })
+    cart.value = []
+    showCart.value = false
+    loadGoods()
+    return
+  }
+
+  const item = cart.value[index]
+  const data : UTSJSONObject = {}
+  data['goodsid'] = item.goodsid
+  data['number'] = item.quantity
+
+  addSales(data).then((res: any) => {
+    const result = res as UTSJSONObject
+    const resCode = result['code'] as number
+    if (resCode == 200) {
+      // 继续提交下一条
+      submitWholesaleItems(index + 1)
+    } else {
+      uni.hideLoading()
+      submitting.value = false
+      const msg = (result['msg'] as string) ?? '提交失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err: Error) => {
+    uni.hideLoading()
+    submitting.value = false
+  })
+}
+
+/**
+ * 加载商品列表
+ */
+function loadGoods() : void {
+  uni.showLoading({ title: '加载中...', mask: true })
+  loadAllGoods({ page: 1, limit: 100 }).then((res: any) => {
+    uni.hideLoading()
+    const result = res as UTSJSONObject
+    const dataList = result['data'] as UTSJSONObject[] | null
+    if (dataList != null) {
+      const items : GoodsItem[] = []
+      for (let i = 0; i < dataList!.length; i++) {
+        const d = dataList![i]
+        items.push({
+          id: d['id'] as number,
+          name: (d['name'] as string) ?? '',
+          number: (d['number'] as number) ?? 0,
+          outportprice: (d['outportprice'] as number) ?? 0
+        })
+      }
+      goodsList.value = items
+    }
+  }).catch((err: Error) => {
+    uni.hideLoading()
+  })
+}
+
+// 页面加载时获取商品数据
+onShow(() => {
+  loadGoods()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 模式切换标签 */
+.mode-tabs {
+  flex-direction: row;
+  background-color: #FFFFFF;
+  padding: 20rpx 24rpx;
+  gap: 20rpx;
+}
+
+.mode-tab {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background-color: #F0F0F0;
+  align-items: center;
+  justify-content: center;
+}
+
+.mode-tab-active {
+  background-color: #409EFF;
+}
+
+.mode-tab-text {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.mode-tab-text-active {
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 搜索区域 */
+.search-section {
+  padding: 20rpx 24rpx 0 24rpx;
+}
+
+/* 商品列表 */
+.goods-list {
+  padding: 20rpx 24rpx;
+}
+
+.goods-row {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  gap: 20rpx;
+}
+
+.goods-info-box {
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.goods-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.goods-meta-row {
+  flex-direction: row;
+  gap: 20rpx;
+}
+
+.goods-stock {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.goods-price {
+  font-size: 24rpx;
+  color: #F56C6C;
+}
+
+.add-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 12rpx 28rpx;
+}
+
+.add-btn-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+}
+
+/* 购物车区域 */
+.cart-section {
+  padding: 20rpx 24rpx;
+}
+
+.cart-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+
+.cart-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.cart-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.clear-btn {
+  padding: 8rpx 20rpx;
+  border-radius: 6rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #F56C6C;
+}
+
+.clear-btn-text {
+  font-size: 24rpx;
+  color: #F56C6C;
+}
+
+.cart-item {
+  flex-direction: row;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.cart-item-info {
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.cart-item-name {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.cart-item-price {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.cart-item-right {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12rpx;
+}
+
+.cart-item-subtotal {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #F56C6C;
+}
+
+.qty-controls {
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.qty-btn {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  background-color: #F5F7FA;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-btn-text {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: bold;
+}
+
+.qty-value {
+  font-size: 28rpx;
+  color: #333333;
+  min-width: 48rpx;
+  text-align: center;
+}
+
+.cart-total {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top-width: 2rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+
+.total-label {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.total-amount {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #F56C6C;
+}
+
+/* 底部操作栏 */
+.bottom-bar {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  padding: 16rpx 24rpx;
+  padding-bottom: 32rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+  gap: 20rpx;
+}
+
+.cart-badge-wrap {
+  width: 80rpx;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.cart-icon {
+  font-size: 44rpx;
+}
+
+.badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 18rpx;
+  background-color: #F56C6C;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge-text {
+  font-size: 20rpx;
+  color: #FFFFFF;
+}
+
+.back-btn {
+  flex: 1;
+}
+
+.back-btn-text {
+  font-size: 26rpx;
+  color: #409EFF;
+}
+
+.submit-btn {
+  height: 80rpx;
+  background-color: #67C23A;
+  border-radius: 40rpx;
+  padding: 0 48rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-btn-disabled {
+  background-color: #C0C4CC;
+}
+
+.submit-btn-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+</style>

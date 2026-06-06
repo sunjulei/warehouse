@@ -1,0 +1,176 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 头部：图标 + 名称 -->
+    <view class="header-card">
+      <view class="header-icon-box">
+        <text class="header-icon">🏢</text>
+      </view>
+      <view class="header-info">
+        <text class="header-name">{{ customer.name }}</text>
+      </view>
+    </view>
+
+    <!-- 详情列表 -->
+    <view class="detail-card">
+      <view class="detail-row">
+        <text class="detail-label">联系人</text>
+        <text class="detail-value">{{ customer.contact }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">电话</text>
+        <text class="detail-value">{{ customer.phone }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">地址</text>
+        <text class="detail-value">{{ customer.address }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">邮箱</text>
+        <text class="detail-value">{{ customer.email }}</text>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import { loadAllCustomer } from '../../api/customer'
+
+interface CustomerDetail {
+  id : number
+  name : string
+  contact : string
+  phone : string
+  address : string
+  email : string
+}
+
+const customer = ref<CustomerDetail>({
+  id: 0,
+  name: '',
+  contact: '',
+  phone: '',
+  address: '',
+  email: ''
+})
+
+function loadDetail(id : number) : void {
+  const params : UTSJSONObject = {
+    page: 1,
+    limit: 1,
+    id: id
+  }
+
+  loadAllCustomer(params).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null && list!.length > 0) {
+        const item = list![0]
+        customer.value = {
+          id: (item['id'] as number) ?? 0,
+          name: (item['name'] as string) ?? '',
+          contact: (item['contact'] as string) ?? '',
+          phone: (item['phone'] as string) ?? '',
+          address: (item['address'] as string) ?? '',
+          email: (item['email'] as string) ?? ''
+        }
+      }
+    }
+  }).catch((err : Error) => {
+    console.error('加载客户详情失败:', err.message)
+  })
+}
+
+onLoad((options : any) => {
+  if (options != null) {
+    const idStr = options['id'] as string | null
+    if (idStr != null) {
+      const id = parseInt(idStr!, 10)
+      if (!isNaN(id)) {
+        loadDetail(id)
+      }
+    }
+  }
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+  gap: 24rpx;
+}
+
+/* 头部卡片 */
+.header-card {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  gap: 24rpx;
+}
+
+.header-icon-box {
+  width: 100rpx;
+  height: 100rpx;
+  background-color: #F5F7FA;
+  border-radius: 16rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-icon {
+  font-size: 56rpx;
+}
+
+.header-info {
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.header-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+/* 详情卡片 */
+.detail-card {
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.detail-row {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #F0F0F0;
+  border-bottom-style: solid;
+}
+
+.detail-label {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.detail-value {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: bold;
+}
+</style>

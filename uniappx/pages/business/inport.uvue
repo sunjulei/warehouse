@@ -1,0 +1,553 @@
+<template>
+  <view class="container">
+    <!-- Step 1: 选择商品 -->
+    <view v-if="currentStep == 1" class="step-content">
+      <!-- 搜索栏 -->
+      <SearchBar
+        placeholder="搜索商品名称"
+        :modelValue="searchKeyword"
+        @update:modelValue="onSearchInput"
+        @search="onSearch"
+      />
+
+      <!-- 步骤提示 -->
+      <view class="step-tip">
+        <text class="step-tip-text">第一步：选择入库商品</text>
+      </view>
+
+      <!-- 商品列表 -->
+      <scroll-view scroll-y="true" class="goods-list" v-if="goodsList.length > 0">
+        <view
+          v-for="(item, index) in goodsList"
+          :key="index"
+          class="goods-item"
+        >
+          <view class="goods-icon-box">
+            <text class="goods-icon">📦</text>
+          </view>
+          <view class="goods-info">
+            <text class="goods-name">{{ item['goodsname'] ?? '' }}</text>
+            <text class="goods-meta">
+              编号: {{ item['goodscode'] ?? '' }} · 库存: {{ item['number'] ?? 0 }}
+            </text>
+          </view>
+          <view class="goods-action">
+            <button class="select-btn" @tap="onSelectGoods(item)">选择</button>
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- 空状态 -->
+      <EmptyState v-if="goodsList.length == 0 && !loading" text="暂无商品数据" />
+    </view>
+
+    <!-- Step 2: 填写入库信息 -->
+    <view v-if="currentStep == 2" class="step-content">
+      <view class="step-tip">
+        <text class="step-tip-text">第二步：填写入库信息</text>
+      </view>
+
+      <!-- 已选商品信息 -->
+      <view class="selected-goods-card">
+        <view class="selected-goods-header">
+          <text class="section-title">入库商品</text>
+        </view>
+        <view class="selected-goods-info">
+          <view class="goods-icon-box">
+            <text class="goods-icon">📦</text>
+          </view>
+          <view class="selected-goods-detail">
+            <text class="selected-goods-name">{{ selectedGoods['goodsname'] ?? '' }}</text>
+            <text class="selected-goods-meta">
+              编号: {{ selectedGoods['goodscode'] ?? '' }} · 当前库存: {{ selectedGoods['number'] ?? 0 }}
+            </text>
+          </view>
+        </view>
+
+        <!-- 数量控制 -->
+        <view class="quantity-section">
+          <text class="section-label">入库数量</text>
+          <view class="quantity-controls">
+            <button class="qty-btn" @tap="decreaseQty">-</button>
+            <text class="qty-value">{{ quantity }}</text>
+            <button class="qty-btn" @tap="increaseQty">+</button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 供应商选择 -->
+      <view class="form-card">
+        <text class="section-title">供应商</text>
+        <picker
+          :range="providerNames"
+          :value="selectedProviderIndex"
+          @change="onProviderChange"
+        >
+          <view class="picker-display">
+            <text class="picker-text" :class="{ 'picker-placeholder': selectedProviderIndex < 0 }">
+              {{ selectedProviderIndex >= 0 ? providerNames[selectedProviderIndex] : '请选择供应商' }}
+            </text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 备注 -->
+      <view class="form-card">
+        <text class="section-title">备注</text>
+        <input
+          class="remark-input"
+          type="text"
+          placeholder="请输入备注信息（选填）"
+          :value="remark"
+          @input="onRemarkInput"
+        />
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="action-buttons">
+        <button class="back-btn" @tap="goBack">返回</button>
+        <button
+          class="submit-btn"
+          :loading="submitting"
+          :disabled="submitting"
+          @tap="onSubmit"
+        >
+          {{ submitting ? '提交中...' : '确认入库' }}
+        </button>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { loadAllGoods } from '../../api/goods'
+import { addInport } from '../../api/inport'
+import { loadAllProviderForSelect } from '../../api/provider'
+import SearchBar from '../../components/SearchBar.uvue'
+import EmptyState from '../../components/EmptyState.uvue'
+
+// 当前步骤：1=选择商品，2=填写入库信息
+const currentStep = ref(1)
+
+// Step 1 状态
+const searchKeyword = ref('')
+const goodsList = ref<UTSJSONObject[]>([])
+const loading = ref(false)
+
+// Step 2 状态
+const selectedGoods = ref<UTSJSONObject>({} as UTSJSONObject)
+const quantity = ref(1)
+const providerList = ref<UTSJSONObject[]>([])
+const providerNames = ref<string[]>([])
+const selectedProviderIndex = ref(-1)
+const remark = ref('')
+const submitting = ref(false)
+
+/**
+ * 加载商品列表
+ */
+function loadGoods(goodsname: string = ''): void {
+  loading.value = true
+  const params = { page: 1, limit: 100 } as UTSJSONObject
+  if (goodsname.length > 0) {
+    params['goodsname'] = goodsname
+  }
+  loadAllGoods(params).then((res: any) => {
+    const result = res as UTSJSONObject
+    const data = result['data']
+    if (data != null && Array.isArray(data)) {
+      goodsList.value = data as UTSJSONObject[]
+    } else {
+      goodsList.value = []
+    }
+    loading.value = false
+  }).catch((err: Error) => {
+    loading.value = false
+    goodsList.value = []
+  })
+}
+
+/**
+ * 加载供应商列表
+ */
+function loadProviders(): void {
+  loadAllProviderForSelect().then((res: any) => {
+    const result = res as UTSJSONObject
+    const data = result['data']
+    if (data != null && Array.isArray(data)) {
+      providerList.value = data as UTSJSONObject[]
+      const names: string[] = []
+      for (let i = 0; i < providerList.value.length; i++) {
+        const name = providerList.value[i]['name'] as string ?? ''
+        names.push(name)
+      }
+      providerNames.value = names
+    } else {
+      providerList.value = []
+      providerNames.value = []
+    }
+  }).catch((err: Error) => {
+    providerList.value = []
+    providerNames.value = []
+  })
+}
+
+/**
+ * 搜索输入事件
+ */
+function onSearchInput(value: string): void {
+  searchKeyword.value = value
+}
+
+/**
+ * 搜索确认事件
+ */
+function onSearch(keyword: string): void {
+  loadGoods(keyword)
+}
+
+/**
+ * 选择商品
+ */
+function onSelectGoods(item: UTSJSONObject): void {
+  selectedGoods.value = item
+  quantity.value = 1
+  selectedProviderIndex.value = -1
+  remark.value = ''
+  currentStep.value = 2
+  loadProviders()
+}
+
+/**
+ * 增加数量
+ */
+function increaseQty(): void {
+  quantity.value = quantity.value + 1
+}
+
+/**
+ * 减少数量（最小为1）
+ */
+function decreaseQty(): void {
+  if (quantity.value > 1) {
+    quantity.value = quantity.value - 1
+  }
+}
+
+/**
+ * 供应商选择事件
+ */
+function onProviderChange(e: any): void {
+  selectedProviderIndex.value = e.detail.value as number
+}
+
+/**
+ * 备注输入事件
+ */
+function onRemarkInput(e: UniInputEvent): void {
+  remark.value = e.detail.value
+}
+
+/**
+ * 返回第一步
+ */
+function goBack(): void {
+  currentStep.value = 1
+}
+
+/**
+ * 提交入库
+ */
+function onSubmit(): void {
+  // 校验供应商
+  if (selectedProviderIndex.value < 0) {
+    uni.showToast({ title: '请选择供应商', icon: 'none' })
+    return
+  }
+
+  // 校验数量
+  if (quantity.value < 1) {
+    uni.showToast({ title: '入库数量不能小于1', icon: 'none' })
+    return
+  }
+
+  submitting.value = true
+
+  const goodsid = selectedGoods.value['id'] as number ?? 0
+  const providerid = providerList.value[selectedProviderIndex.value]['id'] as number ?? 0
+
+  addInport({
+    goodsid: goodsid,
+    providerid: providerid,
+    number: quantity.value,
+    remark: remark.value
+  } as UTSJSONObject).then((res: any) => {
+    submitting.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '入库成功', icon: 'success' })
+      currentStep.value = 1
+      loadGoods(searchKeyword.value)
+    } else {
+      const msg = result['msg'] as string ?? '入库失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err: Error) => {
+    submitting.value = false
+  })
+}
+
+/**
+ * 页面加载时获取商品列表
+ */
+onShow(() => {
+  loadGoods()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-tip {
+  margin-top: 20rpx;
+  margin-bottom: 16rpx;
+}
+
+.step-tip-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+/* 商品列表 */
+.goods-list {
+  flex: 1;
+}
+
+.goods-item {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  gap: 20rpx;
+}
+
+.goods-icon-box {
+  width: 80rpx;
+  height: 80rpx;
+  background-color: #F5F7FA;
+  border-radius: 12rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.goods-icon {
+  font-size: 40rpx;
+}
+
+.goods-info {
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.goods-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.goods-meta {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.goods-action {
+  align-items: center;
+  justify-content: center;
+}
+
+.select-btn {
+  background-color: #409EFF;
+  color: #FFFFFF;
+  font-size: 26rpx;
+  border-radius: 8rpx;
+  padding: 12rpx 32rpx;
+  height: auto;
+  line-height: 1.5;
+}
+
+/* 已选商品卡片 */
+.selected-goods-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 20rpx;
+}
+
+.selected-goods-header {
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.section-label {
+  font-size: 28rpx;
+  color: #606266;
+  margin-bottom: 16rpx;
+}
+
+.selected-goods-info {
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 32rpx;
+}
+
+.selected-goods-detail {
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.selected-goods-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.selected-goods-meta {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+/* 数量控制 */
+.quantity-section {
+  margin-top: 8rpx;
+}
+
+.quantity-controls {
+  flex-direction: row;
+  align-items: center;
+  gap: 24rpx;
+  margin-top: 16rpx;
+}
+
+.qty-btn {
+  width: 72rpx;
+  height: 72rpx;
+  background-color: #F5F7FA;
+  color: #303133;
+  font-size: 36rpx;
+  font-weight: bold;
+  border-radius: 12rpx;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  line-height: 72rpx;
+}
+
+.qty-value {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #303133;
+  min-width: 80rpx;
+  text-align: center;
+}
+
+/* 表单卡片 */
+.form-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 20rpx;
+}
+
+.picker-display {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding-left: 20rpx;
+  padding-right: 20rpx;
+  margin-top: 16rpx;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: #303133;
+}
+
+.picker-placeholder {
+  color: #C0C4CC;
+}
+
+.picker-arrow {
+  font-size: 24rpx;
+  color: #C0C4CC;
+}
+
+.remark-input {
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding-left: 20rpx;
+  padding-right: 20rpx;
+  font-size: 28rpx;
+  margin-top: 16rpx;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  flex-direction: row;
+  gap: 24rpx;
+  margin-top: 40rpx;
+  margin-bottom: 40rpx;
+}
+
+.back-btn {
+  flex: 1;
+  height: 88rpx;
+  background-color: #FFFFFF;
+  color: #606266;
+  font-size: 30rpx;
+  border-radius: 12rpx;
+  justify-content: center;
+  align-items: center;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+}
+
+.submit-btn {
+  flex: 2;
+  height: 88rpx;
+  background-color: #409EFF;
+  color: #FFFFFF;
+  font-size: 32rpx;
+  border-radius: 12rpx;
+  justify-content: center;
+  align-items: center;
+}
+</style>

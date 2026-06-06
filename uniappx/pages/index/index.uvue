@@ -1,0 +1,264 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 问候区域 -->
+    <view class="greeting-section">
+      <text class="greeting-text">{{ greeting }}</text>
+      <text class="greeting-name">{{ userName }}</text>
+    </view>
+
+    <!-- 统计卡片行 -->
+    <view class="stats-row">
+      <StatCard label="商品总数" :value="stats.totalGoods" color="#333333" />
+      <StatCard label="库存预警" :value="stats.warningCount" color="#E6A23C" />
+    </view>
+    <view class="stats-row">
+      <StatCard label="今日入库" :value="stats.todayInport" color="#409EFF" />
+      <StatCard label="今日销售" :value="stats.todaySales" color="#67C23A" />
+    </view>
+
+    <!-- 快捷操作 -->
+    <view class="section">
+      <text class="section-title">快捷操作</text>
+      <view class="actions-row">
+        <view class="action-item" @click="navigateTo('/pages/business/inport')">
+          <text class="action-icon">📥</text>
+          <text class="action-label">入库</text>
+        </view>
+        <view class="action-item" @click="navigateTo('/pages/business/sales')">
+          <text class="action-icon">📤</text>
+          <text class="action-label">销售</text>
+        </view>
+        <view class="action-item" @click="navigateTo('/pages/business/stocktake')">
+          <text class="action-icon">📋</text>
+          <text class="action-label">盘点</text>
+        </view>
+        <view class="action-item" @click="navigateTo('/pages/business/goods')">
+          <text class="action-icon">🔍</text>
+          <text class="action-label">查商品</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 库存预警列表 -->
+    <view class="section">
+      <text class="section-title">库存预警</text>
+      <view v-if="warningGoods.length > 0" class="warning-list">
+        <view v-for="(item, index) in warningGoods" :key="index" class="warning-item">
+          <text class="warning-name">{{ item.name }}</text>
+          <text class="warning-count" :style="{ color: item.number <= 0 ? '#F56C6C' : '#E6A23C' }">
+            剩余 {{ item.number }}
+          </text>
+        </view>
+      </view>
+      <EmptyState v-else text="暂无预警商品" />
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { loadDashboardStats, loadAllWarningGoods } from '../../api/goods'
+import { getUser } from '../../stores/auth'
+import StatCard from '../../components/StatCard.uvue'
+import EmptyState from '../../components/EmptyState.uvue'
+
+// 统计数据
+interface DashboardStats {
+  totalGoods : number
+  warningCount : number
+  todayInport : number
+  todaySales : number
+}
+
+// 预警商品
+interface WarningGoodsItem {
+  id : number
+  name : string
+  number : number
+  warning : number
+}
+
+const stats = ref<DashboardStats>({
+  totalGoods: 0,
+  warningCount: 0,
+  todayInport: 0,
+  todaySales: 0
+})
+
+const warningGoods = ref<WarningGoodsItem[]>([])
+
+// 根据时间计算问候语
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) {
+    return '上午好 ☀️'
+  } else if (hour < 18) {
+    return '下午好 🌤'
+  } else {
+    return '晚上好 🌙'
+  }
+})
+
+// 用户名
+const userName = computed(() => {
+  const user = getUser()
+  return user != null ? user.name : '用户'
+})
+
+// 加载仪表盘数据
+function loadStats() : void {
+  loadDashboardStats().then((res : any) => {
+    const data = res as UTSJSONObject
+    stats.value = {
+      totalGoods: (data['totalGoods'] as number) ?? 0,
+      warningCount: (data['warningCount'] as number) ?? 0,
+      todayInport: (data['todayInport'] as number) ?? 0,
+      todaySales: (data['todaySales'] as number) ?? 0
+    }
+  }).catch((err : Error) => {
+    console.error('加载统计数据失败:', err.message)
+  })
+}
+
+// 加载预警商品
+function loadWarnings() : void {
+  loadAllWarningGoods().then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null) {
+        // 最多显示5条
+        const items = list!.slice(0, 5)
+        warningGoods.value = items.map((item : UTSJSONObject) => {
+          return {
+            id: (item['id'] as number) ?? 0,
+            name: (item['name'] as string) ?? '',
+            number: (item['number'] as number) ?? 0,
+            warning: (item['warning'] as number) ?? 0
+          } as WarningGoodsItem
+        })
+      }
+    }
+  }).catch((err : Error) => {
+    console.error('加载预警商品失败:', err.message)
+  })
+}
+
+// 页面导航
+function navigateTo(url : string) : void {
+  uni.navigateTo({ url: url })
+}
+
+onShow(() => {
+  loadStats()
+  loadWarnings()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+  gap: 24rpx;
+}
+
+/* 问候区域 */
+.greeting-section {
+  flex-direction: column;
+  padding: 32rpx 16rpx;
+  gap: 8rpx;
+}
+
+.greeting-text {
+  font-size: 32rpx;
+  color: #666666;
+}
+
+.greeting-name {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+/* 统计卡片行 */
+.stats-row {
+  flex-direction: row;
+  gap: 20rpx;
+}
+
+/* 区块标题 */
+.section {
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+  padding: 8rpx 0;
+}
+
+/* 快捷操作 */
+.actions-row {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.action-item {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx 16rpx;
+  gap: 12rpx;
+}
+
+.action-icon {
+  font-size: 56rpx;
+}
+
+.action-label {
+  font-size: 26rpx;
+  color: #333333;
+}
+
+/* 预警列表 */
+.warning-list {
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.warning-item {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #F0F0F0;
+  border-bottom-style: solid;
+}
+
+.warning-name {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+
+.warning-count {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+</style>

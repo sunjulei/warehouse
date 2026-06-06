@@ -1,0 +1,9 @@
+import { get } from './request'
+
+export function loadAllProvider(params: any) {
+  return get('/provider/loadAllProvider', params)
+}
+
+export function loadAllProviderForSelect() {
+  return get('/provider/loadAllProviderForSelect')
+}

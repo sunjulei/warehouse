@@ -1,0 +1,131 @@
+<template>
+  <view class="goods-card" @click="onClick">
+    <!-- 左侧图标 -->
+    <view class="goods-icon-box">
+      <text class="goods-icon">📦</text>
+    </view>
+
+    <!-- 中间商品信息 -->
+    <view class="goods-info">
+      <text class="goods-name">{{ goodsName }}</text>
+      <text class="goods-meta">编号: {{ goodsCode }} · 库存: {{ goodsNumber }}</text>
+    </view>
+
+    <!-- 右侧状态 -->
+    <view class="goods-status-box">
+      <text class="goods-status" :style="{ color: statusColor }">{{ statusText }}</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { computed } from 'vue'
+
+// 定义商品对象类型
+interface GoodsInfo {
+  goodsname?: string
+  goodscode?: string
+  number?: number
+  warning?: number
+  [key: string]: any
+}
+
+const props = defineProps({
+  goods: {
+    type: Object,
+    default: () => ({})
+  }
+})
+
+const emit = defineEmits(['click'])
+
+// 安全读取商品属性
+const goodsName = computed((): string => {
+  const g = props.goods as GoodsInfo
+  return g.goodsname ?? ''
+})
+
+const goodsCode = computed((): string => {
+  const g = props.goods as GoodsInfo
+  return g.goodscode ?? ''
+})
+
+const goodsNumber = computed((): number => {
+  const g = props.goods as GoodsInfo
+  return g.number ?? 0
+})
+
+const warningThreshold = computed((): number => {
+  const g = props.goods as GoodsInfo
+  return g.warning ?? 0
+})
+
+// 状态文字：number <= 0 → 缺货, number <= warning → 预警, else → 充足
+const statusText = computed((): string => {
+  if (goodsNumber.value <= 0) return '缺货'
+  if (goodsNumber.value <= warningThreshold.value) return '预警'
+  return '充足'
+})
+
+// 状态颜色：缺货红色，预警橙色，充足绿色
+const statusColor = computed((): string => {
+  if (goodsNumber.value <= 0) return '#F56C6C'
+  if (goodsNumber.value <= warningThreshold.value) return '#E6A23C'
+  return '#67C23A'
+})
+
+const onClick = () => {
+  emit('click')
+}
+</script>
+
+<style>
+.goods-card {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  gap: 20rpx;
+}
+
+.goods-icon-box {
+  width: 80rpx;
+  height: 80rpx;
+  background-color: #F5F7FA;
+  border-radius: 12rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.goods-icon {
+  font-size: 40rpx;
+}
+
+.goods-info {
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.goods-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.goods-meta {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.goods-status-box {
+  align-items: center;
+  justify-content: center;
+}
+
+.goods-status {
+  font-size: 26rpx;
+  font-weight: bold;
+}
+</style>

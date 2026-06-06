@@ -1,0 +1,53 @@
+<template>
+  <view class="stat-card" @click="onClick">
+    <text class="stat-value" :style="{ color: color }">{{ value }}</text>
+    <text class="stat-label">{{ label }}</text>
+  </view>
+</template>
+
+<script setup lang="uts">
+const props = defineProps({
+  value: {
+    type: [String, Number],
+    default: '0'
+  },
+  label: {
+    type: String,
+    default: ''
+  },
+  color: {
+    type: String,
+    default: '#333333'
+  }
+})
+
+const emit = defineEmits(['click'])
+
+const onClick = () => {
+  emit('click')
+}
+</script>
+
+<style>
+.stat-card {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx 16rpx;
+  gap: 8rpx;
+}
+
+.stat-value {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #999999;
+}
+</style>

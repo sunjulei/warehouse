@@ -98,6 +98,7 @@
         <div class="panel-header-left">
           <el-icon class="panel-icon"><List /></el-icon>
           <span class="panel-title">最近操作记录</span>
+          <span v-if="authStore.user && authStore.user.type !== 0" class="panel-hint">仅显示我的</span>
         </div>
         <el-tag v-if="totalOps > 0" type="info" size="small" effect="plain" round>{{ totalOps }} 条</el-tag>
       </div>
@@ -229,7 +230,12 @@ onMounted(async () => {
 
 async function fetchOps(page: number) {
   opsCurrentPage.value = page
-  const res: any = await loadAllOperationLog({ page, limit: opsPageSize })
+  const params: any = { page, limit: opsPageSize }
+  // 超级管理员(type=0)看全部，其他用户只看自己的操作记录
+  if (authStore.user && authStore.user.type !== 0) {
+    params.operateperson = authStore.user.name
+  }
+  const res: any = await loadAllOperationLog(params)
   if (res.data) {
     operations.value = res.data
     totalOps.value = res.count || 0
@@ -380,6 +386,13 @@ function handleNoticeClick(item: any) {
   font-weight: 600;
   font-size: var(--font-size-base);
   color: var(--text-primary);
+}
+
+.panel-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-placeholder);
+  font-weight: 400;
+  margin-left: var(--spacing-xs);
 }
 
 .panel-body {

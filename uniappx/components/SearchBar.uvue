@@ -1,0 +1,73 @@
+<template>
+  <view class="search-bar">
+    <text class="search-icon">🔍</text>
+    <input
+      class="search-input"
+      type="text"
+      :value="keyword"
+      :placeholder="placeholder"
+      @input="onInput"
+      @confirm="onConfirm"
+    />
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref, watch } from 'vue'
+
+const props = defineProps({
+  placeholder: {
+    type: String,
+    default: '搜索...'
+  },
+  modelValue: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['update:modelValue', 'search'])
+
+const keyword = ref(props.modelValue)
+
+// 外部 modelValue 变化时同步到内部 keyword
+watch(() => props.modelValue, (val: string) => {
+  keyword.value = val
+})
+
+// 输入事件：更新内部值并同步到父组件
+const onInput = (e: UniInputEvent) => {
+  keyword.value = e.detail.value
+  emit('update:modelValue', keyword.value)
+}
+
+// 确认/搜索事件
+const onConfirm = () => {
+  emit('search', keyword.value)
+}
+</script>
+
+<style>
+.search-bar {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 16rpx 24rpx;
+  gap: 12rpx;
+}
+
+.search-icon {
+  font-size: 32rpx;
+}
+
+.search-input {
+  flex: 1;
+  height: 64rpx;
+  background-color: #F5F7FA;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #333333;
+}
+</style>

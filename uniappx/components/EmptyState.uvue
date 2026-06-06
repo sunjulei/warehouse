@@ -1,0 +1,35 @@
+<template>
+  <view class="empty-state">
+    <text class="empty-icon">📭</text>
+    <text class="empty-text">{{ text }}</text>
+  </view>
+</template>
+
+<script setup lang="uts">
+defineProps({
+  text: {
+    type: String,
+    default: '暂无数据'
+  }
+})
+</script>
+
+<style>
+.empty-state {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  gap: 24rpx;
+}
+
+.empty-icon {
+  font-size: 100rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #999999;
+}
+</style>

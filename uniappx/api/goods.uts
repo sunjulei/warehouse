@@ -1,0 +1,21 @@
+import { get } from './request'
+
+export function loadAllGoods(params: any) {
+  return get('/goods/loadAllGoods', params)
+}
+
+export function loadAllGoodsForSelect() {
+  return get('/goods/loadAllGoodsForSelect')
+}
+
+export function loadGoodsByProviderId(providerid: number) {
+  return get('/goods/loadGoodsByProviderId', { providerid })
+}
+
+export function loadAllWarningGoods() {
+  return get('/goods/loadAllWarningGoods')
+}
+
+export function loadDashboardStats() {
+  return get('/goods/loadDashboardStats')
+}

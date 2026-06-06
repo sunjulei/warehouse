@@ -1,0 +1,162 @@
+/**
+ * 认证状态管理
+ * 管理用户登录状态，支持 localStorage 持久化
+ */
+
+import { currentUser, logout as logoutApi } from '../api/login'
+
+/**
+ * 用户信息类型
+ */
+export interface UserInfo {
+	id : number
+	name : string
+	loginname : string
+	sex : number | null
+	phone : string | null
+	departmentId : number | null
+	departmentName : string | null
+	type : number | null
+	remark : string | null
+	available : number | null
+	imgurl : string | null
+}
+
+// 全局状态
+let _user : UserInfo | null = null
+let _isLoggedIn = false
+
+const STORAGE_KEY_USER = 'warehouse_user'
+const STORAGE_KEY_LOGGED_IN = 'warehouse_isLoggedIn'
+
+/**
+ * 获取当前用户
+ */
+export function getUser() : UserInfo | null {
+	return _user
+}
+
+/**
+ * 是否已登录
+ */
+export function isLoggedIn() : boolean {
+	return _isLoggedIn
+}
+
+/**
+ * 将 UTSJSONObject 转换为 UserInfo
+ */
+function parseUserInfo(data : UTSJSONObject | null) : UserInfo | null {
+	if (data == null) {
+		return null
+	}
+	return {
+		id: data['id'] as number,
+		name: (data['name'] as string) ?? '',
+		loginname: (data['loginname'] as string) ?? '',
+		sex: data['sex'] as number | null,
+		phone: data['phone'] as string | null,
+		departmentId: data['departmentId'] as number | null,
+		departmentName: data['departmentName'] as string | null,
+		type: data['type'] as number | null,
+		remark: data['remark'] as string | null,
+		available: data['available'] as number | null,
+		imgurl: data['imgurl'] as string | null
+	}
+}
+
+/**
+ * 保存认证状态到 localStorage
+ */
+function saveToStorage(user : UserInfo | null) : void {
+	try {
+		if (user != null) {
+			const jsonStr = JSON.stringify(user as UserInfo)
+			uni.setStorageSync(STORAGE_KEY_USER, jsonStr)
+			uni.setStorageSync(STORAGE_KEY_LOGGED_IN, 'true')
+		} else {
+			uni.removeStorageSync(STORAGE_KEY_USER)
+			uni.removeStorageSync(STORAGE_KEY_LOGGED_IN)
+		}
+	} catch (e) {
+		console.error('保存认证状态失败:', e)
+	}
+}
+
+/**
+ * 从 localStorage 恢复认证状态
+ */
+export function restoreAuth() : boolean {
+	try {
+		const loggedInStr = uni.getStorageSync(STORAGE_KEY_LOGGED_IN)
+		if (loggedInStr == 'true') {
+			const userStr = uni.getStorageSync(STORAGE_KEY_USER)
+			if (userStr != null && (userStr as string).length > 0) {
+				const jsonObj = JSON.parse(userStr as string) as UTSJSONObject
+				_user = parseUserInfo(jsonObj)
+				_isLoggedIn = true
+				return true
+			}
+		}
+	} catch (e) {
+		console.error('恢复认证状态失败:', e)
+	}
+	_user = null
+	_isLoggedIn = false
+	return false
+}
+
+/**
+ * 从后端获取当前用户信息并存储
+ * 调用 /login/currentUser 接口
+ */
+export function fetchCurrentUser() : Promise<boolean> {
+	return new Promise<boolean>((resolve, reject) => {
+		currentUser().then((res : any) => {
+			const result = res as UTSJSONObject
+			const code = result['code'] as number
+
+			if (code == 200) {
+				const userData = result['user'] as UTSJSONObject | null
+				_user = parseUserInfo(userData)
+				_isLoggedIn = true
+				saveToStorage(_user)
+				resolve(true)
+			} else {
+				const msg = (result['msg'] as string) ?? '获取用户信息失败'
+				console.error('fetchCurrentUser 返回异常:', msg)
+				clearAuth()
+				reject(new Error(msg))
+			}
+		}).catch((err : Error) => {
+			console.error('fetchCurrentUser 失败:', err.message)
+			clearAuth()
+			reject(err)
+		})
+	})
+}
+
+/**
+ * 退出登录
+ */
+export function logout() : Promise<boolean> {
+	return new Promise<boolean>((resolve, reject) => {
+		logoutApi().then((res : any) => {
+			clearAuth()
+			resolve(true)
+		}).catch((err : Error) => {
+			// 即使接口调用失败也清除本地状态
+			clearAuth()
+			resolve(true)
+		})
+	})
+}
+
+/**
+ * 清除认证状态（本地 + localStorage）
+ */
+export function clearAuth() : void {
+	_user = null
+	_isLoggedIn = false
+	saveToStorage(null)
+}

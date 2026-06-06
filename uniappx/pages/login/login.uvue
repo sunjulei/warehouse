@@ -1,0 +1,361 @@
+<template>
+  <view class="login-page">
+    <!-- 顶部装饰 -->
+    <view class="top-decor">
+      <view class="decor-circle c1"></view>
+      <view class="decor-circle c2"></view>
+    </view>
+
+    <!-- Logo 区域 -->
+    <view class="logo-area">
+      <view class="logo-icon">
+        <text class="icon-text">📦</text>
+      </view>
+      <text class="app-name">仓储脉搏</text>
+      <text class="app-desc">智能仓库管理系统</text>
+    </view>
+
+    <!-- 登录表单 -->
+    <view class="form-card">
+      <view class="form-title">
+        <text class="title-text">账号登录</text>
+      </view>
+
+      <!-- 用户名 -->
+      <view class="input-group">
+        <view class="input-icon">
+          <text class="icon">👤</text>
+        </view>
+        <input
+          class="input-field"
+          placeholder="请输入用户名"
+          :value="loginname"
+          @input="onLoginnameInput"
+        />
+      </view>
+
+      <!-- 密码 -->
+      <view class="input-group">
+        <view class="input-icon">
+          <text class="icon">🔒</text>
+        </view>
+        <input
+          class="input-field"
+          placeholder="请输入密码"
+          :password="!showPwd"
+          :value="pwd"
+          @input="onPwdInput"
+        />
+        <view class="eye-btn" @click="showPwd = !showPwd">
+          <text class="icon">{{ showPwd ? '👁️' : '🙈' }}</text>
+        </view>
+      </view>
+
+      <!-- 验证码 -->
+      <view class="captcha-row">
+        <view class="input-group captcha-input">
+          <view class="input-icon">
+            <text class="icon">🔐</text>
+          </view>
+          <input
+            class="input-field"
+            placeholder="验证码"
+            :value="code"
+            @input="onCodeInput"
+          />
+        </view>
+        <view class="captcha-img-wrap" @click="refreshCaptcha">
+          <image
+            v-if="captchaImage"
+            class="captcha-img"
+            :src="captchaImage"
+            mode="scaleToFill"
+          />
+          <text v-else class="captcha-loading">加载中...</text>
+        </view>
+      </view>
+
+      <!-- 登录按钮 -->
+      <view class="login-btn" :class="{ disabled: loading }" @click="handleLogin">
+        <text class="btn-text">{{ loading ? '登录中...' : '登 录' }}</text>
+      </view>
+    </view>
+
+    <!-- 底部 -->
+    <view class="footer">
+      <text class="footer-text">Warehouse Pulse v1.0</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { login, getCaptchaBase64 } from '../../api/login.uts'
+
+const loginname = ref('')
+const pwd = ref('')
+const code = ref('')
+const captchaId = ref('')
+const captchaImage = ref('')
+const loading = ref(false)
+const showPwd = ref(false)
+
+function onLoginnameInput(e: UniInputEvent) {
+  loginname.value = e.detail.value
+}
+
+function onPwdInput(e: UniInputEvent) {
+  pwd.value = e.detail.value
+}
+
+function onCodeInput(e: UniInputEvent) {
+  code.value = e.detail.value
+}
+
+// 加载验证码
+function refreshCaptcha() {
+  captchaImage.value = ''
+  code.value = ''
+  getCaptchaBase64().then((data: UTSJSONObject) => {
+    captchaId.value = data['captchaId'] as string
+    captchaImage.value = data['image'] as string
+  }).catch((err: any) => {
+    console.error('获取验证码失败', err)
+    uni.showToast({ title: '获取验证码失败', icon: 'none' })
+  })
+}
+
+onMounted(() => {
+  refreshCaptcha()
+})
+
+function handleLogin() {
+  if (loading.value) return
+  const name = loginname.value.trim()
+  const password = pwd.value.trim()
+  const captchaCode = code.value.trim()
+
+  if (name.length == 0) {
+    uni.showToast({ title: '请输入用户名', icon: 'none' })
+    return
+  }
+  if (password.length == 0) {
+    uni.showToast({ title: '请输入密码', icon: 'none' })
+    return
+  }
+  if (captchaCode.length == 0) {
+    uni.showToast({ title: '请输入验证码', icon: 'none' })
+    return
+  }
+
+  loading.value = true
+  login(name, password, captchaCode, captchaId.value).then(() => {
+    uni.showToast({ title: '登录成功', icon: 'success' })
+    setTimeout(() => {
+      uni.switchTab({ url: '/pages/index/index' })
+    }, 500)
+  }).catch((err: any) => {
+    const msg = typeof err === 'string' ? err : '登录失败'
+    uni.showToast({ title: msg, icon: 'none' })
+    refreshCaptcha()
+  }).finally(() => {
+    loading.value = false
+  })
+}
+</script>
+
+<style lang="scss">
+.login-page {
+  min-height: 100vh;
+  background: #FAFBFC;
+  position: relative;
+  overflow: hidden;
+}
+
+.top-decor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 600rpx;
+}
+
+.decor-circle {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.c1 {
+  width: 500rpx;
+  height: 500rpx;
+  background: linear-gradient(135deg, #2C7BE5 0%, #5B9EF4 100%);
+  top: -200rpx;
+  right: -100rpx;
+  opacity: 0.08;
+}
+
+.c2 {
+  width: 300rpx;
+  height: 300rpx;
+  background: linear-gradient(135deg, #00B8D4 0%, #4DD0E1 100%);
+  top: 100rpx;
+  left: -80rpx;
+  opacity: 0.06;
+}
+
+.logo-area {
+  margin-top: 280rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.logo-icon {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #2C7BE5 0%, #1A56DB 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16rpx 48rpx rgba(44, 123, 229, 0.3);
+}
+
+.icon-text {
+  font-size: 64rpx;
+}
+
+.app-name {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #0F172A;
+  margin-top: 28rpx;
+  letter-spacing: 2rpx;
+}
+
+.app-desc {
+  font-size: 26rpx;
+  color: #94A3B8;
+  margin-top: 10rpx;
+}
+
+.form-card {
+  margin: 60rpx 48rpx 0;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 48rpx 40rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1;
+}
+
+.form-title {
+  margin-bottom: 40rpx;
+}
+
+.title-text {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  background: #F8FAFC;
+  border: 2rpx solid #E2E8F0;
+  border-radius: 16rpx;
+  padding: 0 28rpx;
+  height: 100rpx;
+  margin-bottom: 24rpx;
+}
+
+.input-icon {
+  margin-right: 20rpx;
+}
+
+.icon {
+  font-size: 32rpx;
+}
+
+.input-field {
+  flex: 1;
+  height: 100rpx;
+  font-size: 30rpx;
+  color: #0F172A;
+  background: transparent;
+}
+
+.eye-btn {
+  padding: 10rpx;
+}
+
+.captcha-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.captcha-input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.captcha-img-wrap {
+  width: 240rpx;
+  height: 100rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: #F8FAFC;
+  border: 2rpx solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.captcha-img {
+  width: 240rpx;
+  height: 100rpx;
+}
+
+.captcha-loading {
+  font-size: 24rpx;
+  color: #94A3B8;
+}
+
+.login-btn {
+  height: 100rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #2C7BE5 0%, #1A56DB 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(44, 123, 229, 0.3);
+}
+
+.login-btn.disabled {
+  opacity: 0.6;
+}
+
+.btn-text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  letter-spacing: 4rpx;
+}
+
+.footer {
+  margin-top: 80rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.footer-text {
+  font-size: 24rpx;
+  color: #CBD5E1;
+}
+</style>

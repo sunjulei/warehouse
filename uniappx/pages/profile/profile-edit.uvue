@@ -1,0 +1,220 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 表单卡片 -->
+    <view class="form-card">
+      <!-- 姓名 -->
+      <view class="form-item">
+        <text class="form-label">姓名</text>
+        <input
+          class="form-input"
+          placeholder="请输入姓名"
+          v-model="form.name"
+          type="text"
+        />
+      </view>
+
+      <!-- 登录账号 -->
+      <view class="form-item">
+        <text class="form-label">登录账号</text>
+        <input
+          class="form-input form-input-disabled"
+          placeholder=""
+          v-model="form.loginname"
+          type="text"
+          :disabled="true"
+        />
+      </view>
+
+      <!-- 电话 -->
+      <view class="form-item">
+        <text class="form-label">电话</text>
+        <input
+          class="form-input"
+          placeholder="请输入电话"
+          v-model="form.phone"
+          type="text"
+        />
+      </view>
+
+      <!-- 邮箱 -->
+      <view class="form-item">
+        <text class="form-label">邮箱</text>
+        <input
+          class="form-input"
+          placeholder="请输入邮箱"
+          v-model="form.email"
+          type="text"
+        />
+      </view>
+
+      <!-- 地址 -->
+      <view class="form-item">
+        <text class="form-label">地址</text>
+        <input
+          class="form-input"
+          placeholder="请输入地址"
+          v-model="form.address"
+          type="text"
+        />
+      </view>
+    </view>
+
+    <!-- 保存按钮 -->
+    <view class="btn-wrap">
+      <button class="save-btn" :loading="saving" :disabled="saving" @click="handleSave">
+        {{ saving ? '保存中...' : '保存' }}
+      </button>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import { getNowUser, updateUserInfo } from '../../api/user'
+
+interface ProfileForm {
+  id : number
+  name : string
+  loginname : string
+  phone : string
+  email : string
+  address : string
+}
+
+const form = ref<ProfileForm>({
+  id: 0,
+  name: '',
+  loginname: '',
+  phone: '',
+  email: '',
+  address: ''
+})
+
+const saving = ref(false)
+
+// 加载当前用户信息
+function loadUserInfo() : void {
+  getNowUser().then((res : any) => {
+    const result = res as UTSJSONObject
+    const data = result['data'] as UTSJSONObject | null
+    if (data != null) {
+      form.value = {
+        id: (data!['id'] as number) ?? 0,
+        name: (data!['name'] as string) ?? '',
+        loginname: (data!['loginname'] as string) ?? '',
+        phone: (data!['phone'] as string) ?? '',
+        email: (data!['email'] as string) ?? '',
+        address: (data!['address'] as string) ?? ''
+      }
+    }
+  }).catch((err : Error) => {
+    console.error('加载用户信息失败:', err.message)
+    uni.showToast({ title: '加载失败', icon: 'none' })
+  })
+}
+
+// 保存
+function handleSave() : void {
+  if (form.value.name.trim().length == 0) {
+    uni.showToast({ title: '请输入姓名', icon: 'none' })
+    return
+  }
+
+  saving.value = true
+
+  const data : UTSJSONObject = {
+    id: form.value.id,
+    name: form.value.name.trim(),
+    phone: form.value.phone.trim(),
+    email: form.value.email.trim(),
+    address: form.value.address.trim()
+  }
+
+  updateUserInfo(data).then((res : any) => {
+    saving.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 200) {
+      uni.showToast({ title: '保存成功', icon: 'success' })
+      setTimeout(() => {
+        uni.navigateBack()
+      }, 500)
+    } else {
+      const msg = (result['msg'] as string) ?? '保存失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err : Error) => {
+    saving.value = false
+  })
+}
+
+onShow(() => {
+  loadUserInfo()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+  gap: 24rpx;
+}
+
+/* 表单卡片 */
+.form-card {
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 16rpx 32rpx;
+}
+
+.form-item {
+  flex-direction: column;
+  padding: 20rpx 0;
+}
+
+.form-label {
+  font-size: 26rpx;
+  color: #606266;
+  margin-bottom: 12rpx;
+}
+
+.form-input {
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding-left: 20rpx;
+  padding-right: 20rpx;
+  font-size: 28rpx;
+}
+
+.form-input-disabled {
+  background-color: #F5F7FA;
+  color: #999999;
+}
+
+/* 保存按钮 */
+.btn-wrap {
+  margin-top: 16rpx;
+}
+
+.save-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #409EFF;
+  color: #FFFFFF;
+  font-size: 32rpx;
+  border-radius: 8rpx;
+  justify-content: center;
+  align-items: center;
+}
+</style>

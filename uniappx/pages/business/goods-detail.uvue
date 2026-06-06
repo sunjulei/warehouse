@@ -1,0 +1,215 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 头部：图标 + 名称 + 编号 -->
+    <view class="header-card">
+      <view class="header-icon-box">
+        <text class="header-icon">📦</text>
+      </view>
+      <view class="header-info">
+        <text class="header-name">{{ goods.goodsname }}</text>
+        <text class="header-code">编号: {{ goods.goodscode }}</text>
+      </view>
+    </view>
+
+    <!-- 详情列表 -->
+    <view class="detail-card">
+      <view class="detail-row">
+        <text class="detail-label">分类</text>
+        <text class="detail-value">{{ goods.typename }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">供应商</text>
+        <text class="detail-value">{{ goods.providername }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">进货价</text>
+        <text class="detail-value">¥{{ goods.inprice }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">销售价</text>
+        <text class="detail-value">¥{{ goods.outprice }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">当前库存</text>
+        <text class="detail-value" :style="{ color: stockColor }">{{ goods.number }}</text>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">预警线</text>
+        <text class="detail-value">{{ goods.warning }}</text>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { loadAllGoods } from '../../api/goods'
+
+interface GoodsDetail {
+  id : number
+  goodsname : string
+  goodscode : string
+  typename : string
+  providername : string
+  inprice : string
+  outprice : string
+  number : number
+  warning : number
+}
+
+const goods = ref<GoodsDetail>({
+  id: 0,
+  goodsname: '',
+  goodscode: '',
+  typename: '未知',
+  providername: '未知',
+  inprice: '0.00',
+  outprice: '0.00',
+  number: 0,
+  warning: 0
+})
+
+// 库存颜色：<=0 红色，<=预警线 橙色，否则 绿色
+const stockColor = computed((): string => {
+  if (goods.value.number <= 0) return '#F56C6C'
+  if (goods.value.number <= goods.value.warning) return '#E6A23C'
+  return '#67C23A'
+})
+
+// 加载商品详情
+function loadDetail(id : number) : void {
+  const params : UTSJSONObject = {
+    page: 1,
+    limit: 1,
+    id: id
+  }
+
+  loadAllGoods(params).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null && list!.length > 0) {
+        const item = list![0]
+        goods.value = {
+          id: (item['id'] as number) ?? 0,
+          goodsname: (item['goodsname'] as string) ?? (item['name'] as string) ?? '',
+          goodscode: (item['goodscode'] as string) ?? (item['code'] as string) ?? '',
+          typename: (item['typename'] as string) ?? '未知',
+          providername: (item['providername'] as string) ?? '未知',
+          inprice: formatPrice(item['inprice']),
+          outprice: formatPrice(item['outprice']),
+          number: (item['number'] as number) ?? 0,
+          warning: (item['warning'] as number) ?? 0
+        }
+      }
+    }
+  }).catch((err : Error) => {
+    console.error('加载商品详情失败:', err.message)
+  })
+}
+
+// 格式化价格
+function formatPrice(value : any) : string {
+  if (value == null) return '0.00'
+  const num = Number(value)
+  if (isNaN(num)) return '0.00'
+  return num.toFixed(2)
+}
+
+onLoad((options : any) => {
+  if (options != null) {
+    const idStr = options['id'] as string | null
+    if (idStr != null) {
+      const id = parseInt(idStr!, 10)
+      if (!isNaN(id)) {
+        loadDetail(id)
+      }
+    }
+  }
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+  gap: 24rpx;
+}
+
+/* 头部卡片 */
+.header-card {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  gap: 24rpx;
+}
+
+.header-icon-box {
+  width: 100rpx;
+  height: 100rpx;
+  background-color: #F5F7FA;
+  border-radius: 16rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-icon {
+  font-size: 56rpx;
+}
+
+.header-info {
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.header-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.header-code {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+/* 详情卡片 */
+.detail-card {
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.detail-row {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #F0F0F0;
+  border-bottom-style: solid;
+}
+
+.detail-label {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.detail-value {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: bold;
+}
+</style>

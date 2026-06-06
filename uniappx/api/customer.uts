@@ -1,0 +1,9 @@
+import { get } from './request'
+
+export function loadAllCustomer(params: any) {
+  return get('/customer/loadAllCustomer', params)
+}
+
+export function loadAllCustomerForSelect() {
+  return get('/customer/loadAllCustomerForSelect')
+}

@@ -1,0 +1,253 @@
+/**
+ * 网络请求封装
+ * 基于 uni.request，适配仓库管理系统后端（SA-Token + form-urlencoded）
+ */
+
+// 根据平台设置不同的 BASE_URL
+// #ifdef APP-ANDROID
+export const BASE_URL = 'http://10.0.2.2:8888'
+// #endif
+// #ifdef MP-WEIXIN
+export const BASE_URL = 'http://localhost:8888'
+// #endif
+// #ifdef H5
+export const BASE_URL = 'http://localhost:8888'
+// #endif
+
+/**
+ * 后端响应格式：DataGridView / ResultObj
+ */
+export interface ApiResponse {
+	code : number
+	msg : string
+	count ?: number
+	data ?: UTSJSONObject | UTSJSONObject[] | null
+	user ?: UTSJSONObject
+	menus ?: UTSJSONObject[]
+	permissions ?: string[]
+}
+
+interface RequestOptions {
+	url : string
+	method : 'GET' | 'POST'
+	data ?: UTSJSONObject
+	header ?: UTSJSONObject
+	showLoading ?: boolean
+	dataType ?: 'json' | 'string'
+	responseType ?: 'text' | 'arraybuffer'
+	contentType ?: string
+}
+
+/**
+ * 将对象转为 URL 查询字符串
+ */
+function buildQueryString(params : UTSJSONObject | null) : string {
+	if (params == null) {
+		return ''
+	}
+	const p = params!!
+	const keys = Object.keys(p)
+	if (keys.length == 0) {
+		return ''
+	}
+	let parts : string[] = []
+	for (let i = 0; i < keys.length; i++) {
+		const key = keys[i]
+		const value = params[key]
+		if (value != null) {
+			parts.push(key + '=' + encodeURIComponent(value.toString()))
+		}
+	}
+	return parts.join('&')
+}
+
+/**
+ * 核心请求函数
+ */
+export function request<T>(options : RequestOptions) : Promise<T> {
+	return new Promise<T>((resolve, reject) => {
+		if (options.showLoading == true) {
+			uni.showLoading({
+				title: '加载中...',
+				mask: true
+			})
+		}
+
+		// 构建完整 URL
+		let fullUrl = BASE_URL + options.url
+
+		// GET 请求拼接查询参数
+		if (options.method == 'GET' && options.data != null) {
+			const qs = buildQueryString(options.data)
+			if (qs.length > 0) {
+				const separator = fullUrl.includes('?') ? '&' : '?'
+				fullUrl = fullUrl + separator + qs
+			}
+		}
+
+		// 确定 Content-Type
+		const contentType = options.contentType ?? 'application/x-www-form-urlencoded'
+
+		// 构建请求头
+		let header : UTSJSONObject = {
+			'Content-Type': contentType
+		}
+		const optHeader = options.header
+		if (optHeader != null) {
+			const headerKeys = Object.keys(optHeader)
+			for (let i = 0; i < headerKeys.length; i++) {
+				const key = headerKeys[i]
+				header[key] = optHeader[key]
+			}
+		}
+
+		// POST 请求：将对象转为 form-urlencoded 字符串
+		let postData : string | UTSJSONObject | null = null
+		if (options.method == 'POST') {
+			if (contentType.includes('application/json')) {
+				postData = options.data
+			} else {
+				postData = buildQueryString(options.data)
+			}
+		}
+
+		uni.request({
+			url: fullUrl,
+			method: options.method,
+			data: postData,
+			header: header,
+			dataType: options.dataType ?? 'json',
+			responseType: options.responseType ?? 'text',
+			withCredentials: true,
+			success: (res) => {
+				if (options.showLoading == true) {
+					uni.hideLoading()
+				}
+
+				const statusCode = res.statusCode
+
+				// 401 未授权 → 跳转登录页
+				if (statusCode == 401) {
+					uni.showToast({
+						title: '登录已过期，请重新登录',
+						icon: 'none',
+						duration: 1500
+					})
+					setTimeout(() => {
+						uni.reLaunch({
+							url: '/pages/login/login'
+						})
+					}, 1500)
+					reject(new Error('未授权'))
+					return
+				}
+
+				// HTTP 错误
+				if (statusCode < 200 || statusCode >= 300) {
+					uni.showToast({
+						title: '请求失败 (' + statusCode.toString() + ')',
+						icon: 'none'
+					})
+					reject(new Error('HTTP错误: ' + statusCode.toString()))
+					return
+				}
+
+				// 解析响应体
+				const result = res.data as ApiResponse
+
+				// 业务错误处理：code === -1
+				if (result.code == -1) {
+					uni.showToast({
+						title: result.msg.length > 0 ? result.msg : '操作失败',
+						icon: 'none'
+					})
+					reject(new Error(result.msg.length > 0 ? result.msg : '操作失败'))
+					return
+				}
+
+				resolve(result as T)
+			},
+			fail: (err) => {
+				if (options.showLoading == true) {
+					uni.hideLoading()
+				}
+				uni.showToast({
+					title: '网络错误',
+					icon: 'none'
+				})
+				reject(new Error(err.errMsg))
+			}
+		})
+	})
+}
+
+/**
+ * GET 请求
+ * @param url 接口路径（不含 BASE_URL）
+ * @param params 查询参数
+ */
+export function get<T>(url : string, params : UTSJSONObject | null = null) : Promise<T> {
+	return request<T>({
+		url: url,
+		method: 'GET',
+		data: params
+	})
+}
+
+/**
+ * POST 请求（form-urlencoded 格式，适配后端 VO 接收表单参数）
+ * @param url 接口路径
+ * @param data 请求体
+ */
+export function post<T>(url : string, data : UTSJSONObject | null = null) : Promise<T> {
+	return request<T>({
+		url: url,
+		method: 'POST',
+		data: data,
+		contentType: 'application/x-www-form-urlencoded'
+	})
+}
+
+/**
+ * POST JSON 请求（application/json 格式，支持对象和数组）
+ * @param url 接口路径
+ * @param data 请求体（对象或数组）
+ */
+export function postJson<T>(url : string, data : any = null) : Promise<T> {
+	return new Promise<T>((resolve, reject) => {
+		uni.request({
+			url: BASE_URL + url,
+			method: 'POST',
+			data: data,
+			header: { 'Content-Type': 'application/json' } as UTSJSONObject,
+			dataType: 'json',
+			responseType: 'text',
+			withCredentials: true,
+			success: (res) => {
+				const statusCode = res.statusCode
+				if (statusCode == 401) {
+					uni.showToast({ title: '登录已过期', icon: 'none' })
+					setTimeout(() => { uni.reLaunch({ url: '/pages/login/login' }) }, 1500)
+					reject(new Error('未授权'))
+					return
+				}
+				if (statusCode < 200 || statusCode >= 300) {
+					uni.showToast({ title: '请求失败', icon: 'none' })
+					reject(new Error('HTTP错误'))
+					return
+				}
+				const result = res.data as ApiResponse
+				if (result.code == -1) {
+					uni.showToast({ title: result.msg.length > 0 ? result.msg : '操作失败', icon: 'none' })
+					reject(new Error(result.msg))
+					return
+				}
+				resolve(result as T)
+			},
+			fail: (err) => {
+				uni.showToast({ title: '网络错误', icon: 'none' })
+				reject(new Error(err.errMsg))
+			}
+		})
+	})
+}

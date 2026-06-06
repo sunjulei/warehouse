@@ -1,0 +1,231 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 顶部操作栏 -->
+    <view class="top-bar">
+      <text class="page-title">盘点管理</text>
+      <button class="create-btn" :loading="creating" :disabled="creating" @tap="onCreate">
+        + 新建盘点
+      </button>
+    </view>
+
+    <!-- 盘点单列表 -->
+    <view v-if="list.length > 0" class="stocktake-list">
+      <view
+        v-for="(item, index) in list"
+        :key="index"
+        class="stocktake-item"
+        @tap="onItemTap(item)"
+      >
+        <view class="item-header">
+          <text class="item-no">{{ item.stocktakeNo ?? '' }}</text>
+          <view
+            class="status-tag"
+            :style="{ backgroundColor: item.status == 0 ? '#fdf6ec' : '#f0f9eb' }"
+          >
+            <text
+              class="status-text"
+              :style="{ color: item.status == 0 ? '#E6A23C' : '#67C23A' }"
+            >
+              {{ item.status == 0 ? '待盘点' : '已完成' }}
+            </text>
+          </view>
+        </view>
+        <view class="item-body">
+          <text class="item-operator">操作人: {{ item.operator ?? '' }}</text>
+          <text class="item-time">创建时间: {{ item.createTime ?? '' }}</text>
+        </view>
+        <view v-if="item.status == 0" class="item-action">
+          <text class="item-action-text">点击进入盘点 →</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <EmptyState v-if="list.length === 0 && !loading" text="暂无盘点单数据" />
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import { loadAllStocktake, createStocktake } from '../../api/stocktake'
+import EmptyState from '../../components/EmptyState.uvue'
+
+interface StocktakeItem {
+  id : number
+  stocktakeNo : string
+  status : number
+  operator : string
+  createTime : string
+  remark : string
+}
+
+const list = ref<StocktakeItem[]>([])
+const loading = ref(false)
+const creating = ref(false)
+
+/**
+ * 加载盘点单列表
+ */
+function loadData() : void {
+  loading.value = true
+  loadAllStocktake({ page: 1, limit: 50 } as UTSJSONObject).then((res : any) => {
+    const result = res as UTSJSONObject
+    const dataList = result['data'] as UTSJSONObject[] | null
+    if (dataList != null) {
+      const items : StocktakeItem[] = []
+      for (let i = 0; i < dataList!.length; i++) {
+        const d = dataList![i]
+        items.push({
+          id: (d['id'] as number) ?? 0,
+          stocktakeNo: (d['stocktakeNo'] as string) ?? '',
+          status: (d['status'] as number) ?? 0,
+          operator: (d['operator'] as string) ?? '',
+          createTime: (d['createTime'] as string) ?? '',
+          remark: (d['remark'] as string) ?? ''
+        })
+      }
+      list.value = items
+    } else {
+      list.value = []
+    }
+    loading.value = false
+  }).catch((err : Error) => {
+    loading.value = false
+    list.value = []
+  })
+}
+
+/**
+ * 新建盘点单
+ */
+function onCreate() : void {
+  creating.value = true
+  createStocktake({} as UTSJSONObject).then((res : any) => {
+    creating.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '盘点单创建成功', icon: 'success' })
+      loadData()
+    } else {
+      const msg = result['msg'] as string ?? '创建失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err : Error) => {
+    creating.value = false
+  })
+}
+
+/**
+ * 点击盘点项
+ */
+function onItemTap(item : StocktakeItem) : void {
+  if (item.status == 0) {
+    uni.navigateTo({
+      url: '/pages/business/stocktake-item?id=' + item.id.toString()
+    })
+  }
+}
+
+onShow(() => {
+  loadData()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+}
+
+/* 顶部操作栏 */
+.top-bar {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.create-btn {
+  background-color: #409EFF;
+  color: #FFFFFF;
+  font-size: 28rpx;
+  border-radius: 8rpx;
+  padding: 16rpx 32rpx;
+  height: auto;
+  line-height: 1.5;
+}
+
+/* 盘点单列表 */
+.stocktake-list {
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.stocktake-item {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 28rpx;
+}
+
+.item-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.item-no {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.status-tag {
+  border-radius: 8rpx;
+  padding: 6rpx 20rpx;
+}
+
+.status-text {
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.item-body {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.item-operator {
+  font-size: 26rpx;
+  color: #606266;
+}
+
+.item-time {
+  font-size: 26rpx;
+  color: #909399;
+}
+
+.item-action {
+  margin-top: 16rpx;
+  align-items: flex-end;
+}
+
+.item-action-text {
+  font-size: 26rpx;
+  color: #409EFF;
+}
+</style>

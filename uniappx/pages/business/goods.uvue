@@ -1,0 +1,159 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1" @scrolltolower="onScrollToLower">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 搜索栏 -->
+    <SearchBar placeholder="搜索商品名称" v-model="searchKeyword" @search="onSearch" />
+
+    <!-- 商品列表 -->
+    <view v-if="goodsList.length > 0" class="goods-list">
+      <view v-for="(item, index) in goodsList" :key="index" class="goods-item">
+        <GoodsCard :goods="item" @click="onGoodsClick(item)" />
+      </view>
+      <!-- 加载状态 -->
+      <view v-if="loading" class="loading-row">
+        <text class="loading-text">加载中...</text>
+      </view>
+      <view v-if="noMore && goodsList.length > 0" class="loading-row">
+        <text class="loading-text">没有更多了</text>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <EmptyState v-if="!loading && goodsList.length === 0" text="暂无商品数据" />
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import { loadAllGoods } from '../../api/goods'
+import SearchBar from '../../components/SearchBar.uvue'
+import GoodsCard from '../../components/GoodsCard.uvue'
+import EmptyState from '../../components/EmptyState.uvue'
+
+interface GoodsItem {
+  id : number
+  goodsname : string
+  goodscode : string
+  number : number
+  warning : number
+  [key : string] : any
+}
+
+const searchKeyword = ref('')
+const goodsList = ref<GoodsItem[]>([])
+const loading = ref(false)
+const noMore = ref(false)
+const page = ref(1)
+const limit = 20
+
+// 加载商品列表
+function loadGoods(isRefresh : boolean) : void {
+  if (loading.value) return
+  if (isRefresh) {
+    page.value = 1
+    noMore.value = false
+    goodsList.value = []
+  }
+  if (noMore.value) return
+
+  loading.value = true
+
+  const params : UTSJSONObject = {
+    page: page.value,
+    limit: limit
+  }
+  if (searchKeyword.value.length > 0) {
+    params['goodsname'] = searchKeyword.value
+  }
+
+  loadAllGoods(params).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null && list!.length > 0) {
+        const newItems = list!.map((item : UTSJSONObject) => {
+          return {
+            id: (item['id'] as number) ?? 0,
+            goodsname: (item['goodsname'] as string) ?? (item['name'] as string) ?? '',
+            goodscode: (item['goodscode'] as string) ?? (item['code'] as string) ?? '',
+            number: (item['number'] as number) ?? 0,
+            warning: (item['warning'] as number) ?? 0
+          } as GoodsItem
+        })
+        goodsList.value = goodsList.value.concat(newItems)
+        page.value = page.value + 1
+        if (newItems.length < limit) {
+          noMore.value = true
+        }
+      } else {
+        noMore.value = true
+      }
+    }
+    loading.value = false
+  }).catch((err : Error) => {
+    loading.value = false
+    console.error('加载商品失败:', err.message)
+  })
+}
+
+// 搜索
+function onSearch(keyword : string) : void {
+  searchKeyword.value = keyword
+  loadGoods(true)
+}
+
+// 触底加载更多
+function onScrollToLower() : void {
+  if (!noMore.value && !loading.value) {
+    loadGoods(false)
+  }
+}
+
+// 点击商品项
+function onGoodsClick(item : GoodsItem) : void {
+  uni.navigateTo({
+    url: '/pages/business/goods-detail?id=' + item.id.toString()
+  })
+}
+
+onShow(() => {
+  loadGoods(true)
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+  gap: 20rpx;
+}
+
+/* 商品列表 */
+.goods-list {
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.goods-item {
+  flex-direction: column;
+}
+
+/* 加载状态 */
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 24rpx;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #999999;
+}
+</style>

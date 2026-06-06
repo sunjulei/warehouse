@@ -1,0 +1,9 @@
+import { get, postJson } from './request'
+
+export function loadAllRetail(params: any) {
+  return get('/retail/loadAllRetail', params)
+}
+
+export function batchAddRetail(data: any[]) {
+  return postJson('/retail/batchAddRetail', data)
+}

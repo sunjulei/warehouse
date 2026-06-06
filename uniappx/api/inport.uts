@@ -1,0 +1,9 @@
+import { get, post } from './request'
+
+export function loadAllInport(params: any) {
+  return get('/inport/loadAllInport', params)
+}
+
+export function addInport(data: any) {
+  return post('/inport/addInport', data)
+}

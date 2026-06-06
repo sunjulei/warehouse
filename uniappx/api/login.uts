@@ -1,0 +1,44 @@
+import { post, BASE_URL } from './request.uts'
+
+// 登录
+export function login(loginname: string, pwd: string, code: string, captchaId: string) {
+  const data = {} as UTSJSONObject
+  data['loginname'] = loginname
+  data['pwd'] = pwd
+  data['code'] = code
+  data['captchaId'] = captchaId
+  return post('/login/login', data)
+}
+
+// 获取验证码（base64）
+export function getCaptchaBase64(): Promise<UTSJSONObject> {
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: BASE_URL + '/login/getCaptchaBase64',
+      method: 'GET',
+      withCredentials: true,
+      dataType: 'json',
+      success: (res) => {
+        const data = res.data as UTSJSONObject
+        if (data != null && data['code'] == 200) {
+          resolve(data)
+        } else {
+          reject(data != null ? data['msg'] : '获取验证码失败')
+        }
+      },
+      fail: (err) => {
+        reject(err.errMsg)
+      }
+    })
+  })
+}
+
+// 获取当前用户信息
+export function getNowUser() {
+  return post('/login/currentUser', null)
+}
+
+// 退出登录
+export function logout() {
+  return post('/login/logout', null)
+}

@@ -1,0 +1,133 @@
+{
+	"pages": [
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/business/index",
+			"style": {
+				"navigationBarTitleText": "业务中心"
+			}
+		},
+		{
+			"path": "pages/business/goods",
+			"style": {
+				"navigationBarTitleText": "商品管理"
+			}
+		},
+		{
+			"path": "pages/business/goods-detail",
+			"style": {
+				"navigationBarTitleText": "商品详情"
+			}
+		},
+		{
+			"path": "pages/business/inport",
+			"style": {
+				"navigationBarTitleText": "进货入库"
+			}
+		},
+		{
+			"path": "pages/business/sales",
+			"style": {
+				"navigationBarTitleText": "销售开单"
+			}
+		},
+		{
+			"path": "pages/business/stocktake",
+			"style": {
+				"navigationBarTitleText": "盘点管理"
+			}
+		},
+		{
+			"path": "pages/business/stocktake-item",
+			"style": {
+				"navigationBarTitleText": "盘点录入"
+			}
+		},
+		{
+			"path": "pages/query/index",
+			"style": {
+				"navigationBarTitleText": "查询中心"
+			}
+		},
+		{
+			"path": "pages/query/customer-detail",
+			"style": {
+				"navigationBarTitleText": "客户详情"
+			}
+		},
+		{
+			"path": "pages/query/provider-detail",
+			"style": {
+				"navigationBarTitleText": "供应商详情"
+			}
+		},
+		{
+			"path": "pages/profile/index",
+			"style": {
+				"navigationBarTitleText": "个人中心"
+			}
+		},
+		{
+			"path": "pages/profile/profile-edit",
+			"style": {
+				"navigationBarTitleText": "编辑个人信息"
+			}
+		},
+		{
+			"path": "pages/profile/change-password",
+			"style": {
+				"navigationBarTitleText": "修改密码"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "仓储脉搏",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#FFFFFF"
+	},
+	"tabBar": {
+		"color": "#999999",
+		"selectedColor": "#409EFF",
+		"backgroundColor": "#FFFFFF",
+		"borderStyle": "black",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/tab-home.png",
+				"selectedIconPath": "static/tab-home-active.png"
+			},
+			{
+				"pagePath": "pages/business/index",
+				"text": "业务",
+				"iconPath": "static/tab-business.png",
+				"selectedIconPath": "static/tab-business-active.png"
+			},
+			{
+				"pagePath": "pages/query/index",
+				"text": "查询",
+				"iconPath": "static/tab-query.png",
+				"selectedIconPath": "static/tab-query-active.png"
+			},
+			{
+				"pagePath": "pages/profile/index",
+				"text": "我的",
+				"iconPath": "static/tab-profile.png",
+				"selectedIconPath": "static/tab-profile-active.png"
+			}
+		]
+	}
+}
