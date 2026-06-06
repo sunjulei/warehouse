@@ -131,75 +131,50 @@ const handleMenuSelect = (index: string) => {
   position: relative;
 }
 
-.sidebar-noise {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 1;
-}
-
 .sidebar-logo {
-  height: 60px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 15px;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding: 0 16px;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border-light);
   transition: all var(--transition-base);
   position: relative;
   z-index: 2;
   letter-spacing: 1px;
 }
 
-.sidebar-logo::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.3), transparent);
-}
-
 .logo-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   background: var(--primary-gradient);
   border-radius: var(--border-radius-sm);
-  box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.4);
   flex-shrink: 0;
   transition: all var(--transition-base);
 }
 
 .logo-svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   color: #fff;
 }
 
 .sidebar-logo:hover .logo-icon {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.5);
 }
 
 .logo-text {
   white-space: nowrap;
   overflow: hidden;
-  color: #fafaf9;
+  color: var(--text-primary);
   letter-spacing: 2px;
 }
 
@@ -220,10 +195,11 @@ const handleMenuSelect = (index: string) => {
   margin: 2px 0;
   border-radius: var(--border-radius-sm);
   transition: all var(--transition-fast);
-  height: 42px;
-  line-height: 42px;
+  height: 36px;
+  line-height: 36px;
   position: relative;
   overflow: hidden;
+  font-size: var(--font-size-base);
 }
 
 .menu-item::before {
@@ -260,9 +236,10 @@ const handleMenuSelect = (index: string) => {
 :deep(.el-sub-menu__title) {
   border-radius: var(--border-radius-sm);
   transition: all var(--transition-fast);
-  height: 42px;
-  line-height: 42px;
+  height: 36px;
+  line-height: 36px;
   position: relative;
+  font-size: var(--font-size-base);
 }
 
 :deep(.el-sub-menu__title:hover) {
@@ -293,15 +270,15 @@ const handleMenuSelect = (index: string) => {
 }
 
 :deep(.el-sub-menu .el-menu) {
-  background: rgba(0, 0, 0, 0.12) !important;
+  background: var(--bg-tertiary) !important;
   border-radius: var(--border-radius-sm);
   margin: 4px 8px;
 }
 
 :deep(.el-sub-menu .el-menu .el-menu-item) {
   padding-left: 48px !important;
-  height: 38px;
-  line-height: 38px;
+  height: 34px;
+  line-height: 34px;
   font-size: 13px;
 }
 
@@ -309,13 +286,14 @@ const handleMenuSelect = (index: string) => {
   position: relative;
   z-index: 2;
   flex-shrink: 0;
+  border-top: 1px solid var(--border-light);
 }
 
 .bottom-actions {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 8px;
 }
 
 .layout-toggle {
@@ -330,10 +308,10 @@ const handleMenuSelect = (index: string) => {
   gap: 8px;
   width: 100%;
   padding: 7px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-light);
   border-radius: var(--border-radius-sm);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--sidebar-text);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
   font-size: 13px;
@@ -342,8 +320,8 @@ const handleMenuSelect = (index: string) => {
 }
 
 .theme-toggle:hover {
-  background: var(--sidebar-hover);
-  color: var(--sidebar-text-active);
+  background: var(--primary-subtle);
+  color: var(--primary-color);
   border-color: rgba(var(--primary-rgb), 0.2);
 }
 
@@ -357,13 +335,13 @@ const handleMenuSelect = (index: string) => {
 }
 
 .sidebar-footer {
-  padding: 10px 16px 12px;
+  padding: 8px 16px 10px;
   text-align: center;
 }
 
 .version-text {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--text-placeholder);
   letter-spacing: 0.5px;
 }
 
