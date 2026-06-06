@@ -202,6 +202,12 @@ const router = createRouter({
           name: 'CommissionManager',
           component: () => import('@/views/business/commission/index.vue'),
           meta: { title: '店员提成' }
+        },
+        {
+          path: 'business/my-commission',
+          name: 'MyCommission',
+          component: () => import('@/views/business/my-commission/index.vue'),
+          meta: { title: '我的提成' }
         }
       ]
     }

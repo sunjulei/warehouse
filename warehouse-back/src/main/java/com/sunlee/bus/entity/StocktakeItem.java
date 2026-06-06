@@ -25,6 +25,9 @@ public class StocktakeItem implements Serializable {
     @TableField(exist = false)
     private String goodsname;
 
+    @TableField(exist = false)
+    private String providername;
+
     private Integer systemNum;
 
     private Integer actualNum;

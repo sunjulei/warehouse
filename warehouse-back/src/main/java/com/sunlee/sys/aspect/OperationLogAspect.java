@@ -1,6 +1,5 @@
 package com.sunlee.sys.aspect;
 
-import com.sunlee.bus.entity.OperationLog;
 import com.sunlee.bus.service.IOperationLogService;
 import com.sunlee.sys.annotation.OperationLog;
 import com.sunlee.sys.common.WebUtils;
@@ -11,7 +10,7 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -33,7 +32,7 @@ public class OperationLogAspect {
     private IOperationLogService operationLogService;
 
     private final ExpressionParser parser = new SpelExpressionParser();
-    private final LocalVariableTableParameterNameDiscoverer discoverer = new LocalVariableTableParameterNameDiscoverer();
+    private final StandardReflectionParameterNameDiscoverer discoverer = new StandardReflectionParameterNameDiscoverer();
 
     @AfterReturning(pointcut = "@annotation(com.sunlee.sys.annotation.OperationLog)", returning = "result")
     public void doAfterReturning(JoinPoint joinPoint, Object result) {
@@ -56,7 +55,7 @@ public class OperationLogAspect {
             description = parseSpel(description, joinPoint, method);
         }
 
-        OperationLog entity = new OperationLog();
+        com.sunlee.bus.entity.OperationLog entity = new com.sunlee.bus.entity.OperationLog();
         entity.setType(annotation.type());
         entity.setModule(annotation.module());
         entity.setDescription(description);

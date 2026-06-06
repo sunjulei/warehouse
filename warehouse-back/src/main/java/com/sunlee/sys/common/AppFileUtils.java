@@ -12,12 +12,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @Author: sunlee
  * @Date: 2026/04/10 23:44
  */
+@Slf4j
 public class AppFileUtils {
 
     /**

@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
  * @Author: sunlee
  * @Date: 2026/03/15 10:29
  */
+@Slf4j
 public class PinyinUtils {
 
     /**

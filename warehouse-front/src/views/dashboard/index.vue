@@ -56,6 +56,48 @@
       </div>
     </div>
 
+    <el-row :gutter="20" style="margin-bottom: 20px;">
+      <el-col :span="24">
+        <el-card class="dashboard-card notice-card animate-fade-in-up delay-150" shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <div class="card-header-left">
+                <div class="header-icon-wrap notice-icon-wrap">
+                  <el-icon class="header-icon"><Bell /></el-icon>
+                </div>
+                <div class="header-text-group">
+                  <span class="header-title">公告通知</span>
+                  <span class="header-subtitle">系统公告与通知信息</span>
+                </div>
+              </div>
+              <el-tag v-if="notices.length > 0" type="primary" size="small" class="count-tag" effect="plain" round>
+                {{ notices.length }} 条
+              </el-tag>
+            </div>
+          </template>
+          <div v-if="notices.length === 0" class="empty-state">
+            <div class="empty-icon-wrap">
+              <el-icon class="empty-icon"><Bell /></el-icon>
+            </div>
+            <span class="empty-text">暂无公告</span>
+          </div>
+          <div v-else class="notice-list">
+            <div v-for="(item, index) in notices" :key="item.id" class="notice-item" :style="{ animationDelay: (index * 0.08) + 's' }" @click="handleNoticeClick(item)">
+              <div class="notice-dot"></div>
+              <div class="notice-content">
+                <div class="notice-title">{{ item.title }}</div>
+                <div class="notice-time">
+                  <el-icon><Clock /></el-icon>
+                  {{ item.createtime }} · {{ item.opername }}
+                </div>
+              </div>
+              <el-icon class="notice-arrow"><ArrowRight /></el-icon>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <el-row :gutter="20">
       <el-col :span="12">
         <el-card class="dashboard-card ops-card animate-fade-in-up delay-200" shadow="hover">
@@ -177,6 +219,17 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 公告详情弹窗 -->
+    <el-dialog v-model="noticeDialogVisible" :title="currentNotice?.title" width="520px">
+      <div style="color: #909399; font-size: 13px; margin-bottom: 16px;">
+        <el-icon><Clock /></el-icon> {{ currentNotice?.createtime }} · {{ currentNotice?.opername }}
+      </div>
+      <div style="line-height: 1.8; font-size: 14px; color: #303133; white-space: pre-wrap;">{{ currentNotice?.content || '暂无内容' }}</div>
+      <template #footer>
+        <el-button type="primary" @click="noticeDialogVisible = false">知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -185,6 +238,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { loadAllWarningGoods, loadDashboardStats } from '@/api/goods'
 import { loadAllOperationLog } from '@/api/operationLog'
+import { loadAllNotice } from '@/api/notice'
 
 const authStore = useAuthStore()
 
@@ -197,6 +251,9 @@ const typeTagMap: Record<string, string> = {
   '修改': 'primary',
   '删除': 'danger'
 }
+const notices = ref<any[]>([])
+const noticeDialogVisible = ref(false)
+const currentNotice = ref<any>(null)
 const warningGoods = ref<any[]>([])
 const goodsTotal = ref(0)
 const todayInport = ref(0)
@@ -214,6 +271,13 @@ const greeting = computed(() => {
 onMounted(async () => {
   try {
     await fetchOps(1)
+  } catch {}
+
+  try {
+    const noticeRes: any = await loadAllNotice({ page: 1, limit: 5 })
+    if (noticeRes.data) {
+      notices.value = noticeRes.data
+    }
   } catch {}
 
   try {
@@ -244,6 +308,11 @@ async function fetchOps(page: number) {
 
 function handleOpsPageChange(page: number) {
   fetchOps(page)
+}
+
+function handleNoticeClick(item: any) {
+  currentNotice.value = item
+  noticeDialogVisible.value = true
 }
 </script>
 

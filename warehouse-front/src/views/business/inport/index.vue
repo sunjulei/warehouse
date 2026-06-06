@@ -21,8 +21,8 @@
       <CrudTable ref="tableRef" :load-api="loadAllInport" :search-params="searchParams">
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="providername" label="供应商" />
-        <el-table-column prop="goodsname" label="商品" />
+        <el-table-column prop="providername" label="供应商" min-width="120" />
+        <el-table-column prop="goodsname" label="商品名称" min-width="120" />
         <el-table-column prop="number" label="数量" width="80" />
         <el-table-column prop="inportprice" label="进货价" width="80" />
         <el-table-column prop="paytype" label="付款方式" width="100" />

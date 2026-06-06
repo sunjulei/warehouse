@@ -17,8 +17,8 @@ public class CommissionRecordServiceImpl extends ServiceImpl<CommissionRecordMap
     @Override
     public List<CommissionRecord> loadByMonth(String yearMonth) {
         QueryWrapper<CommissionRecord> qw = new QueryWrapper<>();
-        qw.eq("year_month", yearMonth);
-        qw.orderByDesc("commission_amount");
+        qw.eq("`year_month`", yearMonth);
+        qw.orderByDesc("`commission_amount`");
         return list(qw);
     }
 }

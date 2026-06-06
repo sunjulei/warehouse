@@ -31,3 +31,11 @@ export function loadMemberRecords(params: any) {
 export function deleteMember(data: any) {
   return request.post('/member/deleteMember', data)
 }
+
+export function loadLevelRules() {
+  return request.get('/member/loadLevelRules')
+}
+
+export function saveLevelRule(data: any) {
+  return request.post('/member/saveLevelRule', data)
+}

@@ -10,6 +10,7 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -43,7 +44,8 @@ public class Sales implements Serializable {
 
     private String remark;
 
-    private Double saleprice;
+    @TableField("saleprice")
+    private BigDecimal saleprice;
 
     private Integer goodsid;
 

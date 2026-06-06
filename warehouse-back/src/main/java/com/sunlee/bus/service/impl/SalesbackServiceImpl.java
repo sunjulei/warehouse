@@ -64,7 +64,7 @@ public class SalesbackServiceImpl extends ServiceImpl<SalesbackMapper, Salesback
         salesback.setOperateperson(user.getName());
 
 
-        salesback.setSalebackprice(sales.getSaleprice());
+        salesback.setSalebackprice(sales.getSaleprice() != null ? sales.getSaleprice().doubleValue() : null);
         salesback.setPaytype(sales.getPaytype());
 
         salesback.setSalesbacktime(new Date());

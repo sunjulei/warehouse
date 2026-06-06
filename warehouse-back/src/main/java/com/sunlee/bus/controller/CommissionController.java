@@ -6,8 +6,11 @@ import com.sunlee.bus.service.*;
 import com.sunlee.sys.annotation.OperationLog;
 import com.sunlee.sys.common.DataGridView;
 import com.sunlee.sys.common.ResultObj;
+import com.sunlee.sys.common.WebUtils;
+import com.sunlee.sys.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -65,19 +68,49 @@ public class CommissionController {
     }
 
     /**
+     * 删除提成规则
+     */
+    @OperationLog(type = "删除", module = "提成管理", description = "'删除提成规则ID: ' + #args[0]")
+    @RequestMapping("deleteRule")
+    public ResultObj deleteRule(Integer id) {
+        try {
+            // 先删除关联的阶梯明细
+            QueryWrapper<CommissionTier> tqw = new QueryWrapper<>();
+            tqw.eq("rule_id", id);
+            commissionTierService.remove(tqw);
+            commissionRuleService.removeById(id);
+            return ResultObj.DELETE_SUCCESS;
+        } catch (Exception e) {
+            log.error("删除提成规则失败: {}", e.getMessage(), e);
+            return ResultObj.DELETE_ERROR;
+        }
+    }
+
+    /**
      * 保存阶梯提成明细
      */
     @RequestMapping("saveTiers")
-    public ResultObj saveTiers(Integer ruleId, List<CommissionTier> tiers) {
+    @SuppressWarnings("unchecked")
+    public ResultObj saveTiers(@RequestBody Map<String, Object> body) {
         try {
+            Integer ruleId = (Integer) body.get("ruleId");
+            List<Map<String, Object>> tiersData = (List<Map<String, Object>>) body.get("tiers");
+
             // 先删除旧的
             QueryWrapper<CommissionTier> qw = new QueryWrapper<>();
             qw.eq("rule_id", ruleId);
             commissionTierService.remove(qw);
+
             // 保存新的
-            for (CommissionTier tier : tiers) {
-                tier.setRuleId(ruleId);
-                commissionTierService.save(tier);
+            if (tiersData != null) {
+                for (Map<String, Object> t : tiersData) {
+                    CommissionTier tier = new CommissionTier();
+                    tier.setRuleId(ruleId);
+                    tier.setMinAmount(new java.math.BigDecimal(String.valueOf(t.get("minAmount"))));
+                    tier.setMaxAmount(t.get("maxAmount") != null ? new java.math.BigDecimal(String.valueOf(t.get("maxAmount"))) : null);
+                    tier.setRate(new java.math.BigDecimal(String.valueOf(t.get("rate"))));
+                    commissionTierService.save(tier);
+                }
             }
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
@@ -126,8 +159,8 @@ public class CommissionController {
                 List<Sales> opSales = entry.getValue();
 
                 BigDecimal totalSales = opSales.stream()
-                        .map(s -> s.getSalesprice() != null ?
-                                s.getSalesprice().multiply(BigDecimal.valueOf(s.getNumber() != null ? s.getNumber() : 0)) :
+                        .map(s -> s.getSaleprice() != null ?
+                                s.getSaleprice().multiply(BigDecimal.valueOf(s.getNumber() != null ? s.getNumber() : 0)) :
                                 BigDecimal.ZERO)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -146,7 +179,7 @@ public class CommissionController {
 
                 // 更新或创建记录
                 QueryWrapper<CommissionRecord> crQW = new QueryWrapper<>();
-                crQW.eq("operator", operator).eq("year_month", yearMonth);
+                crQW.eq("operator", operator).eq("`year_month`", yearMonth);
                 CommissionRecord existing = commissionRecordService.getOne(crQW);
 
                 CommissionRecord record = existing != null ? existing : new CommissionRecord();
@@ -198,6 +231,32 @@ public class CommissionController {
         } catch (Exception e) {
             log.error("确认提成失败: {}", e.getMessage(), e);
             return ResultObj.UPDATE_ERROR;
+        }
+    }
+
+    /**
+     * 查询当前登录用户的提成记录
+     */
+    @RequestMapping("loadMyCommission")
+    public DataGridView loadMyCommission(String yearMonth) {
+        try {
+            User user = (User) WebUtils.getSession().getAttribute("user");
+            if (user == null) {
+                return new DataGridView(0L, new ArrayList<>());
+            }
+            String operator = user.getName();
+
+            QueryWrapper<CommissionRecord> qw = new QueryWrapper<>();
+            qw.eq("operator", operator);
+            if (yearMonth != null && !yearMonth.isEmpty()) {
+                qw.eq("`year_month`", yearMonth);
+            }
+            qw.orderByDesc("`year_month`");
+            List<CommissionRecord> records = commissionRecordService.list(qw);
+            return new DataGridView((long) records.size(), records);
+        } catch (Exception e) {
+            log.error("查询个人提成失败: {}", e.getMessage(), e);
+            return new DataGridView(0L, new ArrayList<>());
         }
     }
 

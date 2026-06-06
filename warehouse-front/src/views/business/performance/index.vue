@@ -18,10 +18,11 @@
         <el-date-picker
           v-model="dateRange"
           type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
+          range-separator="-"
+          start-placeholder="开始"
+          end-placeholder="结束"
           value-format="YYYY-MM-DD"
+          class="compact-range"
           @change="handleDateChange"
         />
       </div>
@@ -139,6 +140,10 @@ onMounted(() => loadData('month'))
 </script>
 
 <style scoped>
+.compact-range :deep(.el-range-editor) {
+  width: 220px !important;
+  min-width: 220px !important;
+}
 .rank-badge {
   display: inline-flex;
   align-items: center;
@@ -149,15 +154,12 @@ onMounted(() => loadData('month'))
   font-size: 13px;
   font-weight: 600;
 }
-
 .rank-icon {
   font-size: 18px;
 }
-
 .rank-1 { color: #f5a623; }
 .rank-2 { color: #b0b0b0; }
 .rank-3 { color: #cd7f32; }
-
 .empty-state {
   padding: 40px 0;
 }

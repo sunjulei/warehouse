@@ -57,7 +57,7 @@ public class PerformanceController {
             int totalOrders = list.size();
             int totalQuantity = list.stream().mapToInt(s -> s.getNumber() != null ? s.getNumber() : 0).sum();
             BigDecimal totalAmount = list.stream()
-                    .map(s -> s.getSalesprice() != null ? s.getSalesprice().multiply(BigDecimal.valueOf(s.getNumber() != null ? s.getNumber() : 0)) : BigDecimal.ZERO)
+                    .map(s -> s.getSaleprice() != null ? s.getSaleprice().multiply(BigDecimal.valueOf(s.getNumber() != null ? s.getNumber() : 0)) : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             item.put("totalOrders", totalOrders);
             item.put("totalQuantity", totalQuantity);
@@ -106,7 +106,7 @@ public class PerformanceController {
             item.put("goodsname", goodsName);
             int totalQuantity = list.stream().mapToInt(s -> s.getNumber() != null ? s.getNumber() : 0).sum();
             BigDecimal totalAmount = list.stream()
-                    .map(s -> s.getSalesprice() != null ? s.getSalesprice().multiply(BigDecimal.valueOf(s.getNumber() != null ? s.getNumber() : 0)) : BigDecimal.ZERO)
+                    .map(s -> s.getSaleprice() != null ? s.getSaleprice().multiply(BigDecimal.valueOf(s.getNumber() != null ? s.getNumber() : 0)) : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             item.put("totalQuantity", totalQuantity);
             item.put("totalAmount", totalAmount.setScale(2, RoundingMode.HALF_UP));

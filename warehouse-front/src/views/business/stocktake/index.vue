@@ -59,6 +59,9 @@
             </el-tag>
           </div>
           <div v-if="currentStocktake?.status === 0">
+            <el-button @click="handleCopySystemNum">
+              <el-icon><CopyDocument /></el-icon> 一键复制系统库存
+            </el-button>
             <el-button type="success" @click="handleSaveItems">保存</el-button>
             <el-button type="primary" @click="handleSubmit">提交盘点</el-button>
           </div>
@@ -67,6 +70,7 @@
 
       <el-table :data="stocktakeItems" border stripe>
         <el-table-column prop="goodsname" label="商品名称" min-width="150" />
+        <el-table-column prop="providername" label="供应商" width="120" />
         <el-table-column prop="systemNum" label="系统库存" width="100" align="center">
           <template #default="{ row }">
             <span style="font-weight: 600;">{{ row.systemNum }}</span>
@@ -81,6 +85,7 @@
               size="small"
               controls-position="right"
               style="width: 120px;"
+              @change="row.diffNum = (row.actualNum ?? 0) - row.systemNum"
             />
             <span v-else>{{ row.actualNum ?? '-' }}</span>
           </template>
@@ -127,7 +132,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Plus } from '@element-plus/icons-vue'
+import { ArrowLeft, Plus, CopyDocument } from '@element-plus/icons-vue'
 import SearchForm from '@/components/SearchForm.vue'
 import CrudTable from '@/components/CrudTable.vue'
 import {
@@ -185,6 +190,14 @@ async function handleViewDetail(row: any) {
   } catch {
     stocktakeItems.value = []
   }
+}
+
+function handleCopySystemNum() {
+  stocktakeItems.value.forEach(item => {
+    item.actualNum = item.systemNum
+    item.diffNum = 0
+  })
+  ElMessage.success('已复制系统库存到实际盘点数')
 }
 
 async function handleSaveItems() {

@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunlee.bus.entity.Member;
+import com.sunlee.bus.entity.MemberLevelRule;
 import com.sunlee.bus.entity.MemberRecord;
+import com.sunlee.bus.service.IMemberLevelRuleService;
 import com.sunlee.bus.service.IMemberRecordService;
 import com.sunlee.bus.service.IMemberService;
 import com.sunlee.bus.service.impl.MemberServiceImpl;
@@ -39,6 +41,9 @@ public class MemberController {
 
     @Autowired
     private MemberServiceImpl memberServiceImpl;
+
+    @Autowired
+    private IMemberLevelRuleService memberLevelRuleService;
 
     /**
      * 查询会员列表
@@ -163,6 +168,34 @@ public class MemberController {
         } catch (Exception e) {
             log.error("删除会员失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
+        }
+    }
+
+    /**
+     * 加载会员等级规则
+     */
+    @RequestMapping("loadLevelRules")
+    public DataGridView loadLevelRules() {
+        List<MemberLevelRule> rules = memberLevelRuleService.list(new QueryWrapper<MemberLevelRule>().orderByAsc("sort_order"));
+        return new DataGridView((long) rules.size(), rules);
+    }
+
+    /**
+     * 保存会员等级规则
+     */
+    @OperationLog(type = "修改", module = "会员管理", description = "'保存会员等级规则'")
+    @RequestMapping("saveLevelRule")
+    public ResultObj saveLevelRule(MemberLevelRule rule) {
+        try {
+            if (rule.getId() == null) {
+                memberLevelRuleService.save(rule);
+            } else {
+                memberLevelRuleService.updateById(rule);
+            }
+            return ResultObj.UPDATE_SUCCESS;
+        } catch (Exception e) {
+            log.error("保存等级规则失败: {}", e.getMessage(), e);
+            return ResultObj.UPDATE_ERROR;
         }
     }
 }
