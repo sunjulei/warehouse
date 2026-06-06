@@ -110,7 +110,7 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 .stat-value {
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
   font-weight: 700;
   color: var(--text-primary, #303133);
 }

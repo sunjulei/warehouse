@@ -622,7 +622,7 @@ onMounted(() => {
 .summary-green { background: linear-gradient(135deg, #67C23A, #85ce61); }
 .summary-orange { background: linear-gradient(135deg, #E6A23C, #ebb563); }
 .summary-val {
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
   font-weight: 700;
   line-height: 1.2;
 }

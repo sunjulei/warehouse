@@ -682,7 +682,7 @@ function handleNoticeClick(item: any) {
 }
 
 .empty-icon {
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
   color: var(--text-placeholder);
   opacity: 0.5;
 }
