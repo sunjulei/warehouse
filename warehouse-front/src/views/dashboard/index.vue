@@ -326,36 +326,20 @@ function handleNoticeClick(item: any) {
 
 /* ─── Welcome Banner ─────────────────────── */
 .welcome-banner {
-  background: linear-gradient(135deg, var(--primary-darker) 0%, var(--primary-color) 40%, var(--primary-light) 100%);
+  background: var(--bg-primary);
   border-radius: var(--border-radius-xl);
   padding: var(--spacing-2xl) var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
   position: relative;
   overflow: hidden;
-  color: #fff;
-  min-height: 160px;
   display: flex;
   align-items: center;
+  border: 1px solid var(--border-light);
 }
 
-.banner-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
-  z-index: 1;
-}
-
-.banner-mesh {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(0, 0, 0, 0.1) 0%, transparent 50%);
-  z-index: 1;
-}
+.banner-grid,
+.banner-mesh,
+.welcome-decoration { display: none; }
 
 .welcome-content {
   position: relative;
@@ -363,8 +347,8 @@ function handleNoticeClick(item: any) {
 }
 
 .welcome-greeting {
-  font-size: var(--font-size-sm);
-  color: rgba(255, 255, 255, 0.65);
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
   margin: 0 0 var(--spacing-xs);
   letter-spacing: 1px;
   font-weight: 500;
@@ -374,75 +358,15 @@ function handleNoticeClick(item: any) {
   font-size: var(--font-size-4xl);
   font-weight: 700;
   margin: 0 0 var(--spacing-sm);
-  color: #fff;
+  color: var(--text-primary);
   letter-spacing: var(--letter-spacing-tight);
   line-height: var(--line-height-tight);
 }
 
 .welcome-desc {
   font-size: var(--font-size-base);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
   margin: 0;
-  letter-spacing: 0.5px;
-}
-
-.welcome-decoration {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 50%;
-  overflow: hidden;
-  z-index: 2;
-}
-
-.deco-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-}
-
-.deco-1 {
-  width: 180px;
-  height: 180px;
-  top: -40px;
-  right: -20px;
-  animation: float 10s ease-in-out infinite;
-}
-
-.deco-2 {
-  width: 120px;
-  height: 120px;
-  bottom: -30px;
-  right: 100px;
-  animation: float 12s ease-in-out infinite reverse;
-}
-
-.deco-block {
-  position: absolute;
-  border-radius: var(--border-radius-md);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(4px);
-}
-
-.deco-3 {
-  width: 100px;
-  height: 60px;
-  top: 20px;
-  right: 200px;
-  transform: rotate(-8deg);
-  animation: float 8s ease-in-out infinite 1s;
-}
-
-.deco-4 {
-  width: 70px;
-  height: 70px;
-  bottom: 10px;
-  right: 40px;
-  border-radius: var(--border-radius-lg);
-  transform: rotate(12deg);
-  animation: float 9s ease-in-out infinite 2s;
 }
 
 /* ─── Stat Cards ─────────────────────────── */
@@ -450,20 +374,20 @@ function handleNoticeClick(item: any) {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .stat-card {
   background: var(--bg-primary);
   border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  border: 1px solid var(--border-light);
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-bar {
@@ -472,7 +396,7 @@ function handleNoticeClick(item: any) {
   left: 0;
   right: 0;
   height: 3px;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .stat-bar-total { background: var(--primary-gradient); }
@@ -481,13 +405,13 @@ function handleNoticeClick(item: any) {
 .stat-bar-sales { background: linear-gradient(135deg, #0284c7, #0ea5e9); }
 
 .stat-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
 .stat-icon-wrap {
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--border-radius-md);
   display: flex;
   align-items: center;
@@ -496,22 +420,22 @@ function handleNoticeClick(item: any) {
 }
 
 .stat-icon-total {
-  background: rgba(var(--primary-rgb), 0.1);
+  background: var(--accent-bg);
   color: var(--primary-color);
 }
 
 .stat-icon-warning {
-  background: rgba(var(--accent-rgb), 0.1);
+  background: var(--warning-bg);
   color: var(--warning-color);
 }
 
 .stat-icon-inport {
-  background: rgba(5, 150, 105, 0.1);
+  background: var(--success-bg);
   color: var(--success-color);
 }
 
 .stat-icon-sales {
-  background: rgba(2, 132, 199, 0.1);
+  background: var(--info-bg);
   color: var(--info-color);
 }
 
@@ -545,11 +469,12 @@ function handleNoticeClick(item: any) {
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .card-header {
@@ -565,8 +490,8 @@ function handleNoticeClick(item: any) {
 }
 
 .header-icon-wrap {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--border-radius-sm);
   display: flex;
   align-items: center;
@@ -574,23 +499,19 @@ function handleNoticeClick(item: any) {
   flex-shrink: 0;
 }
 
-.notice-icon-wrap {
-  background: rgba(var(--primary-rgb), 0.1);
-  color: var(--primary-color);
-}
-
+.notice-icon-wrap,
 .ops-icon-wrap {
-  background: rgba(var(--primary-rgb), 0.1);
+  background: var(--accent-bg);
   color: var(--primary-color);
 }
 
 .warning-icon-wrap {
-  background: rgba(var(--accent-rgb), 0.1);
+  background: var(--warning-bg);
   color: var(--warning-color);
 }
 
 .header-icon {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .header-text-group {
@@ -601,7 +522,7 @@ function handleNoticeClick(item: any) {
 
 .header-title {
   font-weight: 600;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   color: var(--text-primary);
   line-height: 1.3;
 }
@@ -627,16 +548,12 @@ function handleNoticeClick(item: any) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-md);
-  border-bottom: 1px solid var(--border-light);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-lighter);
   transition: all var(--transition-fast);
   cursor: pointer;
-  animation: fadeInLeft 0.5s ease forwards;
-  opacity: 0;
   position: relative;
   border-radius: var(--border-radius-sm);
-  margin: 0 calc(-1 * var(--spacing-xs));
-  padding-left: var(--spacing-lg);
 }
 
 .notice-item:last-child {
@@ -645,16 +562,15 @@ function handleNoticeClick(item: any) {
 
 .notice-item:hover {
   background: var(--primary-subtle);
-  padding-left: calc(var(--spacing-lg) + 4px);
 }
 
 .notice-dot {
   position: absolute;
-  left: var(--spacing-sm);
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--primary-color);
   opacity: 0.4;
@@ -663,7 +579,6 @@ function handleNoticeClick(item: any) {
 
 .notice-item:hover .notice-dot {
   opacity: 1;
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
 }
 
 .notice-content {
@@ -671,6 +586,7 @@ function handleNoticeClick(item: any) {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  padding-left: var(--spacing-md);
 }
 
 .notice-title {
@@ -678,7 +594,6 @@ function handleNoticeClick(item: any) {
   color: var(--text-primary);
   font-weight: 500;
   transition: color var(--transition-fast);
-  line-height: 1.4;
 }
 
 .notice-item:hover .notice-title {
@@ -708,7 +623,8 @@ function handleNoticeClick(item: any) {
 }
 
 /* ─── Tables ─────────────────────────────── */
-.ops-table {
+.ops-table,
+.warning-table {
   border-radius: var(--border-radius-md);
   overflow: hidden;
 }
@@ -722,11 +638,6 @@ function handleNoticeClick(item: any) {
   display: flex;
   justify-content: center;
   padding-top: var(--spacing-sm);
-}
-
-.warning-table {
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
 }
 
 .goods-name {
@@ -756,8 +667,8 @@ function handleNoticeClick(item: any) {
 }
 
 .empty-icon-wrap {
-  width: 68px;
-  height: 68px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -771,14 +682,14 @@ function handleNoticeClick(item: any) {
 }
 
 .empty-icon {
-  font-size: 30px;
+  font-size: 24px;
   color: var(--text-placeholder);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .empty-icon-wrap.empty-icon-success .empty-icon {
   color: var(--success-color);
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .empty-text {
@@ -804,10 +715,10 @@ function handleNoticeClick(item: any) {
 :deep(.el-card__header) {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-light);
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-xl);
 }
 
 :deep(.el-card__body) {
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-xl);
 }
 </style>
