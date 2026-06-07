@@ -207,7 +207,13 @@ const router = createRouter({
           path: 'business/member',
           name: 'MemberManager',
           component: () => import('@/views/business/member/index.vue'),
-          meta: { title: '会员管理' }
+          meta: { title: '会员列表' }
+        },
+        {
+          path: 'business/member-level',
+          name: 'MemberLevelManager',
+          component: () => import('@/views/business/member/level.vue'),
+          meta: { title: '等级规则' }
         },
         {
           path: 'business/performance',

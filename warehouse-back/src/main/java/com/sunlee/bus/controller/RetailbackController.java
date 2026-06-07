@@ -35,6 +35,9 @@ public class RetailbackController {
         try {
             retailbackService.addRetailback(id, number, remark);
             return ResultObj.BACKINPORT_SUCCESS;
+        } catch (RuntimeException e) {
+            log.warn("零售退货失败: {}", e.getMessage());
+            return new ResultObj(-1, e.getMessage());
         } catch (Exception e) {
             log.error("零售退货失败: {}", e.getMessage(), e);
             return ResultObj.BACKINPORT_ERROR;

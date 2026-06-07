@@ -30,15 +30,22 @@ public class RetailbackServiceImpl extends ServiceImpl<RetailbackMapper, Retailb
     public void addRetailback(Integer id, Integer number, String remark) {
         // 1. 通过零售单ID查询零售单信息
         Retail retail = retailMapper.selectById(id);
-        // 2. 根据商品ID查询商品信息
+        if (retail == null) {
+            throw new RuntimeException("零售单不存在");
+        }
+        // 2. 验证退货数量不能超过零售单剩余数量
+        if (number > retail.getNumber()) {
+            throw new RuntimeException("退货数量不能超过零售单剩余数量，当前剩余: " + retail.getNumber());
+        }
+        // 3. 根据商品ID查询商品信息
         Goods goods = goodsMapper.selectById(retail.getGoodsid());
-        // 3. 增加商品库存
+        // 4. 增加商品库存
         goods.setNumber(goods.getNumber() + number);
         goodsMapper.updateById(goods);
-        // 4. 减少零售单数量
+        // 5. 减少零售单数量
         retail.setNumber(retail.getNumber() - number);
         retailMapper.updateById(retail);
-        // 5. 添加退货单信息
+        // 6. 添加退货单信息
         Retailback retailback = new Retailback();
         retailback.setGoodsid(retail.getGoodsid());
         retailback.setNumber(number);
