@@ -48,7 +48,6 @@ public class LoginController {
         HREF_MAP.put("/sys/toPermissionManager", "/system/permission");
         HREF_MAP.put("/sys/toNoticeManager", "/system/notice");
         HREF_MAP.put("/sys/toLoginfoManager", "/system/loginfo");
-        HREF_MAP.put("/sys/toCacheManager", "/system/cache");
         HREF_MAP.put("../resources/page/icon.html", "/system/icon");
         HREF_MAP.put("/bus/toCustomerManager", "/business/customer");
         HREF_MAP.put("/bus/toProviderManager", "/business/provider");

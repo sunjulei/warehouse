@@ -84,12 +84,6 @@ const router = createRouter({
           meta: { title: '操作日志' }
         },
         {
-          path: 'system/cache',
-          name: 'CacheManager',
-          component: () => import('@/views/system/cache/index.vue'),
-          meta: { title: '缓存管理' }
-        },
-        {
           path: 'system/icon',
           name: 'IconManager',
           component: () => import('@/views/system/icon/index.vue'),

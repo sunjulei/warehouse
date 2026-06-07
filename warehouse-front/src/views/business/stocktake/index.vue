@@ -9,7 +9,7 @@
     <el-card v-if="!showDetail">
       <SearchForm v-model="searchParams" @search="handleSearch" @reset="handleReset">
         <el-form-item label="状态">
-          <el-select v-model="searchParams.status" placeholder="全部" clearable>
+          <el-select v-model="searchParams.status" placeholder="全部" clearable style="width: 150px;">
             <el-option label="进行中" :value="0" />
             <el-option label="已完成" :value="1" />
             <el-option label="已取消" :value="2" />
