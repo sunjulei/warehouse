@@ -126,10 +126,22 @@ const router = createRouter({
           meta: { title: '进货管理' }
         },
         {
-          path: 'business/outport',
-          name: 'OutportManager',
-          component: () => import('@/views/business/outport/index.vue'),
-          meta: { title: '退货管理' }
+          path: 'business/inport-pos',
+          name: 'InportPOS',
+          component: () => import('@/views/business/inport-pos/index.vue'),
+          meta: { title: '商品进货' }
+        },
+        {
+          path: 'business/inport-order',
+          name: 'InportOrder',
+          component: () => import('@/views/business/inport-order/index.vue'),
+          meta: { title: '进货订单' }
+        },
+        {
+          path: 'business/inport-record',
+          name: 'InportRecord',
+          component: () => import('@/views/business/inport-record/index.vue'),
+          meta: { title: '退加货记录' }
         },
         {
           path: 'business/sales-pos',

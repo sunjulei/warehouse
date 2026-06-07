@@ -1,9 +1,5 @@
 <template>
-  <div class="page-container">
-    <div class="page-header animate-fade-in-up">
-      <h1 class="page-header-title">入库管理</h1>
-      <p class="page-header-desc">管理商品入库记录</p>
-    </div>
+  <div>
     <el-card>
       <SearchForm v-model="searchParams" @search="handleSearch" @reset="handleReset">
         <el-form-item label="供应商">
@@ -13,7 +9,7 @@
         </el-form-item>
         <el-form-item label="商品">
           <el-select v-model="searchParams.goodsid" placeholder="全部" clearable filterable>
-            <el-option v-for="g in goodsList" :key="g.id" :label="g.goodsname" :value="g.id" />
+            <el-option v-for="g in goodsList" :key="g.id" :label="`${g.goodsname}${g.providername ? ' (' + g.providername + ')' : ''}`" :value="g.id" />
           </el-select>
         </el-form-item>
       </SearchForm>
@@ -21,17 +17,16 @@
       <CrudTable ref="tableRef" :load-api="loadAllInport" :search-params="searchParams">
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="providername" label="供应商" min-width="120" />
-        <el-table-column prop="goodsname" label="商品名称" min-width="120" />
+        <el-table-column prop="providername" label="供应商" />
+        <el-table-column prop="goodsname" label="商品" />
         <el-table-column prop="number" label="数量" width="80" />
         <el-table-column prop="inportprice" label="进货价" width="80" />
         <el-table-column prop="paytype" label="付款方式" width="100" />
         <el-table-column prop="inporttime" label="进货时间" width="160" />
         <el-table-column prop="operateperson" label="操作员" width="100" />
         <el-table-column prop="remark" label="备注" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
             <el-button type="warning" link @click="handleBack(row)">退货</el-button>
             <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
@@ -76,8 +71,7 @@
       </template>
     </CrudDialog>
 
-    <!-- 退货弹窗 -->
-    <el-dialog v-model="backDialogVisible" title="退货" width="400px">
+    <el-dialog v-model="backDialogVisible" title="进货退货" width="400px">
       <el-form :model="backForm" label-width="80px">
         <el-form-item label="退货数量">
           <el-input-number v-model="backForm.number" :min="1" />
@@ -100,14 +94,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import SearchForm from '@/components/SearchForm.vue'
 import CrudTable from '@/components/CrudTable.vue'
 import CrudDialog from '@/components/CrudDialog.vue'
-import { loadAllInport, addInport, updateInport, deleteInport } from '@/api/inport'
+import { loadAllInport, addInport, deleteInport } from '@/api/inport'
 import { addOutport } from '@/api/outport'
 import { loadAllProviderForSelect } from '@/api/provider'
 import { loadAllGoodsForSelect, loadGoodsByProviderId } from '@/api/goods'
 
 const tableRef = ref()
 const dialogRef = ref()
-const isEdit = ref(false)
 const providers = ref<any[]>([])
 const goodsList = ref<any[]>([])
 const dialogGoodsList = ref<any[]>([])
@@ -125,8 +118,7 @@ const rules = {
 
 const handleSearch = () => tableRef.value?.reload()
 const handleReset = () => { searchParams.providerid = null; searchParams.goodsid = null }
-const handleAdd = () => { isEdit.value = false; dialogGoodsList.value = []; dialogRef.value?.open({}, false) }
-const handleEdit = (row: any) => { isEdit.value = true; loadGoodsForProvider(row.providerid); dialogRef.value?.open(row, true) }
+const handleAdd = () => { dialogGoodsList.value = []; dialogRef.value?.open({}, false) }
 const handleProviderChange = (formData: any) => {
   formData.goodsid = null
   loadGoodsForProvider(formData.providerid)
@@ -138,7 +130,7 @@ const loadGoodsForProvider = async (providerid: number) => {
     dialogGoodsList.value = res.data || []
   } catch { dialogGoodsList.value = [] }
 }
-const handleSubmitApi = (data: any) => isEdit.value ? updateInport(data) : addInport(data)
+const handleSubmitApi = (data: any) => addInport(data)
 const handleDelete = async (row: any) => {
   await ElMessageBox.confirm('确认删除？删除后将同时删除该进货单的所有退货记录。', '提示', { type: 'warning' })
   await deleteInport(row.id)
@@ -167,3 +159,15 @@ onMounted(async () => {
   } catch {}
 })
 </script>
+
+<style scoped>
+.page-container :deep(.el-card) {
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+.page-container :deep(.el-card:hover) {
+  box-shadow: var(--shadow-md);
+}
+</style>

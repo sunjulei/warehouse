@@ -31,6 +31,16 @@ public class Inport implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
+    /**
+     * 订单号
+     */
+    private String orderno;
+
+    /**
+     * 订单状态：0=正常, 1=已退完
+     */
+    private Integer orderStatus;
+
     private String paytype;
 
     private Date inporttime;

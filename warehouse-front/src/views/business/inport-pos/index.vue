@@ -1,5 +1,5 @@
 <template>
-  <div class="sales-pos-page">
+  <div class="inport-pos-page">
     <el-row :gutter="16" class="full-height">
       <!-- 左侧商品选择区域 -->
       <el-col :span="14" class="left-panel">
@@ -7,8 +7,8 @@
           <template #header>
             <div class="panel-header">
               <span class="panel-title">商品选择</span>
-              <el-select v-model="selectedCustomer" placeholder="选择客户" filterable style="width: 200px">
-                <el-option v-for="c in customers" :key="c.id" :label="c.customername" :value="c.id" />
+              <el-select v-model="selectedProvider" placeholder="选择供应商" filterable style="width: 200px" @change="onProviderChange">
+                <el-option v-for="p in providers" :key="p.id" :label="p.providername" :value="p.id" />
               </el-select>
             </div>
           </template>
@@ -28,16 +28,18 @@
           <!-- 商品列表 -->
           <div class="goods-grid" v-loading="goodsLoading">
             <div
-              v-for="goods in goodsList"
+              v-for="goods in pagedGoodsList"
               :key="goods.id"
               class="goods-card"
-              :class="{ 'goods-card-disabled': goods.number <= 0 }"
               @click="addToCart(goods)"
             >
               <div class="goods-card-name">{{ goods.goodsname }}</div>
-              <div class="goods-card-provider" v-if="goods.providername">{{ goods.providername }}</div>
               <div class="goods-card-price">¥{{ goods.price?.toFixed(2) }}</div>
               <div class="goods-card-stock">库存: {{ goods.number }}</div>
+            </div>
+            <div v-if="pagedGoodsList.length === 0 && !goodsLoading" class="goods-empty">
+              <el-empty v-if="!selectedProvider" description="请先选择供应商" :image-size="60" />
+              <el-empty v-else description="暂无商品" :image-size="60" />
             </div>
           </div>
 
@@ -45,9 +47,8 @@
           <div class="pagination-wrap">
             <el-pagination
               v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :total="total"
-              :page-sizes="[30]"
+              :page-size="pageSize"
+              :total="filteredGoodsList.length"
               layout="total, prev, pager, next"
               @current-change="handlePageChange"
             />
@@ -60,7 +61,7 @@
         <el-card class="panel-card cart-card" shadow="never">
           <template #header>
             <div class="panel-header">
-              <span class="panel-title">购物车</span>
+              <span class="panel-title">进货清单</span>
               <el-button type="danger" link @click="clearCart" :disabled="cartItems.length === 0">
                 清空
               </el-button>
@@ -73,15 +74,14 @@
               <div class="cart-item-info">
                 <div class="cart-item-name">{{ item.goodsname }}</div>
                 <div class="cart-item-provider" v-if="item.providername">{{ item.providername }}</div>
-                <div class="cart-item-price">¥{{ item.saleprice?.toFixed(2) }}</div>
+                <div class="cart-item-price">进货价: ¥{{ item.inportprice?.toFixed(2) }}</div>
               </div>
               <div class="cart-item-right">
-                <div class="cart-item-subtotal">¥{{ (item.saleprice * item.number).toFixed(2) }}</div>
+                <div class="cart-item-subtotal">¥{{ (item.inportprice * item.number).toFixed(2) }}</div>
                 <div class="cart-item-actions">
                   <el-input-number
                     v-model="item.number"
                     :min="1"
-                    :max="getMaxStock(item.goodsid)"
                     size="small"
                     style="width: 100px"
                     @change="(val: number) => onQtyChange(index, val)"
@@ -92,7 +92,17 @@
             </div>
           </div>
           <div v-else class="cart-empty">
-            <el-empty description="购物车为空" :image-size="80" />
+            <el-empty description="进货清单为空" :image-size="80" />
+          </div>
+
+          <!-- 付款方式 -->
+          <div class="cart-paytype" v-if="cartItems.length > 0">
+            <el-select v-model="paytype" placeholder="选择付款方式" style="width: 100%">
+              <el-option label="现金" value="现金" />
+              <el-option label="微信" value="微信" />
+              <el-option label="支付宝" value="支付宝" />
+              <el-option label="银行卡" value="银行卡" />
+            </el-select>
           </div>
 
           <!-- 备注 -->
@@ -115,33 +125,33 @@
               class="submit-btn"
               @click="handleConfirm"
             >
-              确认结算
+              确认进货
             </el-button>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 确认结算弹窗 -->
-    <el-dialog v-model="confirmDialogVisible" title="确认结算" width="600px">
+    <!-- 确认进货弹窗 -->
+    <el-dialog v-model="confirmDialogVisible" title="确认进货" width="600px">
       <div class="confirm-header">
-        <span>客户: <strong>{{ customers.find(c => c.id === selectedCustomer)?.customername }}</strong></span>
+        <span>供应商: <strong>{{ providers.find(p => p.id === selectedProvider)?.providername }}</strong></span>
+        <span>付款方式: <strong>{{ paytype }}</strong></span>
       </div>
 
       <div class="confirm-goods-list">
         <el-table :data="cartItems" border style="width: 100%" max-height="400">
           <el-table-column type="index" label="#" width="50" />
           <el-table-column prop="goodsname" label="商品名称" />
-          <el-table-column prop="providername" label="供应商" width="120" />
-          <el-table-column prop="saleprice" label="售价" width="100" align="right">
+          <el-table-column prop="inportprice" label="进货价" width="100" align="right">
             <template #default="{ row }">
-              ¥{{ row.saleprice?.toFixed(2) }}
+              ¥{{ row.inportprice?.toFixed(2) }}
             </template>
           </el-table-column>
           <el-table-column prop="number" label="数量" width="80" align="center" />
           <el-table-column label="小计" width="100" align="right">
             <template #default="{ row }">
-              <span style="color: #f56c6c; font-weight: 600;">¥{{ (row.saleprice * row.number).toFixed(2) }}</span>
+              <span style="color: #f56c6c; font-weight: 600;">¥{{ (row.inportprice * row.number).toFixed(2) }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -167,10 +177,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { batchAddSales } from '@/api/sales'
-import { loadAllCustomerForSelect } from '@/api/customer'
-import { loadGoodsForPOS } from '@/api/goods'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { batchAddInport } from '@/api/inport'
+import { loadAllProviderForSelect } from '@/api/provider'
+import { loadGoodsByProviderId } from '@/api/goods'
 
 interface GoodsItem {
   id: number
@@ -184,26 +194,23 @@ interface CartItem {
   goodsid: number
   goodsname: string
   providername: string
-  saleprice: number
+  inportprice: number
   number: number
 }
 
-const customers = ref<any[]>([])
-const goodsList = ref<GoodsItem[]>([])
-const selectedCustomer = ref<number | null>(null)
+const providers = ref<any[]>([])
+const allGoodsList = ref<GoodsItem[]>([])
+const selectedProvider = ref<number | null>(null)
 const searchKeyword = ref('')
 const cartItems = ref<CartItem[]>([])
+const paytype = ref('现金')
 const remark = ref('')
 const submitting = ref(false)
 
 // 分页相关
 const goodsLoading = ref(false)
 const currentPage = ref(1)
-const pageSize = ref(30)
-const total = ref(0)
-
-// 搜索防抖定时器
-let searchTimer: number | null = null
+const pageSize = 30
 
 // 购物车总数量
 const totalQuantity = computed(() => {
@@ -212,55 +219,90 @@ const totalQuantity = computed(() => {
 
 // 购物车总金额
 const totalAmount = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + item.saleprice * item.number, 0)
+  return cartItems.value.reduce((sum, item) => sum + item.inportprice * item.number, 0)
 })
 
-// 搜索输入防抖
-function onSearchInput() {
-  if (searchTimer) {
-    clearTimeout(searchTimer)
+// 过滤并排序后的商品列表（根据搜索关键词，库存少的优先）
+const filteredGoodsList = computed(() => {
+  let list = [...allGoodsList.value]
+
+  // 搜索过滤
+  if (searchKeyword.value.trim()) {
+    const keyword = searchKeyword.value.trim().toLowerCase()
+    list = list.filter(goods => goods.goodsname.toLowerCase().includes(keyword))
   }
-  searchTimer = window.setTimeout(() => {
-    currentPage.value = 1
-    loadGoods()
-  }, 300)
+
+  // 按库存排序（库存少的优先）
+  list.sort((a, b) => a.number - b.number)
+
+  return list
+})
+
+// 分页后的商品列表
+const pagedGoodsList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  const end = start + pageSize
+  return filteredGoodsList.value.slice(start, end)
+})
+
+// 总页数
+const totalPages = computed(() => {
+  return Math.ceil(filteredGoodsList.value.length / pageSize)
+})
+
+// 搜索输入
+function onSearchInput() {
+  currentPage.value = 1
 }
 
 // 页码变化
 function handlePageChange(page: number) {
   currentPage.value = page
-  loadGoods()
+}
+
+// 供应商变化时加载商品
+async function onProviderChange(newVal: number | null) {
+  // 如果购物车有数据，提示用户
+  if (cartItems.value.length > 0) {
+    try {
+      await ElMessageBox.confirm(
+        '切换供应商将清空当前进货清单，是否继续？',
+        '提示',
+        { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
+      )
+      // 用户确认，清空购物车并加载新供应商的商品
+      cartItems.value = []
+      currentPage.value = 1
+      loadGoods()
+    } catch {
+      // 用户取消，恢复原来的供应商选择
+      // 需要找到上一个供应商的ID
+      const oldProvider = providers.value.find(p => p.id !== newVal)
+      if (oldProvider) {
+        selectedProvider.value = oldProvider.id
+      }
+    }
+  } else {
+    // 购物车为空，直接加载
+    currentPage.value = 1
+    loadGoods()
+  }
 }
 
 // 添加到购物车
 function addToCart(goods: GoodsItem) {
-  if (goods.number <= 0) {
-    ElMessage.warning('该商品库存不足')
-    return
-  }
-
   const existing = cartItems.value.find(item => item.goodsid === goods.id)
   if (existing) {
-    if (existing.number >= goods.number) {
-      ElMessage.warning('已达到库存上限')
-      return
-    }
     existing.number++
   } else {
     cartItems.value.push({
       goodsid: goods.id,
       goodsname: goods.goodsname,
       providername: goods.providername || '',
-      saleprice: goods.price,
+      inportprice: goods.price,
       number: 1
     })
   }
-}
-
-// 获取商品最大库存
-function getMaxStock(goodsid: number): number {
-  const goods = goodsList.value.find(g => g.id === goodsid)
-  return goods ? goods.number : 9999
 }
 
 // 数量变化回调
@@ -280,18 +322,18 @@ function clearCart() {
   cartItems.value = []
 }
 
-// 确认结算弹窗
+// 确认进货弹窗
 const confirmDialogVisible = ref(false)
 
 // 打开确认弹窗
 function handleConfirm() {
-  if (!selectedCustomer.value) {
-    ElMessage.warning('请先选择客户')
+  if (!selectedProvider.value) {
+    ElMessage.warning('请先选择供应商')
     return
   }
 
   if (cartItems.value.length === 0) {
-    ElMessage.warning('购物车为空')
+    ElMessage.warning('进货清单为空')
     return
   }
 
@@ -303,16 +345,17 @@ async function handleSubmit() {
   try {
     submitting.value = true
     const data = cartItems.value.map(item => ({
-      customerid: selectedCustomer.value,
+      providerid: selectedProvider.value,
       goodsid: item.goodsid,
       number: item.number,
-      saleprice: item.saleprice,
+      inportprice: item.inportprice,
+      paytype: paytype.value,
       remark: remark.value
     }))
 
-    const res: any = await batchAddSales(data)
+    const res: any = await batchAddInport(data)
     if (res.code === 200) {
-      ElMessage.success('结算成功')
+      ElMessage.success('进货成功')
       confirmDialogVisible.value = false
       cartItems.value = []
       remark.value = ''
@@ -320,23 +363,23 @@ async function handleSubmit() {
       loadGoods()
     }
   } catch (error) {
-    console.error('结算失败:', error)
+    console.error('进货失败:', error)
   } finally {
     submitting.value = false
   }
 }
 
-// 加载商品列表
+// 根据供应商加载商品列表
 async function loadGoods() {
+  if (!selectedProvider.value) {
+    allGoodsList.value = []
+    return
+  }
+
   goodsLoading.value = true
   try {
-    const res: any = await loadGoodsForPOS({
-      page: currentPage.value,
-      limit: pageSize.value,
-      keyword: searchKeyword.value.trim() || undefined
-    })
-    goodsList.value = res.data || []
-    total.value = res.count || 0
+    const res: any = await loadGoodsByProviderId(selectedProvider.value, 1)
+    allGoodsList.value = res.data || []
   } catch (error) {
     console.error('加载商品失败:', error)
   } finally {
@@ -346,15 +389,19 @@ async function loadGoods() {
 
 onMounted(async () => {
   try {
-    const [cRes] = await Promise.all([loadAllCustomerForSelect()])
-    customers.value = (cRes as any).data || []
+    const [pRes] = await Promise.all([loadAllProviderForSelect()])
+    providers.value = (pRes as any).data || []
+    // 默认选择第一个供应商
+    if (providers.value.length > 0) {
+      selectedProvider.value = providers.value[0].id
+      loadGoods()
+    }
   } catch {}
-  loadGoods()
 })
 </script>
 
 <style scoped>
-.sales-pos-page {
+.inport-pos-page {
   height: calc(100vh - 120px);
   padding: 16px;
 }
@@ -426,30 +473,11 @@ onMounted(async () => {
   background: var(--el-color-primary-light-9);
 }
 
-.goods-card-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.goods-card-disabled:hover {
-  border-color: transparent;
-  background: var(--el-fill-color-light);
-}
-
 .goods-card-name {
   font-size: 14px;
   font-weight: 500;
   color: var(--el-text-color-primary);
   margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.goods-card-provider {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  margin-bottom: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -465,6 +493,14 @@ onMounted(async () => {
 .goods-card-stock {
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+
+.goods-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
 }
 
 .pagination-wrap {
@@ -534,17 +570,15 @@ onMounted(async () => {
   gap: 8px;
 }
 
-.qty-text {
-  min-width: 24px;
-  text-align: center;
-  font-size: 14px;
-}
-
 .cart-empty {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.cart-paytype {
+  margin-bottom: 16px;
 }
 
 .cart-remark {

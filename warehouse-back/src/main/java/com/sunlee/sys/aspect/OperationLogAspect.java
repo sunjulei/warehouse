@@ -50,8 +50,8 @@ public class OperationLogAspect {
         if (annotation == null) return;
 
         String description = annotation.description();
-        // 如果描述以 # 开头，尝试解析 SpEL 表达式
-        if (description.startsWith("#")) {
+        // 如果描述包含 #，尝试解析 SpEL 表达式
+        if (description.contains("#")) {
             description = parseSpel(description, joinPoint, method);
         }
 
@@ -73,16 +73,20 @@ public class OperationLogAspect {
 
     private String parseSpel(String spel, JoinPoint joinPoint, Method method) {
         try {
-            String expression = spel.startsWith("#") ? spel.substring(1) : spel;
             Object[] args = joinPoint.getArgs();
             String[] paramNames = discoverer.getParameterNames(method);
             if (paramNames == null) return spel;
 
             EvaluationContext context = new StandardEvaluationContext();
+            // 设置方法参数
             for (int i = 0; i < paramNames.length; i++) {
                 ((StandardEvaluationContext) context).setVariable(paramNames[i], args[i]);
             }
-            Object value = parser.parseExpression(expression).getValue(context);
+            // 设置 args 数组
+            ((StandardEvaluationContext) context).setVariable("args", args);
+
+            // 解析整个表达式（包含字符串拼接）
+            Object value = parser.parseExpression(spel).getValue(context);
             return value != null ? value.toString() : spel;
         } catch (Exception e) {
             log.warn("SpEL 解析失败: {}", spel, e);

@@ -25,4 +25,13 @@ public class InportVo extends Inport {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date endTime;
 
+    /**
+     * 订单号（用于查询记录）
+     */
+    private String orderNo;
+
+    /**
+     * 记录类型（用于查询记录）
+     */
+    private String recordType;
 }

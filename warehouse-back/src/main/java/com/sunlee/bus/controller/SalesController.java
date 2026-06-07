@@ -8,6 +8,7 @@ import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Sales;
 import com.sunlee.bus.service.ICustomerService;
 import com.sunlee.bus.service.IGoodsService;
+import com.sunlee.bus.service.IOperationLogService;
 import com.sunlee.bus.service.ISalesService;
 import com.sunlee.bus.vo.SalesVo;
 import com.sunlee.sys.annotation.OperationLog;
@@ -38,6 +39,9 @@ public class SalesController {
 
     @Autowired
     private IGoodsService goodsService;
+
+    @Autowired
+    private IOperationLogService operationLogService;
 
     @RequestMapping("loadAllSales")
     public DataGridView loadAllSales(SalesVo salesVo) {
@@ -78,7 +82,7 @@ public class SalesController {
         }
     }
 
-    @OperationLog(type = "添加", module = "商品销售", description = "'批量销售, 共' + #args[0].size() + '种商品'")
+    @OperationLog(type = "添加", module = "商品销售", description = "''")
     @RequestMapping("batchAddSales")
     public ResultObj batchAddSales(@RequestBody List<Sales> list) {
         try {
@@ -86,12 +90,22 @@ public class SalesController {
             Date now = new Date();
             // 生成订单号：时间戳 + 随机数
             String orderNo = "SO" + System.currentTimeMillis() + String.format("%04d", (int)(Math.random() * 10000));
+            int totalNumber = 0;
             for (Sales sales : list) {
                 sales.setOrderno(orderNo);
                 sales.setOperateperson(user.getName());
                 sales.setSalestime(now);
+                totalNumber += sales.getNumber();
             }
             salesService.batchSave(list);
+            // 手动记录操作日志
+            com.sunlee.bus.entity.OperationLog logEntity = new com.sunlee.bus.entity.OperationLog();
+            logEntity.setType("添加");
+            logEntity.setModule("商品销售");
+            logEntity.setDescription("批量销售, 订单号: " + orderNo + ", 共" + list.size() + "种商品, 总数量: " + totalNumber);
+            logEntity.setOperateperson(user.getName());
+            logEntity.setOperatetime(now);
+            operationLogService.save(logEntity);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
             log.error("批量销售失败: {}", e.getMessage(), e);
