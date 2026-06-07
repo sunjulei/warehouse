@@ -25,4 +25,10 @@ public class SalesVo extends Sales {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date endTime;
 
+    /** 订单号筛选 */
+    private String orderNo;
+
+    /** 记录类型筛选: sale, add, return */
+    private String recordType;
+
 }

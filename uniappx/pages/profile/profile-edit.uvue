@@ -1,7 +1,5 @@
 <template>
-  <!-- #ifdef APP -->
   <scroll-view style="flex:1">
-  <!-- #endif -->
   <view class="container">
     <!-- 表单卡片 -->
     <view class="form-card">
@@ -69,9 +67,7 @@
       </button>
     </view>
   </view>
-  <!-- #ifdef APP -->
   </scroll-view>
-  <!-- #endif -->
 </template>
 
 <script setup lang="uts">

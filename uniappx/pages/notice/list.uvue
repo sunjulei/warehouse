@@ -1,0 +1,135 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <view v-if="notices.length > 0" class="notice-list">
+      <view
+        v-for="(item, index) in notices"
+        :key="index"
+        class="notice-item"
+        @click="goDetail(item.id)"
+      >
+        <view class="notice-content">
+          <text class="notice-title">{{ item.title }}</text>
+          <text class="notice-meta">发布人：{{ item.opername }} · {{ item.createtime }}</text>
+        </view>
+        <text class="notice-arrow">></text>
+      </view>
+    </view>
+    <view v-else class="empty-state">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">暂无公告</text>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { loadAllNotice } from '../../api/notice'
+
+interface NoticeItem {
+  id : number
+  title : string
+  opername : string
+  createtime : string
+}
+
+const notices = ref<NoticeItem[]>([])
+
+function loadNotices() : void {
+  loadAllNotice(1, 50).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null) {
+        notices.value = list!.map((item : UTSJSONObject) => {
+          return {
+            id: (item['id'] as number) ?? 0,
+            title: (item['title'] as string) ?? '',
+            opername: (item['opername'] as string) ?? '',
+            createtime: (item['createtime'] as string) ?? ''
+          } as NoticeItem
+        })
+      }
+    }
+  }).catch((err : Error) => {
+    console.error('加载公告列表失败:', err.message)
+  })
+}
+
+function goDetail(id : number) : void {
+  uni.navigateTo({ url: '/pages/notice/detail?id=' + id.toString() })
+}
+
+onShow(() => {
+  loadNotices()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+}
+
+.notice-list {
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.notice-item {
+  flex-direction: row;
+  align-items: center;
+  padding: 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #F0F0F0;
+  border-bottom-style: solid;
+}
+
+.notice-content {
+  flex: 1;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.notice-title {
+  font-size: 30rpx;
+  color: #333333;
+  font-weight: bold;
+}
+
+.notice-meta {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.notice-arrow {
+  font-size: 28rpx;
+  color: #C0C4CC;
+  margin-left: 16rpx;
+}
+
+.empty-state {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 48rpx;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 64rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+</style>

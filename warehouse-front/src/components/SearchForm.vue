@@ -26,12 +26,23 @@ defineEmits(['search', 'reset'])
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--spacing-md);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-2xl);
   background: var(--bg-primary);
   border-radius: var(--border-radius-lg);
   margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
-  border-left: 3px solid var(--primary-color);
+  border: 1px solid var(--border-lighter);
+  position: relative;
+}
+
+.search-form::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--spacing-2xl);
+  right: var(--spacing-2xl);
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--border-color) 20%, var(--border-color) 80%, transparent 100%);
 }
 
 .search-form :deep(.el-form-item) {
@@ -41,7 +52,7 @@ defineEmits(['search', 'reset'])
 
 .search-form :deep(.el-form-item__label) {
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   padding-right: var(--spacing-sm);
   font-size: var(--font-size-sm);
 }
@@ -56,8 +67,9 @@ defineEmits(['search', 'reset'])
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 20px;
+  padding: 8px 22px;
   font-weight: 500;
+  border-radius: var(--border-radius-md);
 }
 
 .search-btn:hover {
@@ -71,8 +83,9 @@ defineEmits(['search', 'reset'])
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 20px;
+  padding: 8px 22px;
   font-weight: 500;
+  border-radius: var(--border-radius-md);
 }
 
 .reset-btn:hover {

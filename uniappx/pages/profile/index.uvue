@@ -1,7 +1,5 @@
 <template>
-  <!-- #ifdef APP -->
   <scroll-view style="flex:1">
-  <!-- #endif -->
   <view class="container">
     <!-- 用户卡片 -->
     <view class="user-card">
@@ -26,6 +24,11 @@
         <text class="menu-label">修改密码</text>
         <text class="menu-arrow">></text>
       </view>
+      <view class="menu-item" @click="navigateTo('/pages/profile/operation-log')">
+        <text class="menu-icon">📋</text>
+        <text class="menu-label">操作日志</text>
+        <text class="menu-arrow">></text>
+      </view>
       <view class="menu-item" @click="showAbout">
         <text class="menu-icon">ℹ️</text>
         <text class="menu-label">关于</text>
@@ -38,9 +41,7 @@
       <button class="logout-btn" @click="handleLogout">退出登录</button>
     </view>
   </view>
-  <!-- #ifdef APP -->
   </scroll-view>
-  <!-- #endif -->
 </template>
 
 <script setup lang="uts">

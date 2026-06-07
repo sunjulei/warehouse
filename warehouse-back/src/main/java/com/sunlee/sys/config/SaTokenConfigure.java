@@ -22,6 +22,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                     .notMatch(
                             "/login/login",
                             "/login/getCode",
+                            "/login/getCaptchaBase64",
                             "/login/logout",
                             "/index.html*",
                             "/sys/toLogin*",

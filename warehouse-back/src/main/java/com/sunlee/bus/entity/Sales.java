@@ -32,6 +32,10 @@ public class Sales implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
+    private String orderno;
+
+    private Integer orderStatus;
+
     private Integer customerid;
 
     private String paytype;

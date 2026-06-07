@@ -3,15 +3,33 @@
  * 基于 uni.request，适配仓库管理系统后端（SA-Token + form-urlencoded）
  */
 
+// SA-Token 存储（微信小程序可能不支持 cookie，通过请求头传递）
+const SA_TOKEN_KEY = 'satoken_value'
+
+function saveSaToken(token : string) : void {
+	if (token.length > 0) {
+		uni.setStorageSync(SA_TOKEN_KEY, token)
+	}
+}
+
+function getSaToken() : string {
+	const val = uni.getStorageSync(SA_TOKEN_KEY)
+	return val != null ? (val as string) : ''
+}
+
+export function clearSaToken() : void {
+	uni.removeStorageSync(SA_TOKEN_KEY)
+}
+
 // 根据平台设置不同的 BASE_URL
 // #ifdef APP-ANDROID
-export const BASE_URL = 'http://10.0.2.2:8888'
+export const BASE_URL = 'http://10.0.2.2:8899'
 // #endif
 // #ifdef MP-WEIXIN
-export const BASE_URL = 'http://localhost:8888'
+export const BASE_URL = 'http://172.20.10.3:8899'
 // #endif
 // #ifdef H5
-export const BASE_URL = 'http://localhost:8888'
+export const BASE_URL = 'http://localhost:8899'
 // #endif
 
 /**
@@ -92,6 +110,11 @@ export function request<T>(options : RequestOptions) : Promise<T> {
 		let header : UTSJSONObject = {
 			'Content-Type': contentType
 		}
+		// 携带 SA-Token（用于小程序等不支持 cookie 的环境）
+		const saToken = getSaToken()
+		if (saToken.length > 0) {
+			header['satoken'] = saToken
+		}
 		const optHeader = options.header
 		if (optHeader != null) {
 			const headerKeys = Object.keys(optHeader)
@@ -125,6 +148,15 @@ export function request<T>(options : RequestOptions) : Promise<T> {
 				}
 
 				const statusCode = res.statusCode
+
+				// 从响应头保存 SA-Token
+				const resHeader = res.header as UTSJSONObject | null
+				if (resHeader != null) {
+					const token = resHeader!['satoken'] as string | null
+					if (token != null && token!.length > 0) {
+						saveSaToken(token!)
+					}
+				}
 
 				// 401 未授权 → 跳转登录页
 				if (statusCode == 401) {

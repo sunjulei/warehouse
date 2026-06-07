@@ -3,7 +3,8 @@
  * 管理用户登录状态，支持 localStorage 持久化
  */
 
-import { currentUser, logout as logoutApi } from '../api/login'
+import { getNowUser, logout as logoutApi } from '../api/login'
+import { clearSaToken } from '../api/request'
 
 /**
  * 用户信息类型
@@ -21,6 +22,26 @@ export interface UserInfo {
 	available : number | null
 	imgurl : string | null
 }
+
+/**
+ * 菜单项类型（对应后端 TreeNode）
+ */
+export interface MenuItem {
+	id : number
+	parentId : number
+	title : string
+	icon : string
+	href : string
+	spread : boolean
+	children : MenuItem[] | null
+}
+
+// 权限相关全局状态
+let _menus : MenuItem[] = []
+let _permissions : string[] = []
+
+const STORAGE_KEY_MENUS = 'warehouse_menus'
+const STORAGE_KEY_PERMISSIONS = 'warehouse_permissions'
 
 // 全局状态
 let _user : UserInfo | null = null
@@ -41,6 +62,73 @@ export function getUser() : UserInfo | null {
  */
 export function isLoggedIn() : boolean {
 	return _isLoggedIn
+}
+
+/**
+ * 获取菜单列表
+ */
+export function getMenus() : MenuItem[] {
+	return _menus
+}
+
+/**
+ * 获取权限列表
+ */
+export function getPermissions() : string[] {
+	return _permissions
+}
+
+/**
+ * 是否超级管理员
+ */
+export function isSuperAdmin() : boolean {
+	return _permissions.includes('*:*')
+}
+
+/**
+ * 检查是否拥有某个菜单权限（递归匹配 href）
+ * @param menuHref 后端 HREF_MAP 转换后的路由
+ */
+export function hasMenu(menuHref : string) : boolean {
+	if (isSuperAdmin()) return true
+	return findMenuByHref(menuHref, _menus)
+}
+
+/**
+ * 递归查找菜单
+ */
+function findMenuByHref(href : string, menus : MenuItem[]) : boolean {
+	for (let i = 0; i < menus.length; i++) {
+		const menu = menus[i]
+		if (menu.href == href) return true
+		if (menu.children != null && menu.children!.length > 0) {
+			if (findMenuByHref(href, menu.children!)) return true
+		}
+	}
+	return false
+}
+
+/**
+ * 检查是否拥有某个操作权限
+ * @param code 权限码，如 "goods:add"
+ */
+export function hasPermission(code : string) : boolean {
+	if (isSuperAdmin()) return true
+	return _permissions.includes(code)
+}
+
+/**
+ * 设置菜单列表
+ */
+function setMenus(data : MenuItem[] | null) : void {
+	_menus = data ?? []
+}
+
+/**
+ * 设置权限列表
+ */
+function setPermissions(data : string[] | null) : void {
+	_permissions = data ?? []
 }
 
 /**
@@ -66,6 +154,25 @@ function parseUserInfo(data : UTSJSONObject | null) : UserInfo | null {
 }
 
 /**
+ * 将 UTSJSONObject 数组转换为 MenuItem 数组
+ */
+function parseMenuItems(arr : UTSJSONObject[] | null) : MenuItem[] {
+	if (arr == null || arr!.length == 0) return []
+	return arr!.map((item : UTSJSONObject) => {
+		const childrenData = item['children'] as UTSJSONObject[] | null
+		return {
+			id: (item['id'] as number) ?? 0,
+			parentId: (item['parentId'] as number) ?? 0,
+			title: (item['title'] as string) ?? '',
+			icon: (item['icon'] as string) ?? '',
+			href: (item['href'] as string) ?? '',
+			spread: (item['spread'] as boolean) ?? false,
+			children: parseMenuItems(childrenData)
+		} as MenuItem
+	})
+}
+
+/**
  * 保存认证状态到 localStorage
  */
 function saveToStorage(user : UserInfo | null) : void {
@@ -74,9 +181,13 @@ function saveToStorage(user : UserInfo | null) : void {
 			const jsonStr = JSON.stringify(user as UserInfo)
 			uni.setStorageSync(STORAGE_KEY_USER, jsonStr)
 			uni.setStorageSync(STORAGE_KEY_LOGGED_IN, 'true')
+			uni.setStorageSync(STORAGE_KEY_MENUS, JSON.stringify(_menus))
+			uni.setStorageSync(STORAGE_KEY_PERMISSIONS, JSON.stringify(_permissions))
 		} else {
 			uni.removeStorageSync(STORAGE_KEY_USER)
 			uni.removeStorageSync(STORAGE_KEY_LOGGED_IN)
+			uni.removeStorageSync(STORAGE_KEY_MENUS)
+			uni.removeStorageSync(STORAGE_KEY_PERMISSIONS)
 		}
 	} catch (e) {
 		console.error('保存认证状态失败:', e)
@@ -95,6 +206,20 @@ export function restoreAuth() : boolean {
 				const jsonObj = JSON.parse(userStr as string) as UTSJSONObject
 				_user = parseUserInfo(jsonObj)
 				_isLoggedIn = true
+
+				// 恢复 menus
+				const menusStr = uni.getStorageSync(STORAGE_KEY_MENUS)
+				if (menusStr != null && (menusStr as string).length > 0) {
+					const menusArr = JSON.parse(menusStr as string) as UTSJSONObject[]
+					_menus = parseMenuItems(menusArr)
+				}
+
+				// 恢复 permissions
+				const permsStr = uni.getStorageSync(STORAGE_KEY_PERMISSIONS)
+				if (permsStr != null && (permsStr as string).length > 0) {
+					_permissions = JSON.parse(permsStr as string) as string[]
+				}
+
 				return true
 			}
 		}
@@ -103,6 +228,8 @@ export function restoreAuth() : boolean {
 	}
 	_user = null
 	_isLoggedIn = false
+	_menus = []
+	_permissions = []
 	return false
 }
 
@@ -112,7 +239,7 @@ export function restoreAuth() : boolean {
  */
 export function fetchCurrentUser() : Promise<boolean> {
 	return new Promise<boolean>((resolve, reject) => {
-		currentUser().then((res : any) => {
+		getNowUser().then((res : any) => {
 			const result = res as UTSJSONObject
 			const code = result['code'] as number
 
@@ -120,6 +247,15 @@ export function fetchCurrentUser() : Promise<boolean> {
 				const userData = result['user'] as UTSJSONObject | null
 				_user = parseUserInfo(userData)
 				_isLoggedIn = true
+
+				// 解析并存储 menus
+				const menusData = result['menus'] as UTSJSONObject[] | null
+				_menus = parseMenuItems(menusData)
+
+				// 解析并存储 permissions
+				const permsData = result['permissions'] as string[] | null
+				_permissions = permsData ?? []
+
 				saveToStorage(_user)
 				resolve(true)
 			} else {
@@ -158,5 +294,8 @@ export function logout() : Promise<boolean> {
 export function clearAuth() : void {
 	_user = null
 	_isLoggedIn = false
+	_menus = []
+	_permissions = []
 	saveToStorage(null)
+	clearSaToken()
 }

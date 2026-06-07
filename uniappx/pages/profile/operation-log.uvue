@@ -1,0 +1,130 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <view v-if="logs.length > 0" class="log-list">
+      <view v-for="(item, index) in logs" :key="index" class="log-item">
+        <view class="log-left">
+          <text class="log-type">{{ item.type }}</text>
+          <text class="log-time">{{ item.createtime }}</text>
+        </view>
+        <text class="log-operator">{{ item.opername }}</text>
+      </view>
+    </view>
+    <view v-else class="empty-state">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">暂无操作日志</text>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { loadAllLoginfo } from '../../api/loginfo'
+
+interface LogItem {
+  id : number
+  type : string
+  opername : string
+  createtime : string
+}
+
+const logs = ref<LogItem[]>([])
+
+function loadLogs() : void {
+  const params = {
+    page: 1,
+    limit: 50
+  } as UTSJSONObject
+  loadAllLoginfo(params).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null) {
+        logs.value = list!.map((item : UTSJSONObject) => {
+          return {
+            id: (item['id'] as number) ?? 0,
+            type: (item['type'] as string) ?? '',
+            opername: (item['opername'] as string) ?? '',
+            createtime: (item['createtime'] as string) ?? ''
+          } as LogItem
+        })
+      }
+    }
+  }).catch((err : Error) => {
+    console.error('加载操作日志失败:', err.message)
+  })
+}
+
+onShow(() => {
+  loadLogs()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+}
+
+.log-list {
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.log-item {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #F0F0F0;
+  border-bottom-style: solid;
+}
+
+.log-left {
+  flex-direction: column;
+  gap: 8rpx;
+  flex: 1;
+}
+
+.log-type {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: bold;
+}
+
+.log-time {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.log-operator {
+  font-size: 26rpx;
+  color: #666666;
+}
+
+.empty-state {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 48rpx;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 64rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+</style>

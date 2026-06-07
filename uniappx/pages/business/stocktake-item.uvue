@@ -1,7 +1,5 @@
 <template>
-  <!-- #ifdef APP -->
   <scroll-view style="flex:1">
-  <!-- #endif -->
   <view class="container">
     <!-- 警告提示条 -->
     <view class="warning-bar">
@@ -62,9 +60,7 @@
       </button>
     </view>
   </view>
-  <!-- #ifdef APP -->
   </scroll-view>
-  <!-- #endif -->
 </template>
 
 <script setup lang="uts">

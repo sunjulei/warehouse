@@ -1,0 +1,413 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 问候区域 -->
+    <view class="greeting-section">
+      <view class="greeting-left">
+        <text class="greeting-text">{{ greeting }}</text>
+        <text class="greeting-name">{{ userName }}</text>
+      </view>
+      <view class="notice-btn" @click="goNotice">
+        <text class="notice-icon">🔔</text>
+      </view>
+    </view>
+
+    <!-- 统计卡片 -->
+    <view class="stats-grid">
+      <view class="stat-card">
+        <text class="stat-value" style="color: #409EFF;">{{ stats.totalGoods }}</text>
+        <text class="stat-label">商品总数</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-value" style="color: #E6A23C;">{{ stats.warningCount }}</text>
+        <text class="stat-label">库存预警</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-value" style="color: #67C23A;">{{ stats.todayInport }}</text>
+        <text class="stat-label">今日入库</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-value" style="color: #909399;">{{ stats.todaySales }}</text>
+        <text class="stat-label">今日销售</text>
+      </view>
+    </view>
+
+    <!-- 分组功能菜单 -->
+    <view
+      v-for="(group, gi) in visibleGroups"
+      :key="gi"
+      class="group-card"
+    >
+      <view class="group-header">
+        <text class="group-icon">{{ group.icon }}</text>
+        <text class="group-title">{{ group.title }}</text>
+      </view>
+      <view class="group-grid">
+        <view
+          v-for="(item, ii) in group.items"
+          :key="ii"
+          class="grid-item"
+          @click="navigateTo(item.page)"
+        >
+          <text class="grid-icon">{{ item.icon }}</text>
+          <text class="grid-label">{{ item.title }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 库存预警 -->
+    <view class="group-card">
+      <view class="group-header">
+        <text class="group-icon">⚠️</text>
+        <text class="group-title">库存预警</text>
+      </view>
+      <view v-if="warningGoods.length > 0" class="warning-list">
+        <view
+          v-for="(item, index) in warningGoods"
+          :key="index"
+          class="warning-item"
+          @click="goGoodsDetail(item.id)"
+        >
+          <text class="warning-name">{{ item.name }}</text>
+          <text
+            class="warning-count"
+            :style="{ color: item.number <= 0 ? '#F56C6C' : '#E6A23C' }"
+          >
+            剩余 {{ item.number }}
+          </text>
+        </view>
+      </view>
+      <view v-else class="empty-state">
+        <text class="empty-text">暂无预警商品</text>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { loadDashboardStats, loadAllWarningGoods } from '../../api/goods'
+import { getUser, hasMenu, isSuperAdmin } from '../../stores/auth'
+
+// 统计数据类型
+interface DashboardStats {
+  totalGoods : number
+  warningCount : number
+  todayInport : number
+  todaySales : number
+}
+
+// 预警商品类型
+interface WarningGoodsItem {
+  id : number
+  name : string
+  number : number
+}
+
+// 功能项类型
+interface GridItem {
+  title : string
+  icon : string
+  page : string
+  menuHref : string
+}
+
+// 功能分组类型
+interface MenuGroup {
+  title : string
+  icon : string
+  items : GridItem[]
+}
+
+// 所有菜单分组配置
+const ALL_GROUPS : MenuGroup[] = [
+  {
+    title: '业务管理',
+    icon: '📊',
+    items: [
+      { title: '进货入库', icon: '📥', page: '/pages/business/inport', menuHref: '/business/inport' },
+      { title: '销售开单', icon: '🛒', page: '/pages/business/sales', menuHref: '/business/sales' },
+      { title: '盘点管理', icon: '📋', page: '/pages/business/stocktake', menuHref: '/business/stocktake' },
+      { title: '商品管理', icon: '📦', page: '/pages/business/goods', menuHref: '/business/goods' }
+    ]
+  },
+  {
+    title: '查询中心',
+    icon: '🔍',
+    items: [
+      { title: '客户查询', icon: '👥', page: '/pages/query/customer-detail', menuHref: '/business/customer' },
+      { title: '供应商查询', icon: '🏭', page: '/pages/query/provider-detail', menuHref: '/business/provider' }
+    ]
+  }
+]
+
+const stats = ref<DashboardStats>({
+  totalGoods: 0,
+  warningCount: 0,
+  todayInport: 0,
+  todaySales: 0
+})
+
+const warningGoods = ref<WarningGoodsItem[]>([])
+
+// 根据权限过滤分组
+const visibleGroups = computed((): MenuGroup[] => {
+  return ALL_GROUPS.map((group : MenuGroup) => {
+    const filteredItems = group.items.filter((item : GridItem) => {
+      // 盘点无 HREF_MAP 条目时默认可见
+      if (item.menuHref == '/business/stocktake') {
+        return isSuperAdmin() || hasMenu(item.menuHref) || true
+      }
+      return isSuperAdmin() || hasMenu(item.menuHref)
+    })
+    return {
+      title: group.title,
+      icon: group.icon,
+      items: filteredItems
+    } as MenuGroup
+  }).filter((group : MenuGroup) => group.items.length > 0)
+})
+
+// 问候语
+const greeting = computed((): string => {
+  const hour = new Date().getHours()
+  if (hour < 12) return '上午好 ☀️'
+  if (hour < 18) return '下午好 🌤'
+  return '晚上好 🌙'
+})
+
+// 用户名
+const userName = computed((): string => {
+  const user = getUser()
+  return user != null ? user.name : '用户'
+})
+
+// 加载统计数据
+function loadStats() : void {
+  loadDashboardStats().then((res : any) => {
+    const data = res as UTSJSONObject
+    stats.value = {
+      totalGoods: (data['totalGoods'] as number) ?? 0,
+      warningCount: (data['warningCount'] as number) ?? 0,
+      todayInport: (data['todayInport'] as number) ?? 0,
+      todaySales: (data['todaySales'] as number) ?? 0
+    }
+  }).catch((err : Error) => {
+    console.error('加载统计数据失败:', err.message)
+  })
+}
+
+// 加载预警商品
+function loadWarnings() : void {
+  loadAllWarningGoods().then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null) {
+        const items = list!.slice(0, 5)
+        warningGoods.value = items.map((item : UTSJSONObject) => {
+          return {
+            id: (item['id'] as number) ?? 0,
+            name: (item['name'] as string) ?? '',
+            number: (item['number'] as number) ?? 0
+          } as WarningGoodsItem
+        })
+      }
+    }
+  }).catch((err : Error) => {
+    console.error('加载预警商品失败:', err.message)
+  })
+}
+
+// 导航
+function navigateTo(url : string) : void {
+  uni.navigateTo({ url: url })
+}
+
+// 跳转公告
+function goNotice() : void {
+  uni.navigateTo({ url: '/pages/notice/list' })
+}
+
+// 跳转商品详情
+function goGoodsDetail(id : number) : void {
+  uni.navigateTo({ url: '/pages/business/goods-detail?id=' + id.toString() })
+}
+
+onShow(() => {
+  loadStats()
+  loadWarnings()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+  gap: 24rpx;
+}
+
+/* 问候区域 */
+.greeting-section {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx 16rpx;
+}
+
+.greeting-left {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.greeting-text {
+  font-size: 32rpx;
+  color: #666666;
+}
+
+.greeting-name {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.notice-btn {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background-color: #FFFFFF;
+  align-items: center;
+  justify-content: center;
+}
+
+.notice-icon {
+  font-size: 40rpx;
+}
+
+/* 统计卡片 */
+.stats-grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 45%;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.stat-value {
+  font-size: 48rpx;
+  font-weight: bold;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+/* 分组卡片 */
+.group-card {
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.group-header {
+  flex-direction: row;
+  align-items: center;
+  padding: 24rpx 28rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #F0F0F0;
+  border-bottom-style: solid;
+  gap: 12rpx;
+}
+
+.group-icon {
+  font-size: 36rpx;
+}
+
+.group-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.group-grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 20rpx 16rpx;
+  gap: 12rpx;
+}
+
+.grid-item {
+  width: 30%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 8rpx;
+  border-radius: 12rpx;
+  background-color: #F5F7FA;
+  gap: 10rpx;
+}
+
+.grid-icon {
+  font-size: 48rpx;
+}
+
+.grid-label {
+  font-size: 24rpx;
+  color: #333333;
+}
+
+/* 预警列表 */
+.warning-list {
+  flex-direction: column;
+}
+
+.warning-item {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 28rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #F0F0F0;
+  border-bottom-style: solid;
+}
+
+.warning-name {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+
+.warning-count {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+/* 空状态 */
+.empty-state {
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+}
+
+.empty-text {
+  font-size: 26rpx;
+  color: #909399;
+}
+</style>

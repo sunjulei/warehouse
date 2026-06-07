@@ -215,6 +215,53 @@ public class GoodsController {
     }
 
     /**
+     * POS页面加载商品（按销售量排序，支持分页）
+     */
+    @RequestMapping("loadGoodsForPOS")
+    public DataGridView loadGoodsForPOS(Integer page, Integer limit, String keyword){
+        // 查询所有有效商品
+        QueryWrapper<Goods> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("available", Constast.AVAILABLE_TRUE);
+        if (StringUtils.isNotBlank(keyword)) {
+            String kw = keyword.trim();
+            queryWrapper.and(w -> w
+                .like("goodsname", kw)
+                .or().like("pinyin", kw)
+                .or().like("abbreviation", kw)
+            );
+        }
+
+        List<Goods> allGoods = goodsService.list(queryWrapper);
+
+        // 查询每个商品的销售量
+        Map<Integer, Integer> salesCountMap = salesService.getSalesCountByGoodsId();
+
+        // 设置销售量和供应商名称
+        for (Goods goods : allGoods) {
+            goods.setSalesCount(salesCountMap.getOrDefault(goods.getId(), 0));
+            Provider provider = providerService.getById(goods.getProviderid());
+            if (provider != null) {
+                goods.setProvidername(provider.getProvidername());
+            }
+        }
+
+        // 按销售量降序排序
+        allGoods.sort((a, b) -> Integer.compare(b.getSalesCount(), a.getSalesCount()));
+
+        // 分页处理
+        int pageNum = (page != null && page > 0) ? page : 1;
+        int pageSize = (limit != null && limit > 0) ? limit : 30;
+        int fromIndex = (pageNum - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, allGoods.size());
+
+        List<Goods> pageData = fromIndex < allGoods.size()
+                ? allGoods.subList(fromIndex, toIndex)
+                : new ArrayList<>();
+
+        return new DataGridView((long) allGoods.size(), pageData);
+    }
+
+    /**
      * 根据供应商ID查询商品信息
      * @param providerid    供应商ID
      * @return

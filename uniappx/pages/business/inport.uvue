@@ -1,4 +1,7 @@
 <template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
   <view class="container">
     <!-- Step 1: 选择商品 -->
     <view v-if="currentStep == 1" class="step-content">
@@ -10,13 +13,30 @@
         @search="onSearch"
       />
 
+      <!-- 供应商筛选 -->
+      <view class="filter-bar">
+        <text class="filter-label">供应商：</text>
+        <picker
+          :range="providerFilterNames"
+          :value="filterProviderIndex"
+          @change="onFilterProviderChange"
+        >
+          <view class="filter-picker">
+            <text class="filter-picker-text" :class="{ 'filter-placeholder': filterProviderIndex < 0 }">
+              {{ filterProviderIndex >= 0 ? providerFilterNames[filterProviderIndex] : '全部供应商' }}
+            </text>
+            <text class="filter-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
       <!-- 步骤提示 -->
       <view class="step-tip">
         <text class="step-tip-text">第一步：选择入库商品</text>
       </view>
 
       <!-- 商品列表 -->
-      <scroll-view scroll-y="true" class="goods-list" v-if="goodsList.length > 0">
+      <view v-if="goodsList.length > 0">
         <view
           v-for="(item, index) in goodsList"
           :key="index"
@@ -30,12 +50,13 @@
             <text class="goods-meta">
               编号: {{ item['goodscode'] ?? '' }} · 库存: {{ item['number'] ?? 0 }}
             </text>
+            <text class="goods-provider">供应商：{{ item['providername'] ?? '未知' }}</text>
           </view>
           <view class="goods-action">
             <button class="select-btn" @tap="onSelectGoods(item)">选择</button>
           </view>
         </view>
-      </scroll-view>
+      </view>
 
       <!-- 空状态 -->
       <EmptyState v-if="goodsList.length == 0 && !loading" text="暂无商品数据" />
@@ -75,6 +96,18 @@
         </view>
       </view>
 
+      <!-- 进货价 -->
+      <view class="form-card">
+        <text class="section-title">进货价（元）</text>
+        <input
+          class="form-input"
+          type="digit"
+          placeholder="请输入进货单价"
+          :value="inportPrice"
+          @input="onPriceInput"
+        />
+      </view>
+
       <!-- 供应商选择 -->
       <view class="form-card">
         <text class="section-title">供应商</text>
@@ -86,6 +119,23 @@
           <view class="picker-display">
             <text class="picker-text" :class="{ 'picker-placeholder': selectedProviderIndex < 0 }">
               {{ selectedProviderIndex >= 0 ? providerNames[selectedProviderIndex] : '请选择供应商' }}
+            </text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 付款方式 -->
+      <view class="form-card">
+        <text class="section-title">付款方式</text>
+        <picker
+          :range="payTypeNames"
+          :value="selectedPayTypeIndex"
+          @change="onPayTypeChange"
+        >
+          <view class="picker-display">
+            <text class="picker-text" :class="{ 'picker-placeholder': selectedPayTypeIndex < 0 }">
+              {{ selectedPayTypeIndex >= 0 ? payTypeNames[selectedPayTypeIndex] : '请选择付款方式' }}
             </text>
             <text class="picker-arrow">▼</text>
           </view>
@@ -118,6 +168,9 @@
       </view>
     </view>
   </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
 </template>
 
 <script setup lang="uts">
@@ -134,6 +187,9 @@ const currentStep = ref(1)
 const searchKeyword = ref('')
 const goodsList = ref<UTSJSONObject[]>([])
 const loading = ref(false)
+const filterProviderList = ref<UTSJSONObject[]>([])
+const providerFilterNames = ref<string[]>([])
+const filterProviderIndex = ref(-1)
 
 // Step 2 状态
 const selectedGoods = ref<UTSJSONObject>({} as UTSJSONObject)
@@ -141,6 +197,9 @@ const quantity = ref(1)
 const providerList = ref<UTSJSONObject[]>([])
 const providerNames = ref<string[]>([])
 const selectedProviderIndex = ref(-1)
+const inportPrice = ref('')
+const payTypeNames = ref<string[]>(['现金', '微信', '支付宝', '银行转账', '赊账'])
+const selectedPayTypeIndex = ref(-1)
 const remark = ref('')
 const submitting = ref(false)
 
@@ -153,11 +212,18 @@ function loadGoods(goodsname: string = ''): void {
   if (goodsname.length > 0) {
     params['goodsname'] = goodsname
   }
+  // 供应商筛选
+  if (filterProviderIndex.value >= 0) {
+    const providerid = filterProviderList.value[filterProviderIndex.value]['id'] as number ?? 0
+    if (providerid > 0) {
+      params['providerid'] = providerid
+    }
+  }
   loadAllGoods(params).then((res: any) => {
     const result = res as UTSJSONObject
-    const data = result['data']
-    if (data != null && Array.isArray(data)) {
-      goodsList.value = data as UTSJSONObject[]
+    const dataList = result['data'] as UTSJSONObject[] | null
+    if (dataList != null) {
+      goodsList.value = dataList!
     } else {
       goodsList.value = []
     }
@@ -169,17 +235,46 @@ function loadGoods(goodsname: string = ''): void {
 }
 
 /**
+ * 加载供应商列表（用于筛选）
+ */
+function loadProvidersForFilter(): void {
+  loadAllProviderForSelect().then((res: any) => {
+    const result = res as UTSJSONObject
+    const dataList = result['data'] as UTSJSONObject[] | null
+    if (dataList != null) {
+      filterProviderList.value = dataList!
+      const names: string[] = []
+      for (let i = 0; i < dataList!.length; i++) {
+        const name = (dataList![i]['providername'] as string) ?? ''
+        names.push(name)
+      }
+      providerFilterNames.value = names
+    }
+  }).catch((err: Error) => {
+    // ignore
+  })
+}
+
+/**
+ * 供应商筛选变更
+ */
+function onFilterProviderChange(e: any): void {
+  filterProviderIndex.value = e.detail.value as number
+  loadGoods(searchKeyword.value)
+}
+
+/**
  * 加载供应商列表
  */
 function loadProviders(): void {
   loadAllProviderForSelect().then((res: any) => {
     const result = res as UTSJSONObject
-    const data = result['data']
-    if (data != null && Array.isArray(data)) {
-      providerList.value = data as UTSJSONObject[]
+    const dataList = result['data'] as UTSJSONObject[] | null
+    if (dataList != null) {
+      providerList.value = dataList!
       const names: string[] = []
-      for (let i = 0; i < providerList.value.length; i++) {
-        const name = providerList.value[i]['name'] as string ?? ''
+      for (let i = 0; i < dataList!.length; i++) {
+        const name = (dataList![i]['providername'] as string) ?? ''
         names.push(name)
       }
       providerNames.value = names
@@ -214,6 +309,8 @@ function onSelectGoods(item: UTSJSONObject): void {
   selectedGoods.value = item
   quantity.value = 1
   selectedProviderIndex.value = -1
+  inportPrice.value = ''
+  selectedPayTypeIndex.value = -1
   remark.value = ''
   currentStep.value = 2
   loadProviders()
@@ -243,6 +340,20 @@ function onProviderChange(e: any): void {
 }
 
 /**
+ * 进货价输入事件
+ */
+function onPriceInput(e: UniInputEvent): void {
+  inportPrice.value = e.detail.value
+}
+
+/**
+ * 付款方式选择事件
+ */
+function onPayTypeChange(e: any): void {
+  selectedPayTypeIndex.value = e.detail.value as number
+}
+
+/**
  * 备注输入事件
  */
 function onRemarkInput(e: UniInputEvent): void {
@@ -260,9 +371,26 @@ function goBack(): void {
  * 提交入库
  */
 function onSubmit(): void {
+  // 校验进货价
+  if (inportPrice.value.length == 0) {
+    uni.showToast({ title: '请输入进货价', icon: 'none' })
+    return
+  }
+  const priceNum = parseFloat(inportPrice.value)
+  if (isNaN(priceNum) || priceNum <= 0) {
+    uni.showToast({ title: '进货价必须大于0', icon: 'none' })
+    return
+  }
+
   // 校验供应商
   if (selectedProviderIndex.value < 0) {
     uni.showToast({ title: '请选择供应商', icon: 'none' })
+    return
+  }
+
+  // 校验付款方式
+  if (selectedPayTypeIndex.value < 0) {
+    uni.showToast({ title: '请选择付款方式', icon: 'none' })
     return
   }
 
@@ -276,11 +404,14 @@ function onSubmit(): void {
 
   const goodsid = selectedGoods.value['id'] as number ?? 0
   const providerid = providerList.value[selectedProviderIndex.value]['id'] as number ?? 0
+  const paytype = payTypeNames.value[selectedPayTypeIndex.value]
 
   addInport({
     goodsid: goodsid,
     providerid: providerid,
     number: quantity.value,
+    inportprice: priceNum,
+    paytype: paytype,
     remark: remark.value
   } as UTSJSONObject).then((res: any) => {
     submitting.value = false
@@ -300,9 +431,10 @@ function onSubmit(): void {
 }
 
 /**
- * 页面加载时获取商品列表
+ * 页面加载时获取商品列表和供应商
  */
 onShow(() => {
+  loadProvidersForFilter()
   loadGoods()
 })
 </script>
@@ -316,6 +448,51 @@ onShow(() => {
 
 .step-content {
   flex: 1;
+}
+
+/* 供应商筛选栏 */
+.filter-bar {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-top: 16rpx;
+  gap: 12rpx;
+}
+
+.filter-label {
+  font-size: 26rpx;
+  color: #606266;
+  flex-shrink: 0;
+}
+
+.filter-picker {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 64rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+}
+
+.filter-picker-text {
+  font-size: 26rpx;
+  color: #303133;
+}
+
+.filter-placeholder {
+  color: #C0C4CC;
+}
+
+.filter-arrow {
+  font-size: 22rpx;
+  color: #C0C4CC;
 }
 
 .step-tip {
@@ -371,6 +548,12 @@ onShow(() => {
 .goods-meta {
   font-size: 24rpx;
   color: #999999;
+}
+
+.goods-provider {
+  font-size: 22rpx;
+  color: #409EFF;
+  margin-top: 4rpx;
 }
 
 .goods-action {
@@ -504,6 +687,18 @@ onShow(() => {
 .picker-arrow {
   font-size: 24rpx;
   color: #C0C4CC;
+}
+
+.form-input {
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding-left: 20rpx;
+  padding-right: 20rpx;
+  font-size: 28rpx;
+  margin-top: 16rpx;
 }
 
 .remark-input {

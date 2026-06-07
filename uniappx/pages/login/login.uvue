@@ -1,12 +1,6 @@
 <template>
   <view class="login-page">
-    <!-- 顶部装饰 -->
-    <view class="top-decor">
-      <view class="decor-circle c1"></view>
-      <view class="decor-circle c2"></view>
-    </view>
-
-    <!-- Logo 区域 -->
+    <!-- Logo -->
     <view class="logo-area">
       <view class="logo-icon">
         <text class="icon-text">📦</text>
@@ -15,19 +9,15 @@
       <text class="app-desc">智能仓库管理系统</text>
     </view>
 
-    <!-- 登录表单 -->
+    <!-- 表单 -->
     <view class="form-card">
-      <view class="form-title">
-        <text class="title-text">账号登录</text>
-      </view>
+      <text class="form-title">账号登录</text>
 
       <!-- 用户名 -->
-      <view class="input-group">
-        <view class="input-icon">
-          <text class="icon">👤</text>
-        </view>
+      <text class="label">用户名</text>
+      <view class="input-wrap">
         <input
-          class="input-field"
+          class="input"
           placeholder="请输入用户名"
           :value="loginname"
           @input="onLoginnameInput"
@@ -35,31 +25,25 @@
       </view>
 
       <!-- 密码 -->
-      <view class="input-group">
-        <view class="input-icon">
-          <text class="icon">🔒</text>
-        </view>
+      <text class="label">密码</text>
+      <view class="input-wrap">
         <input
-          class="input-field"
+          class="input"
           placeholder="请输入密码"
           :password="!showPwd"
           :value="pwd"
           @input="onPwdInput"
         />
-        <view class="eye-btn" @click="showPwd = !showPwd">
-          <text class="icon">{{ showPwd ? '👁️' : '🙈' }}</text>
-        </view>
+        <text class="eye" @click="showPwd = !showPwd">{{ showPwd ? '隐藏' : '显示' }}</text>
       </view>
 
       <!-- 验证码 -->
+      <text class="label">验证码</text>
       <view class="captcha-row">
-        <view class="input-group captcha-input">
-          <view class="input-icon">
-            <text class="icon">🔐</text>
-          </view>
+        <view class="input-wrap captcha-input">
           <input
-            class="input-field"
-            placeholder="验证码"
+            class="input"
+            placeholder="请输入验证码"
             :value="code"
             @input="onCodeInput"
           />
@@ -71,7 +55,7 @@
             :src="captchaImage"
             mode="scaleToFill"
           />
-          <text v-else class="captcha-loading">加载中...</text>
+          <text v-else class="captcha-loading">...</text>
         </view>
       </view>
 
@@ -81,16 +65,14 @@
       </view>
     </view>
 
-    <!-- 底部 -->
-    <view class="footer">
-      <text class="footer-text">Warehouse Pulse v1.0</text>
-    </view>
+    <text class="footer">Warehouse Pulse v1.0</text>
   </view>
 </template>
 
-<script setup lang="ts">
+<script setup lang="uts">
 import { ref, onMounted } from 'vue'
-import { login, getCaptchaBase64 } from '../../api/login.uts'
+import { login, getCaptchaBase64 } from '../../api/login'
+import { fetchCurrentUser } from '../../stores/auth'
 
 const loginname = ref('')
 const pwd = ref('')
@@ -112,7 +94,6 @@ function onCodeInput(e: UniInputEvent) {
   code.value = e.detail.value
 }
 
-// 加载验证码
 function refreshCaptcha() {
   captchaImage.value = ''
   code.value = ''
@@ -121,7 +102,6 @@ function refreshCaptcha() {
     captchaImage.value = data['image'] as string
   }).catch((err: any) => {
     console.error('获取验证码失败', err)
-    uni.showToast({ title: '获取验证码失败', icon: 'none' })
   })
 }
 
@@ -143,16 +123,14 @@ function handleLogin() {
     uni.showToast({ title: '请输入密码', icon: 'none' })
     return
   }
-  if (captchaCode.length == 0) {
-    uni.showToast({ title: '请输入验证码', icon: 'none' })
-    return
-  }
 
   loading.value = true
   login(name, password, captchaCode, captchaId.value).then(() => {
+    return fetchCurrentUser()
+  }).then(() => {
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => {
-      uni.switchTab({ url: '/pages/index/index' })
+      uni.switchTab({ url: '/pages/workbench/index' })
     }, 500)
   }).catch((err: any) => {
     const msg = typeof err === 'string' ? err : '登录失败'
@@ -166,149 +144,107 @@ function handleLogin() {
 
 <style lang="scss">
 .login-page {
-  min-height: 100vh;
-  background: #FAFBFC;
-  position: relative;
-  overflow: hidden;
-}
-
-.top-decor {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 600rpx;
-}
-
-.decor-circle {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.c1 {
-  width: 500rpx;
-  height: 500rpx;
-  background: linear-gradient(135deg, #2C7BE5 0%, #5B9EF4 100%);
-  top: -200rpx;
-  right: -100rpx;
-  opacity: 0.08;
-}
-
-.c2 {
-  width: 300rpx;
-  height: 300rpx;
-  background: linear-gradient(135deg, #00B8D4 0%, #4DD0E1 100%);
-  top: 100rpx;
-  left: -80rpx;
-  opacity: 0.06;
-}
-
-.logo-area {
-  margin-top: 280rpx;
+  flex: 1;
+  background: #F5F7FA;
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
-  z-index: 1;
+  padding-top: 200rpx;
+}
+
+.logo-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60rpx;
 }
 
 .logo-icon {
-  width: 140rpx;
-  height: 140rpx;
-  border-radius: 32rpx;
-  background: linear-gradient(135deg, #2C7BE5 0%, #1A56DB 100%);
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #2C7BE5, #1A56DB);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 16rpx 48rpx rgba(44, 123, 229, 0.3);
 }
 
 .icon-text {
-  font-size: 64rpx;
+  font-size: 56rpx;
 }
 
 .app-name {
-  font-size: 48rpx;
+  font-size: 44rpx;
   font-weight: 700;
   color: #0F172A;
-  margin-top: 28rpx;
-  letter-spacing: 2rpx;
+  margin-top: 24rpx;
 }
 
 .app-desc {
   font-size: 26rpx;
   color: #94A3B8;
-  margin-top: 10rpx;
+  margin-top: 8rpx;
 }
 
 .form-card {
-  margin: 60rpx 48rpx 0;
+  width: 650rpx;
   background: #FFFFFF;
   border-radius: 24rpx;
   padding: 48rpx 40rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.04);
-  position: relative;
-  z-index: 1;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.04);
 }
 
 .form-title {
-  margin-bottom: 40rpx;
-}
-
-.title-text {
   font-size: 36rpx;
   font-weight: 600;
   color: #0F172A;
+  margin-bottom: 36rpx;
 }
 
-.input-group {
-  display: flex;
+.label {
+  font-size: 26rpx;
+  color: #64748B;
+  margin-bottom: 12rpx;
+}
+
+.input-wrap {
+  flex-direction: row;
   align-items: center;
   background: #F8FAFC;
   border: 2rpx solid #E2E8F0;
-  border-radius: 16rpx;
-  padding: 0 28rpx;
-  height: 100rpx;
-  margin-bottom: 24rpx;
+  border-radius: 12rpx;
+  height: 88rpx;
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+  margin-bottom: 28rpx;
 }
 
-.input-icon {
-  margin-right: 20rpx;
-}
-
-.icon {
-  font-size: 32rpx;
-}
-
-.input-field {
+.input {
   flex: 1;
-  height: 100rpx;
+  height: 88rpx;
   font-size: 30rpx;
   color: #0F172A;
-  background: transparent;
 }
 
-.eye-btn {
+.eye {
+  font-size: 32rpx;
   padding: 10rpx;
 }
 
 .captcha-row {
-  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 20rpx;
-  margin-bottom: 24rpx;
 }
 
 .captcha-input {
   flex: 1;
-  margin-bottom: 0;
 }
 
 .captcha-img-wrap {
-  width: 240rpx;
-  height: 100rpx;
-  border-radius: 16rpx;
+  width: 220rpx;
+  height: 88rpx;
+  border-radius: 12rpx;
   overflow: hidden;
   background: #F8FAFC;
   border: 2rpx solid #E2E8F0;
@@ -318,23 +254,23 @@ function handleLogin() {
 }
 
 .captcha-img {
-  width: 240rpx;
-  height: 100rpx;
+  width: 220rpx;
+  height: 88rpx;
 }
 
 .captcha-loading {
-  font-size: 24rpx;
+  font-size: 26rpx;
   color: #94A3B8;
 }
 
 .login-btn {
-  height: 100rpx;
-  border-radius: 16rpx;
-  background: linear-gradient(135deg, #2C7BE5 0%, #1A56DB 100%);
+  height: 92rpx;
+  border-radius: 12rpx;
+  background: linear-gradient(135deg, #2C7BE5, #1A56DB);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(44, 123, 229, 0.3);
+  margin-top: 12rpx;
 }
 
 .login-btn.disabled {
@@ -345,16 +281,10 @@ function handleLogin() {
   font-size: 32rpx;
   font-weight: 600;
   color: #FFFFFF;
-  letter-spacing: 4rpx;
 }
 
 .footer {
-  margin-top: 80rpx;
-  display: flex;
-  justify-content: center;
-}
-
-.footer-text {
+  margin-top: 60rpx;
   font-size: 24rpx;
   color: #CBD5E1;
 }

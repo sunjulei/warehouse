@@ -1,7 +1,5 @@
 <template>
-  <!-- #ifdef APP -->
   <scroll-view style="flex:1" @scrolltolower="onScrollToLower">
-  <!-- #endif -->
   <view class="container">
     <!-- 搜索栏 -->
     <SearchBar placeholder="搜索商品名称" v-model="searchKeyword" @search="onSearch" />
@@ -23,9 +21,7 @@
     <!-- 空状态 -->
     <EmptyState v-if="!loading && goodsList.length === 0" text="暂无商品数据" />
   </view>
-  <!-- #ifdef APP -->
   </scroll-view>
-  <!-- #endif -->
 </template>
 
 <script setup lang="uts">

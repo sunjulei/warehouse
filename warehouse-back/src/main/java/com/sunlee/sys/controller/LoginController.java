@@ -57,11 +57,13 @@ public class LoginController {
         HREF_MAP.put("/bus/toInportManager", "/business/inport");
         HREF_MAP.put("/bus/toOutportManager", "/business/outport");
         HREF_MAP.put("/bus/toSalesManager", "/business/sales");
+        HREF_MAP.put("/bus/toSalesPOS", "/business/sales-pos");
         HREF_MAP.put("/bus/toSalesbackManager", "/business/salesback");
         HREF_MAP.put("/bus/toReportManager", "/business/report");
         HREF_MAP.put("/bus/toInportAnalysis", "/business/inport-analysis");
         HREF_MAP.put("/bus/toGoodsAnalysis", "/business/goods-analysis");
         HREF_MAP.put("/bus/toProfitAnalysis", "/business/profit-analysis");
+        HREF_MAP.put("/bus/toStocktakeManager", "/business/stocktake");
     }
 
     @Autowired
@@ -77,10 +79,23 @@ public class LoginController {
     private IUserService userService;
 
     @RequestMapping("login")
-    public ResultObj login(UserVo userVo, String code, HttpSession session) {
-        // 获得存储在session中的验证码
-        String sessionCode = (String) session.getAttribute("code");
-        if (code != null && sessionCode != null && sessionCode.equalsIgnoreCase(code)) {
+    public ResultObj login(UserVo userVo, String code, HttpSession session, String captchaId, HttpServletResponse response, String platform) {
+        boolean codeValid = false;
+        // 移动端跳过验证码校验（小程序 session 不可靠）
+        if ("mobile".equals(platform)) {
+            codeValid = true;
+        } else if (code != null) {
+            String sessionCode;
+            if (captchaId != null && !captchaId.isEmpty()) {
+                // 移动端：通过 captchaId 从 session 获取验证码
+                sessionCode = (String) session.getAttribute("captcha_" + captchaId);
+            } else {
+                // PC 端：直接从 session 获取验证码
+                sessionCode = (String) session.getAttribute("code");
+            }
+            codeValid = sessionCode != null && sessionCode.equalsIgnoreCase(code);
+        }
+        if (codeValid) {
             // 根据登录名查询用户
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("loginname", userVo.getLoginname());
@@ -112,6 +127,8 @@ public class LoginController {
             }
             // SA-Token 登录
             StpUtil.login(user.getId());
+            // 将 token 放入响应头（供微信小程序等不支持 cookie 的环境使用）
+            response.setHeader("satoken", StpUtil.getTokenValue());
             // 将用户信息存入 SA-Token 会话
             StpUtil.getSession().set("user", user);
             // 记录登陆日志
@@ -141,6 +158,31 @@ public class LoginController {
         } catch (IOException e) {
             log.error("验证码输出失败: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * 获取验证码（base64，供移动端使用）
+     */
+    @RequestMapping("getCaptchaBase64")
+    public Map<String, Object> getCaptchaBase64(HttpSession session) {
+        Map<String, Object> map = new HashMap<>();
+        try {
+            LineCaptcha lineCaptcha = CaptchaUtil.createLineCaptcha(116, 36, 4, 5);
+            String captchaId = java.util.UUID.randomUUID().toString().replace("-", "");
+            session.setAttribute("captcha_" + captchaId, lineCaptcha.getCode());
+            // 将验证码图片转为 base64
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            lineCaptcha.write(baos);
+            String base64 = java.util.Base64.getEncoder().encodeToString(baos.toByteArray());
+            map.put("code", 200);
+            map.put("captchaId", captchaId);
+            map.put("image", "data:image/png;base64," + base64);
+        } catch (Exception e) {
+            log.error("获取验证码失败: {}", e.getMessage(), e);
+            map.put("code", -1);
+            map.put("msg", "获取验证码失败");
+        }
+        return map;
     }
 
     /**

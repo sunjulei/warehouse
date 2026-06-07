@@ -1,0 +1,111 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <view class="detail-card">
+      <text class="detail-title">{{ notice.title }}</text>
+      <view class="detail-meta">
+        <text class="meta-text">发布人：{{ notice.opername }}</text>
+        <text class="meta-text">发布时间：{{ notice.createtime }}</text>
+      </view>
+      <view class="detail-divider"></view>
+      <text class="detail-content">{{ notice.content }}</text>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { loadNoticeById } from '../../api/notice'
+
+interface NoticeDetail {
+  id : number
+  title : string
+  content : string
+  opername : string
+  createtime : string
+}
+
+const notice = ref<NoticeDetail>({
+  id: 0,
+  title: '',
+  content: '',
+  opername: '',
+  createtime: ''
+})
+
+function loadDetail(id : number) : void {
+  loadNoticeById(id).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const data = result['data'] as UTSJSONObject | null
+      if (data != null) {
+        notice.value = {
+          id: (data!['id'] as number) ?? 0,
+          title: (data!['title'] as string) ?? '',
+          content: (data!['content'] as string) ?? '',
+          opername: (data!['opername'] as string) ?? '',
+          createtime: (data!['createtime'] as string) ?? ''
+        }
+      }
+    }
+  }).catch((err : Error) => {
+    console.error('加载公告详情失败:', err.message)
+  })
+}
+
+onLoad((options : Record<string, string>) => {
+  const idStr = options['id']
+  if (idStr != null) {
+    loadDetail(parseInt(idStr!))
+  }
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+  padding: 24rpx;
+}
+
+.detail-card {
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  gap: 16rpx;
+}
+
+.detail-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.detail-meta {
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.meta-text {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.detail-divider {
+  height: 1rpx;
+  background-color: #F0F0F0;
+  margin: 16rpx 0;
+}
+
+.detail-content {
+  font-size: 30rpx;
+  color: #333333;
+  line-height: 48rpx;
+}
+</style>

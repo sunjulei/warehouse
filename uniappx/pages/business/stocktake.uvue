@@ -1,7 +1,5 @@
 <template>
-  <!-- #ifdef APP -->
   <scroll-view style="flex:1">
-  <!-- #endif -->
   <view class="container">
     <!-- 顶部操作栏 -->
     <view class="top-bar">
@@ -46,9 +44,7 @@
     <!-- 空状态 -->
     <EmptyState v-if="list.length === 0 && !loading" text="暂无盘点单数据" />
   </view>
-  <!-- #ifdef APP -->
   </scroll-view>
-  <!-- #endif -->
 </template>
 
 <script setup lang="uts">

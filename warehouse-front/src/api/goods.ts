@@ -20,6 +20,10 @@ export function loadAllGoodsForSelect() {
   return request.get('/goods/loadAllGoodsForSelect')
 }
 
+export function loadGoodsForPOS(params: { page?: number; limit?: number; keyword?: string }) {
+  return request.get('/goods/loadGoodsForPOS', { params })
+}
+
 export function loadGoodsByProviderId(providerid: number, allStatus?: number) {
   return request.get('/goods/loadGoodsByProviderId', { params: { providerid, allStatus } })
 }

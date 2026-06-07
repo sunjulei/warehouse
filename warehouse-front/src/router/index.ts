@@ -132,16 +132,22 @@ const router = createRouter({
           meta: { title: '退货管理' }
         },
         {
-          path: 'business/sales',
-          name: 'SalesManager',
-          component: () => import('@/views/business/sales/index.vue'),
-          meta: { title: '销售管理' }
+          path: 'business/sales-pos',
+          name: 'SalesPOS',
+          component: () => import('@/views/business/sales-pos/index.vue'),
+          meta: { title: '商品销售' }
         },
         {
-          path: 'business/salesback',
-          name: 'SalesbackManager',
-          component: () => import('@/views/business/salesback/index.vue'),
-          meta: { title: '销售退货' }
+          path: 'business/sales-order',
+          name: 'SalesOrder',
+          component: () => import('@/views/business/sales-order/index.vue'),
+          meta: { title: '销售订单' }
+        },
+        {
+          path: 'business/sales-record',
+          name: 'SalesRecord',
+          component: () => import('@/views/business/sales-record/index.vue'),
+          meta: { title: '退加货记录' }
         },
         {
           path: 'business/retail',

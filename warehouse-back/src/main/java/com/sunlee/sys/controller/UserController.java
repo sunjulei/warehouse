@@ -60,8 +60,8 @@ public class UserController {
         //根据用户登录名称以及用户名称模糊查询用户
         queryWrapper.like(StringUtils.isNotBlank(userVo.getName()),"loginname",userVo.getName()).or().eq(StringUtils.isNotBlank(userVo.getName()),"name",userVo.getName());
         queryWrapper.like(StringUtils.isNotBlank(userVo.getAddress()),"address",userVo.getAddress());
-        //查询系统用户
-        queryWrapper.eq("type", Constast.USER_TYPE_NORMAL);
+        //查询系统用户（包含超级管理员和普通用户）
+        queryWrapper.in("type", Constast.USER_TYPE_SUPER, Constast.USER_TYPE_NORMAL);
         queryWrapper.eq(userVo.getDeptid()!=null,"deptid",userVo.getDeptid());
         queryWrapper.orderByDesc("id");
         userService.page(page,queryWrapper);

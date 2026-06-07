@@ -1,23 +1,29 @@
 <template>
-  <!-- #ifdef APP -->
   <scroll-view style="flex:1">
-  <!-- #endif -->
   <view class="container">
     <!-- 顶部模式切换 -->
-    <view class="mode-tabs">
-      <view
-        class="mode-tab"
-        :class="mode === 'retail' ? 'mode-tab-active' : ''"
-        @click="switchMode('retail')"
-      >
-        <text class="mode-tab-text" :class="mode === 'retail' ? 'mode-tab-text-active' : ''">散客零售</text>
+    <view class="mode-section">
+      <view class="mode-tabs">
+        <view
+          class="mode-tab"
+          :class="mode === 'retail' ? 'mode-tab-retail-active' : ''"
+          @click="switchMode('retail')"
+        >
+          <text class="mode-tab-icon">🛒</text>
+          <text class="mode-tab-text" :class="mode === 'retail' ? 'mode-tab-text-active' : ''">散客零售</text>
+        </view>
+        <view
+          class="mode-tab"
+          :class="mode === 'wholesale' ? 'mode-tab-wholesale-active' : ''"
+          @click="switchMode('wholesale')"
+        >
+          <text class="mode-tab-icon">📦</text>
+          <text class="mode-tab-text" :class="mode === 'wholesale' ? 'mode-tab-text-active' : ''">批发销售</text>
+        </view>
       </view>
-      <view
-        class="mode-tab"
-        :class="mode === 'wholesale' ? 'mode-tab-active' : ''"
-        @click="switchMode('wholesale')"
-      >
-        <text class="mode-tab-text" :class="mode === 'wholesale' ? 'mode-tab-text-active' : ''">批发销售</text>
+      <view class="mode-desc">
+        <text class="mode-desc-text" v-if="mode === 'retail'">🛒 散客模式 · 按售价结算 · 批量提交</text>
+        <text class="mode-desc-text" v-if="mode === 'wholesale'">📦 批发模式 · 按售价结算 · 逐单记录</text>
       </view>
     </view>
 
@@ -42,10 +48,14 @@
           class="goods-row"
         >
           <view class="goods-info-box">
-            <text class="goods-name">{{ item.name }}</text>
+            <text class="goods-name">{{ item.goodsname }}</text>
             <view class="goods-meta-row">
+              <text class="goods-provider" v-if="item.providername">供应商: {{ item.providername }}</text>
               <text class="goods-stock">库存: {{ item.number }}</text>
-              <text class="goods-price">¥{{ formatPrice(item.outportprice) }}</text>
+            </view>
+            <view class="goods-price-row">
+              <text class="goods-price">售价: ¥{{ formatPrice(item.price) }}</text>
+              <text class="goods-outport-price" v-if="item.outportprice > 0">出库价: ¥{{ formatPrice(item.outportprice) }}</text>
             </view>
           </view>
           <view class="add-btn" @click="addToCart(item)">
@@ -57,13 +67,13 @@
 
     <!-- 购物车视图 -->
     <view v-if="showCart" class="cart-section">
-      <view v-if="cart.length === 0" class="goods-list">
+      <view v-if="currentCart.length === 0" class="goods-list">
         <EmptyState :text="'购物车为空'" />
       </view>
       <view v-else class="cart-card">
-        <!-- 清空按钮 -->
+        <!-- 购物车标题 -->
         <view class="cart-header">
-          <text class="cart-title">已选商品</text>
+          <text class="cart-title">{{ mode === 'retail' ? '🛒 零售购物车' : '📦 批发购物车' }}</text>
           <view class="clear-btn" @click="clearCart">
             <text class="clear-btn-text">清空</text>
           </view>
@@ -71,12 +81,13 @@
 
         <!-- 购物车商品列表 -->
         <view
-          v-for="(item, index) in cart"
+          v-for="(item, index) in currentCart"
           :key="item.goodsid"
           class="cart-item"
         >
           <view class="cart-item-info">
             <text class="cart-item-name">{{ item.name }}</text>
+            <text class="cart-item-provider" v-if="item.providername">供应商: {{ item.providername }}</text>
             <text class="cart-item-price">¥{{ formatPrice(item.price) }} × {{ item.quantity }}</text>
           </view>
           <view class="cart-item-right">
@@ -106,9 +117,9 @@
   <view class="bottom-bar">
     <!-- 购物车图标 + 角标 -->
     <view class="cart-badge-wrap" @click="toggleCartView">
-      <text class="cart-icon">🛒</text>
-      <view v-if="cart.length > 0" class="badge">
-        <text class="badge-text">{{ cart.length }}</text>
+      <text class="cart-icon">{{ mode === 'retail' ? '🛒' : '📦' }}</text>
+      <view v-if="currentCart.length > 0" class="badge">
+        <text class="badge-text">{{ currentCart.length }}</text>
       </view>
     </view>
 
@@ -120,29 +131,29 @@
 
     <view
       class="submit-btn"
-      :class="cart.length === 0 ? 'submit-btn-disabled' : ''"
+      :class="currentCart.length === 0 ? 'submit-btn-disabled' : ''"
       @click="handleSubmit"
     >
       <text class="submit-btn-text">确认结算</text>
     </view>
   </view>
-  <!-- #ifdef APP -->
   </scroll-view>
-  <!-- #endif -->
 </template>
 
 <script setup lang="uts">
 import { ref, computed } from 'vue'
 import { loadAllGoods } from '../../api/goods'
 import { batchAddRetail } from '../../api/retail'
-import { addSales } from '../../api/sales'
+import { addSales, batchAddSales } from '../../api/sales'
 import SearchBar from '../../components/SearchBar.uvue'
 import EmptyState from '../../components/EmptyState.uvue'
 
 // 商品数据类型
 interface GoodsItem {
   id : number
-  name : string
+  goodsname : string
+  providername : string
+  price : number
   number : number
   outportprice : number
 }
@@ -151,6 +162,7 @@ interface GoodsItem {
 interface CartItem {
   goodsid : number
   name : string
+  providername : string
   price : number
   quantity : number
 }
@@ -164,8 +176,16 @@ const keyword = ref('')
 // 商品列表
 const goodsList = ref<GoodsItem[]>([])
 
-// 购物车
-const cart = ref<CartItem[]>([])
+// 零售购物车
+const retailCart = ref<CartItem[]>([])
+
+// 批发购物车
+const wholesaleCart = ref<CartItem[]>([])
+
+// 当前购物车（根据模式返回对应的购物车）
+const currentCart = computed((): CartItem[] => {
+  return mode.value === 'retail' ? retailCart.value : wholesaleCart.value
+})
 
 // 是否显示购物车视图
 const showCart = ref(false)
@@ -182,7 +202,7 @@ const filteredGoods = computed((): GoodsItem[] => {
   const result : GoodsItem[] = []
   for (let i = 0; i < goodsList.value.length; i++) {
     const g = goodsList.value[i]
-    if (g.name.toLowerCase().includes(kw)) {
+    if (g.goodsname.toLowerCase().includes(kw)) {
       result.push(g)
     }
   }
@@ -192,8 +212,9 @@ const filteredGoods = computed((): GoodsItem[] => {
 // 购物车总数量
 const totalQuantity = computed((): number => {
   let sum = 0
-  for (let i = 0; i < cart.value.length; i++) {
-    sum += cart.value[i].quantity
+  const cart = currentCart.value
+  for (let i = 0; i < cart.length; i++) {
+    sum += cart[i].quantity
   }
   return sum
 })
@@ -201,8 +222,9 @@ const totalQuantity = computed((): number => {
 // 购物车总金额
 const totalAmount = computed((): number => {
   let sum = 0
-  for (let i = 0; i < cart.value.length; i++) {
-    const item = cart.value[i]
+  const cart = currentCart.value
+  for (let i = 0; i < cart.length; i++) {
+    const item = cart[i]
     sum += item.price * item.quantity
   }
   return sum
@@ -220,6 +242,8 @@ function formatPrice(val : number) : string {
  */
 function switchMode(m : string) : void {
   mode.value = m
+  // 切换模式时隐藏购物车视图
+  showCart.value = false
 }
 
 /**
@@ -239,6 +263,9 @@ function addToCart(goods : GoodsItem) : void {
     return
   }
 
+  // 根据当前模式选择购物车
+  const cart = mode.value === 'retail' ? retailCart : wholesaleCart
+
   // 检查是否已在购物车
   for (let i = 0; i < cart.value.length; i++) {
     if (cart.value[i].goodsid === goods.id) {
@@ -256,8 +283,9 @@ function addToCart(goods : GoodsItem) : void {
   // 新增到购物车
   const newItem : CartItem = {
     goodsid: goods.id,
-    name: goods.name,
-    price: goods.outportprice,
+    name: goods.goodsname,
+    providername: goods.providername,
+    price: goods.price,
     quantity: 1
   }
   cart.value.push(newItem)
@@ -268,7 +296,8 @@ function addToCart(goods : GoodsItem) : void {
  * 增加数量
  */
 function increaseQty(index : number) : void {
-  const item = cart.value[index]
+  const cart = currentCart.value
+  const item = cart[index]
   // 查找对应商品的库存
   const goods = findGoodsById(item.goodsid)
   if (goods != null && item.quantity >= goods.number) {
@@ -282,10 +311,11 @@ function increaseQty(index : number) : void {
  * 减少数量
  */
 function decreaseQty(index : number) : void {
-  const item = cart.value[index]
+  const cart = currentCart.value
+  const item = cart[index]
   if (item.quantity <= 1) {
     // 数量为1时再减则移除
-    cart.value.splice(index, 1)
+    cart.splice(index, 1)
   } else {
     item.quantity -= 1
   }
@@ -307,7 +337,11 @@ function findGoodsById(id : number) : GoodsItem | null {
  * 清空购物车
  */
 function clearCart() : void {
-  cart.value = []
+  if (mode.value === 'retail') {
+    retailCart.value = []
+  } else {
+    wholesaleCart.value = []
+  }
   uni.showToast({ title: '购物车已清空', icon: 'none', duration: 800 })
 }
 
@@ -322,7 +356,8 @@ function toggleCartView() : void {
  * 提交结算
  */
 function handleSubmit() : void {
-  if (cart.value.length === 0) {
+  const cart = currentCart.value
+  if (cart.length === 0) {
     uni.showToast({ title: '请先添加商品', icon: 'none' })
     return
   }
@@ -334,70 +369,34 @@ function handleSubmit() : void {
   submitting.value = true
   uni.showLoading({ title: '提交中...', mask: true })
 
-  if (mode.value === 'retail') {
-    // 散客零售：批量提交
-    const data : UTSJSONObject[] = []
-    for (let i = 0; i < cart.value.length; i++) {
-      const item = cart.value[i]
-      const obj : UTSJSONObject = {}
-      obj['goodsid'] = item.goodsid
-      obj['number'] = item.quantity
-      data.push(obj)
-    }
-    batchAddRetail(data).then((res: any) => {
-      const result = res as UTSJSONObject
-      const resCode = result['code'] as number
-      uni.hideLoading()
-      submitting.value = false
-      if (resCode == 200) {
-        uni.showToast({ title: '结算成功', icon: 'success' })
-        cart.value = []
-        showCart.value = false
-        loadGoods()
-      } else {
-        const msg = (result['msg'] as string) ?? '结算失败'
-        uni.showToast({ title: msg, icon: 'none' })
-      }
-    }).catch((err: Error) => {
-      uni.hideLoading()
-      submitting.value = false
-    })
-  } else {
-    // 批发销售：逐条提交
-    submitWholesaleItems(0)
-  }
-}
-
-/**
- * 逐条提交批发销售（递归串行）
- */
-function submitWholesaleItems(index : number) : void {
-  if (index >= cart.value.length) {
-    // 全部提交完成
-    uni.hideLoading()
-    submitting.value = false
-    uni.showToast({ title: '结算成功', icon: 'success' })
-    cart.value = []
-    showCart.value = false
-    loadGoods()
-    return
+  // 构建批量数据
+  const data : UTSJSONObject[] = []
+  for (let i = 0; i < cart.length; i++) {
+    const item = cart[i]
+    const obj : UTSJSONObject = {}
+    obj['goodsid'] = item.goodsid
+    obj['number'] = item.quantity
+    data.push(obj)
   }
 
-  const item = cart.value[index]
-  const data : UTSJSONObject = {}
-  data['goodsid'] = item.goodsid
-  data['number'] = item.quantity
-
-  addSales(data).then((res: any) => {
+  // 调用对应的批量接口
+  const apiFunc = mode.value === 'retail' ? batchAddRetail : batchAddSales
+  apiFunc(data).then((res: any) => {
     const result = res as UTSJSONObject
     const resCode = result['code'] as number
+    uni.hideLoading()
+    submitting.value = false
     if (resCode == 200) {
-      // 继续提交下一条
-      submitWholesaleItems(index + 1)
+      uni.showToast({ title: '结算成功', icon: 'success' })
+      if (mode.value === 'retail') {
+        retailCart.value = []
+      } else {
+        wholesaleCart.value = []
+      }
+      showCart.value = false
+      loadGoods()
     } else {
-      uni.hideLoading()
-      submitting.value = false
-      const msg = (result['msg'] as string) ?? '提交失败'
+      const msg = (result['msg'] as string) ?? '结算失败'
       uni.showToast({ title: msg, icon: 'none' })
     }
   }).catch((err: Error) => {
@@ -421,7 +420,9 @@ function loadGoods() : void {
         const d = dataList![i]
         items.push({
           id: d['id'] as number,
-          name: (d['name'] as string) ?? '',
+          goodsname: (d['goodsname'] as string) ?? '',
+          providername: (d['providername'] as string) ?? '',
+          price: (d['price'] as number) ?? 0,
           number: (d['number'] as number) ?? 0,
           outportprice: (d['outportprice'] as number) ?? 0
         })
@@ -445,25 +446,43 @@ onShow(() => {
   background-color: #F5F7FA;
 }
 
-/* 模式切换标签 */
+/* 模式切换区域 */
+.mode-section {
+  background-color: #FFFFFF;
+  padding: 20rpx 24rpx 16rpx 24rpx;
+}
+
 .mode-tabs {
   flex-direction: row;
-  background-color: #FFFFFF;
-  padding: 20rpx 24rpx;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .mode-tab {
   flex: 1;
-  height: 72rpx;
-  border-radius: 36rpx;
-  background-color: #F0F0F0;
+  height: 80rpx;
+  border-radius: 12rpx;
+  background-color: #F5F7FA;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: 8rpx;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: transparent;
 }
 
-.mode-tab-active {
-  background-color: #409EFF;
+.mode-tab-retail-active {
+  background-color: #E8F5E9;
+  border-color: #67C23A;
+}
+
+.mode-tab-wholesale-active {
+  background-color: #FFF3E0;
+  border-color: #E6A23C;
+}
+
+.mode-tab-icon {
+  font-size: 32rpx;
 }
 
 .mode-tab-text {
@@ -472,8 +491,20 @@ onShow(() => {
 }
 
 .mode-tab-text-active {
-  color: #FFFFFF;
   font-weight: bold;
+  color: #333333;
+}
+
+.mode-desc {
+  margin-top: 12rpx;
+  padding: 12rpx 16rpx;
+  background-color: #F5F7FA;
+  border-radius: 8rpx;
+}
+
+.mode-desc-text {
+  font-size: 24rpx;
+  color: #909399;
 }
 
 /* 搜索区域 */
@@ -511,6 +542,12 @@ onShow(() => {
 .goods-meta-row {
   flex-direction: row;
   gap: 20rpx;
+  flex-wrap: wrap;
+}
+
+.goods-provider {
+  font-size: 24rpx;
+  color: #409EFF;
 }
 
 .goods-stock {
@@ -518,9 +555,21 @@ onShow(() => {
   color: #999999;
 }
 
+.goods-price-row {
+  flex-direction: row;
+  gap: 20rpx;
+  margin-top: 4rpx;
+}
+
 .goods-price {
-  font-size: 24rpx;
+  font-size: 26rpx;
   color: #F56C6C;
+  font-weight: bold;
+}
+
+.goods-outport-price {
+  font-size: 24rpx;
+  color: #E6A23C;
 }
 
 .add-btn {
@@ -589,6 +638,11 @@ onShow(() => {
 .cart-item-name {
   font-size: 28rpx;
   color: #333333;
+}
+
+.cart-item-provider {
+  font-size: 22rpx;
+  color: #409EFF;
 }
 
 .cart-item-price {

@@ -8,15 +8,21 @@
 			}
 		},
 		{
-			"path": "pages/index/index",
+			"path": "pages/workbench/index",
 			"style": {
-				"navigationBarTitleText": "首页"
+				"navigationBarTitleText": "工作台"
 			}
 		},
 		{
-			"path": "pages/business/index",
+			"path": "pages/notice/list",
 			"style": {
-				"navigationBarTitleText": "业务中心"
+				"navigationBarTitleText": "公告通知"
+			}
+		},
+		{
+			"path": "pages/notice/detail",
+			"style": {
+				"navigationBarTitleText": "公告详情"
 			}
 		},
 		{
@@ -56,12 +62,6 @@
 			}
 		},
 		{
-			"path": "pages/query/index",
-			"style": {
-				"navigationBarTitleText": "查询中心"
-			}
-		},
-		{
 			"path": "pages/query/customer-detail",
 			"style": {
 				"navigationBarTitleText": "客户详情"
@@ -90,6 +90,12 @@
 			"style": {
 				"navigationBarTitleText": "修改密码"
 			}
+		},
+		{
+			"path": "pages/profile/operation-log",
+			"style": {
+				"navigationBarTitleText": "操作日志"
+			}
 		}
 	],
 	"globalStyle": {
@@ -105,22 +111,10 @@
 		"borderStyle": "black",
 		"list": [
 			{
-				"pagePath": "pages/index/index",
-				"text": "首页",
+				"pagePath": "pages/workbench/index",
+				"text": "工作台",
 				"iconPath": "static/tab-home.png",
 				"selectedIconPath": "static/tab-home-active.png"
-			},
-			{
-				"pagePath": "pages/business/index",
-				"text": "业务",
-				"iconPath": "static/tab-business.png",
-				"selectedIconPath": "static/tab-business-active.png"
-			},
-			{
-				"pagePath": "pages/query/index",
-				"text": "查询",
-				"iconPath": "static/tab-query.png",
-				"selectedIconPath": "static/tab-query-active.png"
 			},
 			{
 				"pagePath": "pages/profile/index",

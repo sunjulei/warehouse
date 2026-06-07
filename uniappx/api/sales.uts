@@ -1,4 +1,4 @@
-import { get, post } from './request'
+import { get, post, postJson } from './request'
 
 export function loadAllSales(params: any) {
   return get('/sales/loadAllSales', params)
@@ -6,4 +6,8 @@ export function loadAllSales(params: any) {
 
 export function addSales(data: any) {
   return post('/sales/addSales', data)
+}
+
+export function batchAddSales(data: any[]) {
+  return postJson('/sales/batchAddSales', data)
 }
