@@ -1,0 +1,41 @@
+import { get } from './request'
+
+export function inportAnalysis(type: string, startDate: string, endDate: string) {
+  const params = {} as UTSJSONObject
+  params['type'] = type
+  params['startDate'] = startDate
+  params['endDate'] = endDate
+  return get('/report/inportAnalysis', params)
+}
+
+export function salesAnalysis(type: string, startDate: string, endDate: string) {
+  const params = {} as UTSJSONObject
+  params['type'] = type
+  params['startDate'] = startDate
+  params['endDate'] = endDate
+  return get('/report/salesAnalysis', params)
+}
+
+export function inportGoodsAnalysis(type: string, startDate: string, endDate: string) {
+  const params = {} as UTSJSONObject
+  params['type'] = type
+  params['startDate'] = startDate
+  params['endDate'] = endDate
+  return get('/report/inportGoodsAnalysis', params)
+}
+
+export function salesGoodsAnalysis(type: string, startDate: string, endDate: string) {
+  const params = {} as UTSJSONObject
+  params['type'] = type
+  params['startDate'] = startDate
+  params['endDate'] = endDate
+  return get('/report/salesGoodsAnalysis', params)
+}
+
+export function profitAnalysis(type: string, startDate: string, endDate: string) {
+  const params = {} as UTSJSONObject
+  params['type'] = type
+  params['startDate'] = startDate
+  params['endDate'] = endDate
+  return get('/report/profitAnalysis', params)
+}

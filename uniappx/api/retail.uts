@@ -1,9 +1,56 @@
-import { get, postJson } from './request'
+import { get, post, postJson, postWithParams } from './request'
 
 export function loadAllRetail(params: any) {
-  return get('/retail/loadAllRetail', params)
+  return get('/retail/loadAllRetail', params as UTSJSONObject)
+}
+
+export function addRetail(data: any) {
+  return post('/retail/addRetail', data as UTSJSONObject)
+}
+
+export function updateRetail(data: any) {
+  return post('/retail/updateRetail', data as UTSJSONObject)
+}
+
+export function deleteRetail(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/retail/deleteRetail', params)
 }
 
 export function batchAddRetail(data: any[]) {
   return postJson('/retail/batchAddRetail', data)
+}
+
+export function loadAllOrders(params: any) {
+  return get('/retail/loadAllOrders', params as UTSJSONObject)
+}
+
+export function loadOrderDetail(orderNo: string) {
+  const params = {} as UTSJSONObject
+  params['orderNo'] = orderNo
+  return get('/retail/loadOrderDetail', params)
+}
+
+export function returnSingleGoods(retailId: number, returnNumber: number = 0) {
+  const params = {} as UTSJSONObject
+  params['retailId'] = retailId
+  if (returnNumber > 0) {
+    params['returnNumber'] = returnNumber
+  }
+  return postWithParams('/retail/returnSingleGoods', params)
+}
+
+export function returnOrder(orderNo: string) {
+  const params = {} as UTSJSONObject
+  params['orderNo'] = orderNo
+  return postWithParams('/retail/returnOrder', params)
+}
+
+export function addToOrder(data: any[]) {
+  return postJson('/retail/addToOrder', data)
+}
+
+export function loadReturnAddRecords(params: any) {
+  return get('/retail/loadReturnAddRecords', params as UTSJSONObject)
 }

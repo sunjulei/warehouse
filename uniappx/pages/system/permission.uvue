@@ -1,0 +1,897 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 左侧菜单树 -->
+    <view class="tree-section">
+      <view class="tree-header">
+        <text class="tree-title">菜单结构</text>
+        <view class="tree-refresh-btn" @click="loadTreeData">
+          <text class="tree-refresh-text">刷新</text>
+        </view>
+      </view>
+      <scroll-view style="flex:1">
+        <view class="tree-container">
+          <view class="tree-item-root" @click="selectRootNode">
+            <text class="tree-item-text" :class="{ 'tree-item-active': selectedPermId == null }">全部权限</text>
+          </view>
+          <view v-for="(item, index) in treeData" :key="index">
+            <view class="tree-item" @click="selectNode(item)">
+              <text class="tree-item-text" :class="{ 'tree-item-active': selectedPermId == (item['id'] as number) }">
+                {{ item['title'] ?? '' }}
+              </text>
+            </view>
+            <view v-if="item['children'] != null" class="tree-children">
+              <view v-for="(child, ci) in (item['children'] as UTSJSONObject[])" :key="ci" class="tree-child-item" @click="selectNode(child)">
+                <text class="tree-child-text" :class="{ 'tree-item-active': selectedPermId == (child['id'] as number) }">
+                  └ {{ child['title'] ?? '' }}
+                </text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 右侧权限列表 -->
+    <view class="list-section">
+      <view class="section-header">
+        <text class="section-title">{{ selectedPermName ?? '全部权限' }}</text>
+        <view class="add-btn" @click="openForm()">
+          <text class="add-btn-text">+ 添加</text>
+        </view>
+      </view>
+
+      <!-- 搜索栏 -->
+      <view class="search-bar">
+        <input
+          class="search-input"
+          placeholder="搜索权限名"
+          v-model="searchKeyword"
+          @confirm="onSearch"
+        />
+        <view class="search-btn" @click="onSearch">
+          <text class="search-btn-text">搜索</text>
+        </view>
+      </view>
+
+      <scroll-view
+        style="flex:1"
+        @scrolltolower="onLoadMore"
+        refresher-enabled
+        :refresher-triggered="refreshing"
+        @refresherrefresh="onRefresh"
+      >
+        <view v-if="permList.length > 0" class="list-container">
+          <view v-for="(item, index) in permList" :key="index" class="perm-card">
+            <view class="perm-info">
+              <view class="perm-row">
+                <text class="perm-label">权限名：</text>
+                <text class="perm-value">{{ item['title'] ?? '' }}</text>
+              </view>
+              <view class="perm-row">
+                <text class="perm-label">权限码：</text>
+                <text class="perm-value perm-code">{{ item['percode'] ?? '' }}</text>
+              </view>
+              <view class="perm-row">
+                <text class="perm-label">排序：</text>
+                <text class="perm-value">{{ item['ordernum'] ?? 0 }}</text>
+              </view>
+              <view class="perm-row">
+                <text class="perm-label">可用：</text>
+                <text class="perm-value" :class="(item['available'] as number) == 1 ? 'status-on' : 'status-off'">
+                  {{ (item['available'] as number) == 1 ? '是' : '否' }}
+                </text>
+              </view>
+            </view>
+            <view class="perm-actions">
+              <view class="action-btn action-edit" @click="openForm(item)">
+                <text class="action-text edit-text">编辑</text>
+              </view>
+              <view class="action-btn action-delete" @click="handleDelete(item)">
+                <text class="action-text delete-text">删除</text>
+              </view>
+            </view>
+          </view>
+          <view class="loading-row">
+            <text class="loading-text">{{ loadingText }}</text>
+          </view>
+        </view>
+
+        <view v-if="!loading && permList.length === 0" class="empty-state">
+          <text class="empty-icon">📭</text>
+          <text class="empty-text">暂无权限数据</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 添加/编辑权限弹窗 -->
+    <view v-if="formVisible" class="form-overlay" @click="closeForm">
+      <view class="form-popup" @click.stop>
+        <view class="form-header">
+          <text class="form-title">{{ isEdit ? '编辑权限' : '添加权限' }}</text>
+          <view class="form-close" @click="closeForm">
+            <text class="close-icon">✕</text>
+          </view>
+        </view>
+
+        <scroll-view style="flex:1" class="form-body">
+          <view class="form-fields">
+            <view class="form-item">
+              <text class="form-label">上级权限</text>
+              <picker :range="parentPermLabels" @change="onParentPermChange">
+                <view class="form-picker">
+                  <text class="picker-text">{{ selectedParentLabel || '请选择上级权限' }}</text>
+                  <text class="picker-arrow">▼</text>
+                </view>
+              </picker>
+            </view>
+            <view class="form-item">
+              <text class="form-label">权限名 <text class="required-mark">*</text></text>
+              <input class="form-input" placeholder="请输入权限名" :value="formData['title']" @input="onFormInput($event, 'title')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">权限码 <text class="required-mark">*</text></text>
+              <input class="form-input" placeholder="如: user:view" :value="formData['percode']" @input="onFormInput($event, 'percode')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">排序号</text>
+              <input class="form-input" type="number" placeholder="请输入排序号" :value="formData['ordernum']" @input="onFormInput($event, 'ordernum')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">是否可用</text>
+              <switch :checked="(formData['available'] as number) == 1" @change="onAvailableChange" />
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="form-footer">
+          <view class="btn-cancel" @click="closeForm">
+            <text class="btn-text">取消</text>
+          </view>
+          <view class="btn-submit" @click="handleSubmit">
+            <text class="btn-text btn-text-white">{{ submitting ? '提交中...' : '保存' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { loadPermissionManagerLeftTreeJson, loadAllPermission, addPermission, updatePermission, deletePermission, loadPermissionMaxOrderNum } from '../../api/permission'
+import { checkPagePermission } from '../../utils/auth-guard'
+
+// 菜单树
+const treeData = ref<UTSJSONObject[]>([])
+const selectedPermId = ref<number | null>(null)
+const selectedPermName = ref<string | null>(null)
+
+// 权限列表
+const permList = ref<UTSJSONObject[]>([])
+const loading = ref(false)
+const noMore = ref(false)
+const refreshing = ref(false)
+const page = ref(1)
+const limit = 20
+const searchKeyword = ref('')
+
+// 表单
+const formVisible = ref(false)
+const isEdit = ref(false)
+const editId = ref<number | null>(null)
+const submitting = ref(false)
+const formData = ref<UTSJSONObject>({} as UTSJSONObject)
+
+// 上级权限选择
+const parentPermLabels = ref<string[]>([])
+const parentPermIds = ref<number[]>([])
+const selectedParentLabel = ref('')
+
+const loadingText = computed((): string => {
+  if (loading.value) return '加载中...'
+  if (noMore.value && permList.value.length > 0) return '没有更多了'
+  return ''
+})
+
+/**
+ * 加载菜单树
+ */
+function loadTreeData(): void {
+  loadPermissionManagerLeftTreeJson().then((res: any) => {
+    const result = res as UTSJSONObject
+    const data = result['data'] as UTSJSONObject[] | null
+    if (data != null) {
+      treeData.value = data!
+    }
+  }).catch((err: Error) => {
+    console.error('加载菜单树失败:', err.message)
+  })
+}
+
+/**
+ * 选择根节点
+ */
+function selectRootNode(): void {
+  selectedPermId.value = null
+  selectedPermName.value = null
+  loadPermList(true)
+}
+
+/**
+ * 选择菜单节点
+ */
+function selectNode(item: UTSJSONObject): void {
+  selectedPermId.value = item['id'] as number
+  selectedPermName.value = item['title'] as string
+  loadPermList(true)
+}
+
+/**
+ * 加载权限列表
+ */
+function loadPermList(isRefresh: boolean): void {
+  if (loading.value) return
+  if (isRefresh) {
+    page.value = 1
+    noMore.value = false
+    permList.value = []
+  }
+  if (noMore.value) return
+
+  loading.value = true
+  const params = {} as UTSJSONObject
+  params['page'] = isRefresh ? 1 : page.value
+  params['limit'] = limit
+  if (selectedPermId.value != null) {
+    params['id'] = selectedPermId.value
+  }
+  if (searchKeyword.value.length > 0) {
+    params['title'] = searchKeyword.value
+  }
+
+  loadAllPermission(params).then((res: any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null && list!.length > 0) {
+        const newItems = list!
+        permList.value = permList.value.concat(newItems)
+        page.value = page.value + 1
+        if (newItems.length < limit) {
+          noMore.value = true
+        }
+      } else {
+        noMore.value = true
+      }
+    }
+    loading.value = false
+    refreshing.value = false
+  }).catch((err: Error) => {
+    loading.value = false
+    refreshing.value = false
+    console.error('加载权限列表失败:', err.message)
+  })
+}
+
+function onSearch(): void {
+  loadPermList(true)
+}
+
+function onRefresh(): void {
+  refreshing.value = true
+  loadPermList(true)
+}
+
+function onLoadMore(): void {
+  if (!noMore.value && !loading.value) {
+    loadPermList(false)
+  }
+}
+
+/**
+ * 构建上级权限选择器数据
+ */
+function buildParentPermOptions(): void {
+  const labels: string[] = ['顶级权限']
+  const ids: number[] = [0]
+
+  for (let i = 0; i < treeData.value.length; i++) {
+    const item = treeData.value[i]
+    labels.push(item['title'] as string)
+    ids.push(item['id'] as number)
+
+    const children = item['children'] as UTSJSONObject[] | null
+    if (children != null) {
+      for (let j = 0; j < children!.length; j++) {
+        const child = children![j]
+        labels.push('  └ ' + (child['title'] as string))
+        ids.push(child['id'] as number)
+      }
+    }
+  }
+
+  parentPermLabels.value = labels
+  parentPermIds.value = ids
+}
+
+function onParentPermChange(e: any): void {
+  const index = e.detail.value as number
+  if (index < parentPermIds.value.length) {
+    const id = parentPermIds.value[index]
+    formData.value['pid'] = id == 0 ? null : id
+    selectedParentLabel.value = parentPermLabels.value[index]
+  }
+}
+
+/**
+ * 表单输入处理
+ */
+function onFormInput(e: UniInputEvent, key: string): void {
+  formData.value[key] = e.detail.value
+}
+
+function onAvailableChange(e: any): void {
+  formData.value['available'] = e.detail.value ? 1 : 0
+}
+
+/**
+ * 打开表单
+ */
+function openForm(data: UTSJSONObject | null = null): void {
+  buildParentPermOptions()
+
+  if (data != null) {
+    isEdit.value = true
+    editId.value = data['id'] as number
+    const pid = data['pid'] as number | null
+    formData.value = {
+      title: (data['title'] as string) ?? '',
+      percode: (data['percode'] as string) ?? '',
+      ordernum: (data['ordernum'] as number) ?? 0,
+      available: (data['available'] as number) ?? 1,
+      pid: pid
+    } as UTSJSONObject
+
+    // 设置上级权限显示
+    if (pid != null) {
+      const idx = parentPermIds.value.indexOf(pid!)
+      selectedParentLabel.value = idx >= 0 ? parentPermLabels.value[idx] : ''
+    } else {
+      selectedParentLabel.value = '顶级权限'
+    }
+  } else {
+    isEdit.value = false
+    editId.value = null
+    // 获取最大排序号
+    loadPermissionMaxOrderNum().then((res: any) => {
+      const result = res as UTSJSONObject
+      const maxNum = result['value'] as number ?? 0
+      formData.value = {
+        title: '',
+        percode: '',
+        ordernum: maxNum + 1,
+        available: 1,
+        pid: selectedPermId.value
+      } as UTSJSONObject
+    }).catch(() => {
+      formData.value = {
+        title: '',
+        percode: '',
+        ordernum: 1,
+        available: 1,
+        pid: selectedPermId.value
+      } as UTSJSONObject
+    })
+    selectedParentLabel.value = selectedPermId.value != null ? '' : '顶级权限'
+  }
+  formVisible.value = true
+}
+
+function closeForm(): void {
+  formVisible.value = false
+}
+
+/**
+ * 提交表单
+ */
+function handleSubmit(): void {
+  if (submitting.value) return
+
+  const title = (formData.value['title'] as string) ?? ''
+  if (title.length == 0) {
+    uni.showToast({ title: '请输入权限名', icon: 'none' })
+    return
+  }
+
+  const percode = (formData.value['percode'] as string) ?? ''
+  if (percode.length == 0) {
+    uni.showToast({ title: '请输入权限码', icon: 'none' })
+    return
+  }
+
+  submitting.value = true
+  const submitData = {} as UTSJSONObject
+  submitData['title'] = formData.value['title']
+  submitData['percode'] = formData.value['percode']
+  submitData['ordernum'] = formData.value['ordernum']
+  submitData['available'] = formData.value['available']
+  submitData['pid'] = formData.value['pid']
+
+  let api: Promise<any>
+  if (isEdit.value && editId.value != null) {
+    submitData['id'] = editId.value
+    api = updatePermission(submitData)
+  } else {
+    api = addPermission(submitData)
+  }
+
+  api.then((res: any) => {
+    submitting.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '操作成功', icon: 'success' })
+      closeForm()
+      loadPermList(true)
+      loadTreeData()
+    } else {
+      const msg = result['msg'] as string ?? '操作失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err: Error) => {
+    submitting.value = false
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  })
+}
+
+/**
+ * 删除权限
+ */
+function handleDelete(item: UTSJSONObject): void {
+  const title = (item['title'] as string) ?? ''
+  uni.showModal({
+    title: '确认删除',
+    content: '确认删除权限「' + title + '」？',
+    success: (res) => {
+      if (res.confirm) {
+        const id = item['id'] as number
+        deletePermission(id).then((r: any) => {
+          const result = r as UTSJSONObject
+          const code = result['code'] as number ?? -1
+          if (code == 200) {
+            uni.showToast({ title: '删除成功', icon: 'success' })
+            loadPermList(true)
+            loadTreeData()
+          } else {
+            const msg = result['msg'] as string ?? '删除失败'
+            uni.showToast({ title: msg, icon: 'none' })
+          }
+        }).catch((err: Error) => {
+          uni.showToast({ title: '删除失败', icon: 'none' })
+        })
+      }
+    }
+  })
+}
+
+/**
+ * 页面加载
+ */
+onShow(() => {
+  if (!checkPagePermission('/system/permission')) return
+  loadTreeData()
+  loadPermList(true)
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  flex-direction: row;
+  background-color: #F5F7FA;
+}
+
+/* 左侧树 */
+.tree-section {
+  width: 240rpx;
+  background-color: #FFFFFF;
+  border-right-width: 1rpx;
+  border-right-style: solid;
+  border-right-color: #F0F0F0;
+  flex-direction: column;
+}
+
+.tree-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 16rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.tree-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.tree-refresh-btn {
+  padding: 4rpx 12rpx;
+  background-color: #F0F9FF;
+  border-radius: 6rpx;
+}
+
+.tree-refresh-text {
+  font-size: 22rpx;
+  color: #409EFF;
+}
+
+.tree-container {
+  padding: 12rpx 0;
+}
+
+.tree-item-root {
+  padding: 16rpx;
+}
+
+.tree-item {
+  padding: 12rpx 16rpx;
+}
+
+.tree-item-text {
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.tree-item-active {
+  color: #409EFF;
+  font-weight: 600;
+}
+
+.tree-children {
+  padding-left: 16rpx;
+}
+
+.tree-child-item {
+  padding: 10rpx 16rpx;
+}
+
+.tree-child-text {
+  font-size: 24rpx;
+  color: #666666;
+}
+
+/* 右侧列表 */
+.list-section {
+  flex: 1;
+  flex-direction: column;
+}
+
+.section-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background-color: #FFFFFF;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.add-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 10rpx 24rpx;
+}
+
+.add-btn-text {
+  color: #FFFFFF;
+  font-size: 26rpx;
+}
+
+/* 搜索栏 */
+.search-bar {
+  flex-direction: row;
+  padding: 16rpx 24rpx;
+  background-color: #FFFFFF;
+  gap: 16rpx;
+  align-items: center;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  background-color: #F5F7FA;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.search-btn {
+  background-color: #409EFF;
+  border-radius: 36rpx;
+  padding: 0 32rpx;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn-text {
+  color: #FFFFFF;
+  font-size: 28rpx;
+}
+
+.list-container {
+  padding: 16rpx 24rpx;
+  gap: 16rpx;
+}
+
+/* 权限卡片 */
+.perm-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.perm-info {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.perm-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.perm-label {
+  font-size: 26rpx;
+  color: #909399;
+  width: 140rpx;
+}
+
+.perm-value {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+
+.perm-code {
+  color: #409EFF;
+  font-weight: 500;
+}
+
+.status-on {
+  color: #67C23A;
+}
+
+.status-off {
+  color: #F56C6C;
+}
+
+.perm-actions {
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 16rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+  padding-top: 16rpx;
+}
+
+.action-btn {
+  padding: 8rpx 24rpx;
+  border-radius: 8rpx;
+}
+
+.action-text {
+  font-size: 24rpx;
+}
+
+.action-edit {
+  background-color: #E6F7FF;
+}
+
+.edit-text {
+  color: #409EFF;
+}
+
+.action-delete {
+  background-color: #FFF1F0;
+}
+
+.delete-text {
+  color: #F56C6C;
+}
+
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 24rpx;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.empty-state {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+/* 弹窗 */
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.form-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 80vh;
+  background-color: #FFFFFF;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  flex-direction: column;
+}
+
+.form-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.form-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.form-close {
+  width: 48rpx;
+  height: 48rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-icon {
+  font-size: 32rpx;
+  color: #909399;
+}
+
+.form-body {
+  padding: 24rpx 32rpx;
+}
+
+.form-fields {
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.form-item {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.form-label {
+  font-size: 28rpx;
+  color: #606266;
+  font-weight: 500;
+}
+
+.required-mark {
+  color: #F56C6C;
+}
+
+.form-input {
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.form-picker {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding: 0 24rpx;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.picker-arrow {
+  font-size: 24rpx;
+  color: #C0C4CC;
+}
+
+.form-footer {
+  flex-direction: row;
+  padding: 24rpx 32rpx;
+  gap: 24rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+
+.btn-cancel {
+  flex: 1;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+}
+
+.btn-submit {
+  flex: 2;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  background-color: #409EFF;
+  border-radius: 8rpx;
+}
+
+.btn-text {
+  font-size: 30rpx;
+  color: #606266;
+}
+
+.btn-text-white {
+  color: #FFFFFF;
+}
+</style>

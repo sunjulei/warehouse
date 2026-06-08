@@ -299,3 +299,48 @@ export function clearAuth() : void {
 	saveToStorage(null)
 	clearSaToken()
 }
+
+// 后端菜单 href → uniappx 页面路径 映射
+export const ROUTE_MAP : Record<string, string> = {
+  '/dashboard': '/pages/workbench/index',
+  '/system/user': '/pages/system/user',
+  '/system/role': '/pages/system/role',
+  '/system/dept': '/pages/system/dept',
+  '/system/menu': '/pages/system/menu',
+  '/system/permission': '/pages/system/permission',
+  '/system/notice': '/pages/system/notice-manage',
+  '/system/loginfo': '/pages/system/loginfo',
+  '/system/operation-log': '/pages/profile/operation-log',
+  '/business/customer': '/pages/business/customer-manage',
+  '/business/provider': '/pages/business/provider-manage',
+  '/business/category': '/pages/business/category',
+  '/business/goods': '/pages/business/goods',
+  '/business/inport': '/pages/business/inport',
+  '/business/inport-pos': '/pages/business/inport-pos',
+  '/business/inport-order': '/pages/business/inport-order',
+  '/business/inport-record': '/pages/business/inport-record',
+  '/business/sales-pos': '/pages/business/sales-pos',
+  '/business/sales-order': '/pages/business/sales-order',
+  '/business/sales-record': '/pages/business/sales-record',
+  '/business/retail': '/pages/business/retail',
+  '/business/retail-order': '/pages/business/retail-order',
+  '/business/retail-record': '/pages/business/retail-record',
+  '/business/retailback': '/pages/business/retail-record',
+  '/business/report': '/pages/business/report',
+  '/business/inport-analysis': '/pages/business/report',
+  '/business/goods-analysis': '/pages/business/report',
+  '/business/profit-analysis': '/pages/business/report',
+  '/business/stocktake': '/pages/business/stocktake',
+  '/business/member': '/pages/business/member',
+  '/business/member-level': '/pages/business/member-level',
+  '/business/performance': '/pages/business/performance',
+  '/business/commission': '/pages/business/commission',
+  '/business/my-commission': '/pages/business/my-commission'
+}
+
+/**
+ * 根据后端菜单 href 获取 uniappx 页面路径
+ */
+export function getPagePathByHref(href : string) : string | null {
+  return ROUTE_MAP[href] ?? null
+}

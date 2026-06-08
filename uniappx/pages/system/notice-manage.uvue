@@ -1,0 +1,691 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <input
+        class="search-input"
+        placeholder="搜索公告标题"
+        v-model="searchKeyword"
+        @confirm="onSearch"
+      />
+      <view class="search-btn" @click="onSearch">
+        <text class="search-btn-text">搜索</text>
+      </view>
+    </view>
+
+    <!-- 公告列表 -->
+    <scroll-view
+      style="flex:1"
+      @scrolltolower="onLoadMore"
+      refresher-enabled
+      :refresher-triggered="refreshing"
+      @refresherrefresh="onRefresh"
+    >
+      <view v-if="noticeList.length > 0" class="list-container">
+        <view v-for="(item, index) in noticeList" :key="index" class="notice-card">
+          <view class="notice-info">
+            <view class="notice-row">
+              <text class="notice-label">标题：</text>
+              <text class="notice-value notice-title">{{ item['title'] ?? '' }}</text>
+            </view>
+            <view class="notice-row">
+              <text class="notice-label">操作人：</text>
+              <text class="notice-value">{{ item['opername'] ?? '' }}</text>
+            </view>
+            <view class="notice-row">
+              <text class="notice-label">创建时间：</text>
+              <text class="notice-value">{{ item['createtime'] ?? '' }}</text>
+            </view>
+          </view>
+          <view class="notice-actions">
+            <view class="action-btn action-view" @click="viewNotice(item)">
+              <text class="action-text view-text">查看</text>
+            </view>
+            <view class="action-btn action-edit" @click="openForm(item)">
+              <text class="action-text edit-text">编辑</text>
+            </view>
+            <view class="action-btn action-delete" @click="handleDelete(item)">
+              <text class="action-text delete-text">删除</text>
+            </view>
+          </view>
+        </view>
+        <view class="loading-row">
+          <text class="loading-text">{{ loadingText }}</text>
+        </view>
+      </view>
+
+      <view v-if="!loading && noticeList.length === 0" class="empty-state">
+        <text class="empty-icon">📭</text>
+        <text class="empty-text">暂无公告数据</text>
+      </view>
+    </scroll-view>
+
+    <!-- FAB 新增按钮 -->
+    <view class="fab-btn" @click="openForm()">
+      <text class="fab-icon">+</text>
+    </view>
+
+    <!-- 查看公告详情弹窗 -->
+    <view v-if="viewVisible" class="form-overlay" @click="closeView">
+      <view class="form-popup" @click.stop>
+        <view class="form-header">
+          <text class="form-title">公告详情</text>
+          <view class="form-close" @click="closeView">
+            <text class="close-icon">✕</text>
+          </view>
+        </view>
+        <scroll-view style="flex:1" class="form-body">
+          <view class="view-section">
+            <text class="view-label">标题</text>
+            <text class="view-value view-title">{{ viewData['title'] ?? '' }}</text>
+          </view>
+          <view class="view-section">
+            <text class="view-label">操作人</text>
+            <text class="view-value">{{ viewData['opername'] ?? '' }}</text>
+          </view>
+          <view class="view-section">
+            <text class="view-label">创建时间</text>
+            <text class="view-value">{{ viewData['createtime'] ?? '' }}</text>
+          </view>
+          <view class="view-section">
+            <text class="view-label">内容</text>
+            <text class="view-value view-content">{{ viewData['content'] ?? '' }}</text>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <!-- 添加/编辑公告弹窗 -->
+    <view v-if="formVisible" class="form-overlay" @click="closeForm">
+      <view class="form-popup" @click.stop>
+        <view class="form-header">
+          <text class="form-title">{{ isEdit ? '编辑公告' : '添加公告' }}</text>
+          <view class="form-close" @click="closeForm">
+            <text class="close-icon">✕</text>
+          </view>
+        </view>
+
+        <scroll-view style="flex:1" class="form-body">
+          <view class="form-fields">
+            <view class="form-item">
+              <text class="form-label">标题 <text class="required-mark">*</text></text>
+              <input class="form-input" placeholder="请输入公告标题" :value="formData['title']" @input="onFormInput($event, 'title')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">内容 <text class="required-mark">*</text></text>
+              <textarea class="form-textarea" placeholder="请输入公告内容" :value="formData['content']" @input="onFormInput($event, 'content')" />
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="form-footer">
+          <view class="btn-cancel" @click="closeForm">
+            <text class="btn-text">取消</text>
+          </view>
+          <view class="btn-submit" @click="handleSubmit">
+            <text class="btn-text btn-text-white">{{ submitting ? '提交中...' : '保存' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { loadAllNotice, addNotice, updateNotice, deleteNotice } from '../../api/notice'
+import { checkPagePermission } from '../../utils/auth-guard'
+
+// 公告列表
+const noticeList = ref<UTSJSONObject[]>([])
+const loading = ref(false)
+const noMore = ref(false)
+const refreshing = ref(false)
+const page = ref(1)
+const limit = 20
+const searchKeyword = ref('')
+
+// 查看详情
+const viewVisible = ref(false)
+const viewData = ref<UTSJSONObject>({} as UTSJSONObject)
+
+// 表单
+const formVisible = ref(false)
+const isEdit = ref(false)
+const editId = ref<number | null>(null)
+const submitting = ref(false)
+const formData = ref<UTSJSONObject>({} as UTSJSONObject)
+
+const loadingText = computed((): string => {
+  if (loading.value) return '加载中...'
+  if (noMore.value && noticeList.value.length > 0) return '没有更多了'
+  return ''
+})
+
+/**
+ * 加载公告列表
+ */
+function loadNoticeList(isRefresh: boolean): void {
+  if (loading.value) return
+  if (isRefresh) {
+    page.value = 1
+    noMore.value = false
+    noticeList.value = []
+  }
+  if (noMore.value) return
+
+  loading.value = true
+  const params = {} as UTSJSONObject
+  params['page'] = isRefresh ? 1 : page.value
+  params['limit'] = limit
+  if (searchKeyword.value.length > 0) {
+    params['title'] = searchKeyword.value
+  }
+
+  loadAllNotice(params).then((res: any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null && list!.length > 0) {
+        const newItems = list!
+        noticeList.value = noticeList.value.concat(newItems)
+        page.value = page.value + 1
+        if (newItems.length < limit) {
+          noMore.value = true
+        }
+      } else {
+        noMore.value = true
+      }
+    }
+    loading.value = false
+    refreshing.value = false
+  }).catch((err: Error) => {
+    loading.value = false
+    refreshing.value = false
+    console.error('加载公告列表失败:', err.message)
+  })
+}
+
+function onSearch(): void {
+  loadNoticeList(true)
+}
+
+function onRefresh(): void {
+  refreshing.value = true
+  loadNoticeList(true)
+}
+
+function onLoadMore(): void {
+  if (!noMore.value && !loading.value) {
+    loadNoticeList(false)
+  }
+}
+
+/**
+ * 查看公告详情
+ */
+function viewNotice(item: UTSJSONObject): void {
+  viewData.value = item
+  viewVisible.value = true
+}
+
+function closeView(): void {
+  viewVisible.value = false
+}
+
+/**
+ * 表单输入处理
+ */
+function onFormInput(e: UniInputEvent, key: string): void {
+  formData.value[key] = e.detail.value
+}
+
+/**
+ * 打开表单
+ */
+function openForm(data: UTSJSONObject | null = null): void {
+  if (data != null) {
+    isEdit.value = true
+    editId.value = data['id'] as number
+    formData.value = {
+      title: (data['title'] as string) ?? '',
+      content: (data['content'] as string) ?? ''
+    } as UTSJSONObject
+  } else {
+    isEdit.value = false
+    editId.value = null
+    formData.value = {
+      title: '',
+      content: ''
+    } as UTSJSONObject
+  }
+  formVisible.value = true
+}
+
+function closeForm(): void {
+  formVisible.value = false
+}
+
+/**
+ * 提交表单
+ */
+function handleSubmit(): void {
+  if (submitting.value) return
+
+  const title = (formData.value['title'] as string) ?? ''
+  if (title.length == 0) {
+    uni.showToast({ title: '请输入公告标题', icon: 'none' })
+    return
+  }
+
+  const content = (formData.value['content'] as string) ?? ''
+  if (content.length == 0) {
+    uni.showToast({ title: '请输入公告内容', icon: 'none' })
+    return
+  }
+
+  submitting.value = true
+  const submitData = {} as UTSJSONObject
+  submitData['title'] = formData.value['title']
+  submitData['content'] = formData.value['content']
+
+  let api: Promise<any>
+  if (isEdit.value && editId.value != null) {
+    submitData['id'] = editId.value
+    api = updateNotice(submitData)
+  } else {
+    api = addNotice(submitData)
+  }
+
+  api.then((res: any) => {
+    submitting.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '操作成功', icon: 'success' })
+      closeForm()
+      loadNoticeList(true)
+    } else {
+      const msg = result['msg'] as string ?? '操作失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err: Error) => {
+    submitting.value = false
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  })
+}
+
+/**
+ * 删除公告
+ */
+function handleDelete(item: UTSJSONObject): void {
+  const title = (item['title'] as string) ?? ''
+  uni.showModal({
+    title: '确认删除',
+    content: '确认删除公告「' + title + '」？',
+    success: (res) => {
+      if (res.confirm) {
+        const id = item['id'] as number
+        deleteNotice(id).then((r: any) => {
+          const result = r as UTSJSONObject
+          const code = result['code'] as number ?? -1
+          if (code == 200) {
+            uni.showToast({ title: '删除成功', icon: 'success' })
+            loadNoticeList(true)
+          } else {
+            const msg = result['msg'] as string ?? '删除失败'
+            uni.showToast({ title: msg, icon: 'none' })
+          }
+        }).catch((err: Error) => {
+          uni.showToast({ title: '删除失败', icon: 'none' })
+        })
+      }
+    }
+  })
+}
+
+/**
+ * 页面加载
+ */
+onShow(() => {
+  if (!checkPagePermission('/system/notice')) return
+  loadNoticeList(true)
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 搜索栏 */
+.search-bar {
+  flex-direction: row;
+  padding: 16rpx 24rpx;
+  background-color: #FFFFFF;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  background-color: #F5F7FA;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.search-btn {
+  background-color: #409EFF;
+  border-radius: 36rpx;
+  padding: 0 32rpx;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn-text {
+  color: #FFFFFF;
+  font-size: 28rpx;
+}
+
+.list-container {
+  padding: 16rpx 24rpx;
+  gap: 16rpx;
+}
+
+/* 公告卡片 */
+.notice-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.notice-info {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.notice-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.notice-label {
+  font-size: 26rpx;
+  color: #909399;
+  width: 160rpx;
+}
+
+.notice-value {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+
+.notice-title {
+  font-weight: 500;
+}
+
+.notice-actions {
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 16rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+  padding-top: 16rpx;
+}
+
+.action-btn {
+  padding: 8rpx 24rpx;
+  border-radius: 8rpx;
+}
+
+.action-text {
+  font-size: 24rpx;
+}
+
+.action-view {
+  background-color: #F0F9EB;
+}
+
+.view-text {
+  color: #67C23A;
+}
+
+.action-edit {
+  background-color: #E6F7FF;
+}
+
+.edit-text {
+  color: #409EFF;
+}
+
+.action-delete {
+  background-color: #FFF1F0;
+}
+
+.delete-text {
+  color: #F56C6C;
+}
+
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 24rpx;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.empty-state {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+/* FAB 按钮 */
+.fab-btn {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50rpx;
+  background-color: #409EFF;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(64, 158, 255, 0.4);
+}
+
+.fab-icon {
+  font-size: 48rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 弹窗 */
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.form-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 80vh;
+  background-color: #FFFFFF;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  flex-direction: column;
+}
+
+.form-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.form-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.form-close {
+  width: 48rpx;
+  height: 48rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-icon {
+  font-size: 32rpx;
+  color: #909399;
+}
+
+.form-body {
+  padding: 24rpx 32rpx;
+}
+
+.form-fields {
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.form-item {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.form-label {
+  font-size: 28rpx;
+  color: #606266;
+  font-weight: 500;
+}
+
+.required-mark {
+  color: #F56C6C;
+}
+
+.form-input {
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.form-textarea {
+  height: 240rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding: 16rpx 24rpx;
+  font-size: 28rpx;
+}
+
+.form-footer {
+  flex-direction: row;
+  padding: 24rpx 32rpx;
+  gap: 24rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+
+.btn-cancel {
+  flex: 1;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+}
+
+.btn-submit {
+  flex: 2;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  background-color: #409EFF;
+  border-radius: 8rpx;
+}
+
+.btn-text {
+  font-size: 30rpx;
+  color: #606266;
+}
+
+.btn-text-white {
+  color: #FFFFFF;
+}
+
+/* 详情查看 */
+.view-section {
+  flex-direction: column;
+  gap: 8rpx;
+  margin-bottom: 24rpx;
+}
+
+.view-label {
+  font-size: 26rpx;
+  color: #909399;
+  font-weight: 500;
+}
+
+.view-value {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.view-title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.view-content {
+  line-height: 48rpx;
+  color: #606266;
+}
+</style>

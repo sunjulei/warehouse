@@ -1,5 +1,17 @@
-import { get } from './request'
+import { get, postWithParams } from './request'
 
 export function loadAllLoginfo(params: any) {
-  return get('/loginfo/loadAllLoginfo', params)
+  return get('/loginfo/loadAllLoginfo', params as UTSJSONObject)
+}
+
+export function deleteLoginfo(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/loginfo/deleteLoginfo', params)
+}
+
+export function batchDeleteLoginfo(ids: number[]) {
+  const params = {} as UTSJSONObject
+  params['ids'] = ids.join(',')
+  return postWithParams('/loginfo/batchDeleteLoginfo', params)
 }

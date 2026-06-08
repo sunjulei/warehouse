@@ -1,0 +1,37 @@
+import { get, post, postWithParams } from './request'
+
+export function loadIndexLeftMenuJson() {
+  return get('/menu/loadIndexLeftMenuJson')
+}
+
+export function loadMenuManagerLeftTreeJson() {
+  return get('/menu/loadMenuManagerLeftTreeJson')
+}
+
+export function loadAllMenu(params: any) {
+  return get('/menu/loadAllMenu', params as UTSJSONObject)
+}
+
+export function addMenu(data: any) {
+  return post('/menu/addMenu', data as UTSJSONObject)
+}
+
+export function updateMenu(data: any) {
+  return post('/menu/updateMenu', data as UTSJSONObject)
+}
+
+export function deleteMenu(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/menu/deleteMenu', params)
+}
+
+export function loadMenuMaxOrderNum() {
+  return get('/menu/loadMenuMaxOrderNum')
+}
+
+export function checkMenuHasChildrenNode(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return get('/menu/checkMenuHasChildrenNode', params)
+}

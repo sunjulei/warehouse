@@ -1,0 +1,666 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 标题栏 -->
+    <view class="title-bar">
+      <text class="page-title">会员等级规则配置</text>
+      <view class="title-btn" @click="handleAddLevel">
+        <text class="title-btn-text">+ 新增等级</text>
+      </view>
+    </view>
+
+    <!-- 等级规则列表 -->
+    <view v-if="loading" class="loading-box">
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view v-if="!loading && levelRules.length === 0" class="empty-box">
+      <text class="empty-text">暂无等级规则</text>
+    </view>
+
+    <view v-if="!loading && levelRules.length > 0" class="rules-list">
+      <view v-for="(rule, index) in levelRules" :key="index" class="rule-card">
+        <view class="rule-info">
+          <view class="rule-row">
+            <text class="rule-label">排序：</text>
+            <text class="rule-value">{{ rule['sortOrder'] ?? 0 }}</text>
+          </view>
+          <view class="rule-row">
+            <text class="rule-label">等级名称：</text>
+            <text class="rule-value level-name">{{ rule['levelName'] ?? '' }}</text>
+          </view>
+          <view class="rule-row">
+            <text class="rule-label">等级值：</text>
+            <text class="rule-value">{{ rule['levelValue'] ?? 0 }}</text>
+          </view>
+          <view class="rule-row">
+            <text class="rule-label">达标条件：</text>
+            <text class="rule-value">{{ formatCondition(rule) }}</text>
+          </view>
+          <view class="rule-row">
+            <text class="rule-label">折扣率：</text>
+            <text class="rule-value">{{ rule['discountRate'] ?? 100 }}%</text>
+          </view>
+          <view class="rule-row">
+            <text class="rule-label">积分倍率：</text>
+            <text class="rule-value">{{ rule['pointsRate'] ?? 1 }}x</text>
+          </view>
+          <view v-if="rule['remark'] != null && (rule['remark'] as string).length > 0" class="rule-row">
+            <text class="rule-label">备注：</text>
+            <text class="rule-value">{{ rule['remark'] ?? '' }}</text>
+          </view>
+        </view>
+
+        <view class="rule-actions">
+          <view class="action-btn action-edit" @click="handleEditLevel(rule)">
+            <text class="action-text">编辑</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 编辑弹窗 -->
+    <view v-if="dialogVisible" class="form-overlay" @click="closeDialog">
+      <view class="form-popup" @click.stop>
+        <view class="form-header">
+          <text class="form-title">{{ isEditing ? '编辑等级' : '新增等级' }}</text>
+          <view class="form-close" @click="closeDialog">
+            <text class="close-icon">✕</text>
+          </view>
+        </view>
+
+        <scroll-view style="flex:1" class="form-body">
+          <view class="form-fields">
+            <view class="form-item">
+              <text class="form-label">等级名称 <text class="required-mark">*</text></text>
+              <input class="form-input" placeholder="如：银卡会员" :value="editForm.levelName" @input="onEditInput($event, 'levelName')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">等级值 <text class="required-mark">*</text></text>
+              <input class="form-input" type="number" placeholder="等级值" :value="editForm.levelValue" @input="onEditInput($event, 'levelValue')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">排序</text>
+              <input class="form-input" type="number" placeholder="排序值" :value="editForm.sortOrder" @input="onEditInput($event, 'sortOrder')" />
+            </view>
+
+            <view class="divider">
+              <text class="divider-text">达标条件</text>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">充值达标</text>
+              <input class="form-input" type="number" placeholder="0" :value="editForm.minRecharge" @input="onEditInput($event, 'minRecharge')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">消费达标</text>
+              <input class="form-input" type="number" placeholder="0" :value="editForm.minConsume" @input="onEditInput($event, 'minConsume')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">达标关系</text>
+              <view class="picker-row">
+                <view
+                  class="picker-btn"
+                  :class="{ 'picker-active': editForm.conditionType === 1 }"
+                  @click="setConditionType(1)"
+                >
+                  <text class="picker-text" :class="{ 'picker-active-text': editForm.conditionType === 1 }">满足其一</text>
+                </view>
+                <view
+                  class="picker-btn"
+                  :class="{ 'picker-active': editForm.conditionType === 2 }"
+                  @click="setConditionType(2)"
+                >
+                  <text class="picker-text" :class="{ 'picker-active-text': editForm.conditionType === 2 }">同时满足</text>
+                </view>
+              </view>
+            </view>
+
+            <view class="divider">
+              <text class="divider-text">权益配置</text>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">折扣率 (%)</text>
+              <input class="form-input" type="number" placeholder="100" :value="editForm.discountRate" @input="onEditInput($event, 'discountRate')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">积分倍率</text>
+              <input class="form-input" type="digit" placeholder="1" :value="editForm.pointsRate" @input="onEditInput($event, 'pointsRate')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">备注</text>
+              <input class="form-input" placeholder="请输入备注" :value="editForm.remark" @input="onEditInput($event, 'remark')" />
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="form-footer">
+          <view class="btn-cancel" @click="closeDialog">
+            <text class="btn-text">取消</text>
+          </view>
+          <view class="btn-submit" @click="handleSave">
+            <text class="btn-text btn-text-white">{{ saving ? '保存中...' : '保存' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import { loadLevelRules, saveLevelRule } from '../../api/member'
+
+// 等级规则列表
+const levelRules = ref<UTSJSONObject[]>([])
+const loading = ref(false)
+
+// 弹窗
+const dialogVisible = ref(false)
+const isEditing = ref(false)
+const saving = ref(false)
+
+// 编辑表单
+interface LevelEditForm {
+  id: number | null
+  levelName: string
+  levelValue: string
+  sortOrder: string
+  minRecharge: string
+  minConsume: string
+  conditionType: number
+  discountRate: string
+  pointsRate: string
+  remark: string
+}
+
+const editForm = ref<LevelEditForm>({
+  id: null,
+  levelName: '',
+  levelValue: '1',
+  sortOrder: '1',
+  minRecharge: '0',
+  minConsume: '0',
+  conditionType: 1,
+  discountRate: '100',
+  pointsRate: '1',
+  remark: ''
+})
+
+/**
+ * 格式化达标条件
+ */
+function formatCondition(rule: UTSJSONObject): string {
+  const minRecharge = (rule['minRecharge'] as number) ?? 0
+  const minConsume = (rule['minConsume'] as number) ?? 0
+  const conditionType = (rule['conditionType'] as number) ?? 1
+
+  if (minRecharge == 0 && minConsume == 0) {
+    return '无门槛'
+  }
+
+  let result = ''
+  if (minRecharge > 0) {
+    result = '充值满 ¥' + minRecharge.toFixed(0)
+  }
+  if (minRecharge > 0 && minConsume > 0) {
+    result = result + (conditionType == 2 ? ' 且 ' : ' 或 ')
+  }
+  if (minConsume > 0) {
+    result = result + '消费满 ¥' + minConsume.toFixed(0)
+  }
+  return result
+}
+
+/**
+ * 加载等级规则
+ */
+function loadData(): void {
+  loading.value = true
+  loadLevelRules().then((res: any) => {
+    loading.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const data = result['data'] as UTSJSONObject[] | null
+      if (data != null) {
+        levelRules.value = data!
+      } else {
+        levelRules.value = []
+      }
+    }
+  }).catch((err: Error) => {
+    loading.value = false
+    levelRules.value = []
+    console.error('加载等级规则失败:', err.message)
+  })
+}
+
+/**
+ * 新增等级
+ */
+function handleAddLevel(): void {
+  isEditing.value = false
+  const nextValue = levelRules.value.length + 1
+  editForm.value = {
+    id: null,
+    levelName: '',
+    levelValue: nextValue.toString(),
+    sortOrder: nextValue.toString(),
+    minRecharge: '0',
+    minConsume: '0',
+    conditionType: 1,
+    discountRate: '100',
+    pointsRate: '1',
+    remark: ''
+  }
+  dialogVisible.value = true
+}
+
+/**
+ * 编辑等级
+ */
+function handleEditLevel(rule: UTSJSONObject): void {
+  isEditing.value = true
+  editForm.value = {
+    id: (rule['id'] as number) ?? null,
+    levelName: (rule['levelName'] as string) ?? '',
+    levelValue: ((rule['levelValue'] as number) ?? 1).toString(),
+    sortOrder: ((rule['sortOrder'] as number) ?? 0).toString(),
+    minRecharge: ((rule['minRecharge'] as number) ?? 0).toString(),
+    minConsume: ((rule['minConsume'] as number) ?? 0).toString(),
+    conditionType: (rule['conditionType'] as number) ?? 1,
+    discountRate: ((rule['discountRate'] as number) ?? 100).toString(),
+    pointsRate: ((rule['pointsRate'] as number) ?? 1).toString(),
+    remark: (rule['remark'] as string) ?? ''
+  }
+  dialogVisible.value = true
+}
+
+function closeDialog(): void {
+  dialogVisible.value = false
+}
+
+/**
+ * 表单输入处理
+ */
+function onEditInput(e: UniInputEvent, key: string): void {
+  const form = editForm.value
+  if (key === 'levelName') {
+    form.levelName = e.detail.value
+  } else if (key === 'levelValue') {
+    form.levelValue = e.detail.value
+  } else if (key === 'sortOrder') {
+    form.sortOrder = e.detail.value
+  } else if (key === 'minRecharge') {
+    form.minRecharge = e.detail.value
+  } else if (key === 'minConsume') {
+    form.minConsume = e.detail.value
+  } else if (key === 'discountRate') {
+    form.discountRate = e.detail.value
+  } else if (key === 'pointsRate') {
+    form.pointsRate = e.detail.value
+  } else if (key === 'remark') {
+    form.remark = e.detail.value
+  }
+}
+
+/**
+ * 设置达标关系
+ */
+function setConditionType(val: number): void {
+  editForm.value.conditionType = val
+}
+
+/**
+ * 保存等级规则
+ */
+function handleSave(): void {
+  if (saving.value) return
+
+  if (editForm.value.levelName.length == 0) {
+    uni.showToast({ title: '请输入等级名称', icon: 'none' })
+    return
+  }
+
+  saving.value = true
+  const data = {} as UTSJSONObject
+  if (editForm.value.id != null) {
+    data['id'] = editForm.value.id
+  }
+  data['levelName'] = editForm.value.levelName
+  data['levelValue'] = parseInt(editForm.value.levelValue) ?? 1
+  data['sortOrder'] = parseInt(editForm.value.sortOrder) ?? 0
+  data['minRecharge'] = parseInt(editForm.value.minRecharge) ?? 0
+  data['minConsume'] = parseInt(editForm.value.minConsume) ?? 0
+  data['conditionType'] = editForm.value.conditionType
+  data['discountRate'] = parseInt(editForm.value.discountRate) ?? 100
+  data['pointsRate'] = parseFloat(editForm.value.pointsRate) ?? 1
+  if (editForm.value.remark.length > 0) {
+    data['remark'] = editForm.value.remark
+  }
+
+  saveLevelRule(data).then((res: any) => {
+    saving.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '保存成功', icon: 'success' })
+      closeDialog()
+      loadData()
+    } else {
+      const msg = result['msg'] as string ?? '保存失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err: Error) => {
+    saving.value = false
+    uni.showToast({ title: '保存失败', icon: 'none' })
+  })
+}
+
+/**
+ * 页面加载
+ */
+onShow(() => {
+  loadData()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 标题栏 */
+.title-bar {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  background-color: #FFFFFF;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.page-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.title-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 12rpx 24rpx;
+}
+
+.title-btn-text {
+  color: #FFFFFF;
+  font-size: 26rpx;
+}
+
+/* 加载/空状态 */
+.loading-box {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+.empty-box {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+/* 规则列表 */
+.rules-list {
+  padding: 16rpx 24rpx;
+  gap: 16rpx;
+}
+
+/* 规则卡片 */
+.rule-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.rule-info {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.rule-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.rule-label {
+  font-size: 26rpx;
+  color: #909399;
+  width: 180rpx;
+}
+
+.rule-value {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+
+.level-name {
+  font-weight: 600;
+  color: #409EFF;
+}
+
+/* 规则操作 */
+.rule-actions {
+  flex-direction: row;
+  justify-content: flex-end;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+  padding-top: 16rpx;
+}
+
+.action-btn {
+  padding: 8rpx 24rpx;
+  border-radius: 8rpx;
+  background-color: #E6F7FF;
+}
+
+.action-text {
+  font-size: 24rpx;
+  color: #409EFF;
+}
+
+/* 弹窗 */
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.form-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 85vh;
+  background-color: #FFFFFF;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  flex-direction: column;
+}
+
+.form-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.form-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.form-close {
+  width: 48rpx;
+  height: 48rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-icon {
+  font-size: 32rpx;
+  color: #909399;
+}
+
+.form-body {
+  padding: 24rpx 32rpx;
+}
+
+.form-fields {
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.form-item {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.form-label {
+  font-size: 28rpx;
+  color: #606266;
+  font-weight: 500;
+}
+
+.required-mark {
+  color: #F56C6C;
+}
+
+.form-input {
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+/* 分隔线 */
+.divider {
+  padding: 16rpx 0;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #EBEEF5;
+  margin-bottom: 8rpx;
+}
+
+.divider-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #303133;
+}
+
+/* 选择器行 */
+.picker-row {
+  flex-direction: row;
+  gap: 16rpx;
+}
+
+.picker-btn {
+  flex: 1;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  background-color: #FFFFFF;
+}
+
+.picker-active {
+  background-color: #409EFF;
+  border-color: #409EFF;
+}
+
+.picker-text {
+  font-size: 26rpx;
+  color: #606266;
+}
+
+.picker-active-text {
+  color: #FFFFFF;
+}
+
+/* 底部按钮 */
+.form-footer {
+  flex-direction: row;
+  padding: 24rpx 32rpx;
+  gap: 24rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+
+.btn-cancel {
+  flex: 1;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+}
+
+.btn-submit {
+  flex: 2;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  background-color: #409EFF;
+  border-radius: 8rpx;
+}
+
+.btn-text {
+  font-size: 30rpx;
+  color: #606266;
+}
+
+.btn-text-white {
+  color: #FFFFFF;
+}
+</style>

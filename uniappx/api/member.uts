@@ -1,0 +1,41 @@
+import { get, post } from './request'
+
+export function loadAllMember(params: any) {
+  return get('/member/loadAllMember', params as UTSJSONObject)
+}
+
+export function findMember(params: any) {
+  return get('/member/findMember', params as UTSJSONObject)
+}
+
+export function addMember(data: any) {
+  return post('/member/addMember', data as UTSJSONObject)
+}
+
+export function updateMember(data: any) {
+  return post('/member/updateMember', data as UTSJSONObject)
+}
+
+export function recharge(data: any) {
+  return post('/member/recharge', data as UTSJSONObject)
+}
+
+export function consume(data: any) {
+  return post('/member/consume', data as UTSJSONObject)
+}
+
+export function loadMemberRecords(params: any) {
+  return get('/member/loadMemberRecords', params as UTSJSONObject)
+}
+
+export function deleteMember(data: any) {
+  return post('/member/deleteMember', data as UTSJSONObject)
+}
+
+export function loadLevelRules() {
+  return get('/member/loadLevelRules')
+}
+
+export function saveLevelRule(data: any) {
+  return post('/member/saveLevelRule', data as UTSJSONObject)
+}

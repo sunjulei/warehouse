@@ -1,15 +1,48 @@
-import { get } from './request'
+import { get, post, postWithParams } from './request'
 
 export function loadAllGoods(params: any) {
-  return get('/goods/loadAllGoods', params)
+  return get('/goods/loadAllGoods', params as UTSJSONObject)
+}
+
+export function addGoods(data: any) {
+  return post('/goods/addGoods', data as UTSJSONObject)
+}
+
+export function updateGoods(data: any) {
+  return post('/goods/updateGoods', data as UTSJSONObject)
+}
+
+export function deleteGoods(id: number, goodsimg: string) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  params['goodsimg'] = goodsimg
+  return postWithParams('/goods/deleteGoods', params)
 }
 
 export function loadAllGoodsForSelect() {
   return get('/goods/loadAllGoodsForSelect')
 }
 
-export function loadGoodsByProviderId(providerid: number) {
-  return get('/goods/loadGoodsByProviderId', { providerid })
+export function loadGoodsForPOS(page: number, limit: number, keyword: string) {
+  const params = {} as UTSJSONObject
+  params['page'] = page
+  params['limit'] = limit
+  params['keyword'] = keyword
+  return get('/goods/loadGoodsForPOS', params)
+}
+
+export function loadGoodsByProviderId(providerid: number, allStatus: number = 0) {
+  const params = {} as UTSJSONObject
+  params['providerid'] = providerid
+  params['allStatus'] = allStatus
+  return get('/goods/loadGoodsByProviderId', params)
+}
+
+export function updateGoodsAvailable(id: number, available: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  params['available'] = available
+  return postWithParams('/goods/updateGoodsAvailable', params)
 }
 
 export function loadAllWarningGoods() {
@@ -18,4 +51,8 @@ export function loadAllWarningGoods() {
 
 export function loadDashboardStats() {
   return get('/goods/loadDashboardStats')
+}
+
+export function loadRecentOperations() {
+  return get('/goods/loadRecentOperations')
 }

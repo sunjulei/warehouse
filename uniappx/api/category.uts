@@ -1,0 +1,23 @@
+import { get, post, postWithParams } from './request'
+
+export function loadAllCategory(params: any) {
+  return get('/category/loadAllCategory', params as UTSJSONObject)
+}
+
+export function addCategory(data: any) {
+  return post('/category/addCategory', data as UTSJSONObject)
+}
+
+export function updateCategory(data: any) {
+  return post('/category/updateCategory', data as UTSJSONObject)
+}
+
+export function deleteCategory(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/category/deleteCategory', params)
+}
+
+export function loadAllCategoryForSelect() {
+  return get('/category/loadAllCategoryForSelect')
+}

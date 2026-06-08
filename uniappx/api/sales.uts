@@ -1,13 +1,56 @@
-import { get, post, postJson } from './request'
+import { get, post, postJson, postWithParams } from './request'
 
 export function loadAllSales(params: any) {
-  return get('/sales/loadAllSales', params)
+  return get('/sales/loadAllSales', params as UTSJSONObject)
 }
 
 export function addSales(data: any) {
-  return post('/sales/addSales', data)
+  return post('/sales/addSales', data as UTSJSONObject)
 }
 
 export function batchAddSales(data: any[]) {
   return postJson('/sales/batchAddSales', data)
+}
+
+export function updateSales(data: any) {
+  return post('/sales/updateSales', data as UTSJSONObject)
+}
+
+export function deleteSales(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/sales/deleteSales', params)
+}
+
+export function loadAllOrders(params: any) {
+  return get('/sales/loadAllOrders', params as UTSJSONObject)
+}
+
+export function loadOrderDetail(orderNo: string) {
+  const params = {} as UTSJSONObject
+  params['orderNo'] = orderNo
+  return get('/sales/loadOrderDetail', params)
+}
+
+export function returnSingleGoods(salesId: number, returnNumber: number = 0) {
+  const params = {} as UTSJSONObject
+  params['salesId'] = salesId
+  if (returnNumber > 0) {
+    params['returnNumber'] = returnNumber
+  }
+  return postWithParams('/sales/returnSingleGoods', params)
+}
+
+export function returnOrder(orderNo: string) {
+  const params = {} as UTSJSONObject
+  params['orderNo'] = orderNo
+  return postWithParams('/sales/returnOrder', params)
+}
+
+export function addToOrder(data: any[]) {
+  return postJson('/sales/addToOrder', data)
+}
+
+export function loadReturnAddRecords(params: any) {
+  return get('/sales/loadReturnAddRecords', params as UTSJSONObject)
 }

@@ -1,0 +1,1672 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title">店员提成</text>
+      <text class="page-desc">提成规则配置、月度提成计算与历史记录</text>
+    </view>
+
+    <!-- 标签栏 -->
+    <view class="tab-bar">
+      <view
+        v-for="(tab, index) in tabs"
+        :key="index"
+        class="tab-item"
+        :class="activeTab === index ? 'tab-item-active' : ''"
+        @click="switchTab(index)"
+      >
+        <text class="tab-text" :class="activeTab === index ? 'tab-text-active' : ''">{{ tab.label }}</text>
+      </view>
+    </view>
+
+    <!-- Tab 1: 计算提成 -->
+    <view v-if="activeTab === 0" class="tab-content">
+      <!-- 计算区域 -->
+      <view class="calc-section">
+        <view class="calc-card">
+          <text class="calc-icon">📊</text>
+          <text class="calc-title">月度提成计算</text>
+          <text class="calc-desc">选择月份，系统将自动汇总该月所有销售记录并计算提成</text>
+
+          <view class="calc-form">
+            <view class="form-item">
+              <text class="form-label">选择月份</text>
+              <picker mode="date" fields="month" :value="calcMonth" @change="onCalcMonthChange">
+                <view class="picker-display">
+                  <text class="picker-value">{{ calcMonth || '请选择月份' }}</text>
+                </view>
+              </picker>
+            </view>
+            <view class="form-item">
+              <text class="form-label">提成规则</text>
+              <view class="rule-select-list">
+                <view
+                  v-for="(rule, index) in enabledRules"
+                  :key="rule.id"
+                  class="rule-select-item"
+                  :class="calcRuleId === rule.id ? 'rule-select-item-active' : ''"
+                  @click="selectCalcRule(rule.id)"
+                >
+                  <text class="rule-select-name" :class="calcRuleId === rule.id ? 'rule-select-name-active' : ''">{{ rule.name }}</text>
+                  <text v-if="rule.type === 'fixed' && rule.rate > 0" class="rule-select-rate">{{ rule.rate }}%</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <view class="calc-btn" :class="calculating ? 'calc-btn-disabled' : ''" @click="handleCalculate">
+            <text class="calc-btn-text">{{ calculating ? '计算中...' : '开始计算' }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 最近计算结果 -->
+      <view v-if="records.length > 0" class="result-section">
+        <!-- 汇总 -->
+        <view class="summary-row">
+          <view class="summary-card summary-blue">
+            <text class="summary-val">{{ records.length }}</text>
+            <text class="summary-label">参与店员</text>
+          </view>
+          <view class="summary-card summary-green">
+            <text class="summary-val">¥{{ formatAmount(totalSales) }}</text>
+            <text class="summary-label">总销售额</text>
+          </view>
+          <view class="summary-card summary-orange">
+            <text class="summary-val">¥{{ formatAmount(totalCommission) }}</text>
+            <text class="summary-label">总提成</text>
+          </view>
+        </view>
+
+        <!-- 提成明细 -->
+        <view class="section-header">
+          <text class="section-title">{{ lastCalcMonth }} 提成明细</text>
+        </view>
+
+        <view
+          v-for="(item, index) in records"
+          :key="index"
+          class="record-card"
+        >
+          <view class="record-header">
+            <text class="record-operator">{{ item.operator }}</text>
+            <view class="status-tag" :class="getStatusClass(item.status)">
+              <text class="status-text" :class="getStatusTextClass(item.status)">{{ getStatusText(item.status) }}</text>
+            </view>
+          </view>
+          <view class="record-body">
+            <view class="record-row">
+              <text class="record-label">月销售额</text>
+              <text class="record-value">¥{{ (item.totalSales as number ?? 0).toFixed(2) }}</text>
+            </view>
+            <view class="record-row">
+              <text class="record-label">订单数</text>
+              <text class="record-value">{{ item.totalOrders ?? 0 }}</text>
+            </view>
+            <view class="record-row">
+              <text class="record-label">提成比例</text>
+              <text class="record-value">{{ item.commissionRate ?? 0 }}%</text>
+            </view>
+            <view class="record-row">
+              <text class="record-label">提成金额</text>
+              <text class="record-value record-amount">¥{{ (item.commissionAmount as number ?? 0).toFixed(2) }}</text>
+            </view>
+          </view>
+          <view v-if="item.status === 0 || item.status === 1" class="record-action">
+            <view v-if="item.status === 0" class="action-btn action-btn-primary" @click="handleConfirm(item, 1)">
+              <text class="action-btn-text">确认</text>
+            </view>
+            <view v-if="item.status === 1" class="action-btn action-btn-success" @click="handleConfirm(item, 2)">
+              <text class="action-btn-text">标记已发放</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Tab 2: 提成记录 -->
+    <view v-if="activeTab === 1" class="tab-content">
+      <!-- 月份选择 -->
+      <view class="query-bar">
+        <picker mode="date" fields="month" :value="queryMonth" @change="onQueryMonthChange">
+          <view class="picker-display">
+            <text class="picker-value">{{ queryMonth || '选择月份' }}</text>
+          </view>
+        </picker>
+        <view class="query-btn" @click="loadHistoryRecords">
+          <text class="query-btn-text">查询</text>
+        </view>
+      </view>
+
+      <!-- 历史记录 -->
+      <view v-if="historyRecords.length > 0" class="result-section">
+        <!-- 汇总 -->
+        <view class="summary-row">
+          <view class="summary-card summary-blue">
+            <text class="summary-val">{{ historyRecords.length }}</text>
+            <text class="summary-label">参与店员</text>
+          </view>
+          <view class="summary-card summary-green">
+            <text class="summary-val">¥{{ formatAmount(historyTotalSales) }}</text>
+            <text class="summary-label">总销售额</text>
+          </view>
+          <view class="summary-card summary-orange">
+            <text class="summary-val">¥{{ formatAmount(historyTotalCommission) }}</text>
+            <text class="summary-label">总提成</text>
+          </view>
+        </view>
+
+        <view
+          v-for="(item, index) in historyRecords"
+          :key="index"
+          class="record-card"
+        >
+          <view class="record-header">
+            <text class="record-operator">{{ item.operator }}</text>
+            <view class="status-tag" :class="getStatusClass(item.status)">
+              <text class="status-text" :class="getStatusTextClass(item.status)">{{ getStatusText(item.status) }}</text>
+            </view>
+          </view>
+          <view class="record-body">
+            <view class="record-row">
+              <text class="record-label">月销售额</text>
+              <text class="record-value">¥{{ (item.totalSales as number ?? 0).toFixed(2) }}</text>
+            </view>
+            <view class="record-row">
+              <text class="record-label">订单数</text>
+              <text class="record-value">{{ item.totalOrders ?? 0 }}</text>
+            </view>
+            <view class="record-row">
+              <text class="record-label">提成比例</text>
+              <text class="record-value">{{ item.commissionRate ?? 0 }}%</text>
+            </view>
+            <view class="record-row">
+              <text class="record-label">提成金额</text>
+              <text class="record-value record-amount">¥{{ (item.commissionAmount as number ?? 0).toFixed(2) }}</text>
+            </view>
+          </view>
+          <view v-if="item.status === 0 || item.status === 1" class="record-action">
+            <view v-if="item.status === 0" class="action-btn action-btn-primary" @click="handleConfirmHistory(item, 1)">
+              <text class="action-btn-text">确认</text>
+            </view>
+            <view v-if="item.status === 1" class="action-btn action-btn-success" @click="handleConfirmHistory(item, 2)">
+              <text class="action-btn-text">标记已发放</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <EmptyState v-if="historyRecords.length === 0 && !loadingHistory" text="选择月份查询历史提成记录" />
+    </view>
+
+    <!-- Tab 3: 提成规则 -->
+    <view v-if="activeTab === 2" class="tab-content">
+      <!-- 新增按钮 -->
+      <view class="top-bar">
+        <text class="section-title">提成规则配置</text>
+        <view class="add-btn" @click="handleAddRule">
+          <text class="add-btn-text">+ 新增规则</text>
+        </view>
+      </view>
+
+      <!-- 规则列表 -->
+      <view v-if="rules.length > 0" class="rules-list">
+        <view
+          v-for="(rule, index) in rules"
+          :key="rule.id"
+          class="rule-card"
+        >
+          <view class="rule-header">
+            <view class="rule-info-row">
+              <view class="rule-type-tag" :class="rule.type === 'fixed' ? 'rule-type-fixed' : 'rule-type-tiered'">
+                <text class="rule-type-text">{{ rule.type === 'fixed' ? '固定比例' : '阶梯' }}</text>
+              </view>
+              <text class="rule-name">{{ rule.name }}</text>
+              <text v-if="rule.type === 'fixed' && rule.rate > 0" class="rule-rate">{{ rule.rate }}%</text>
+              <view class="rule-status-tag" :class="rule.status === 1 ? 'rule-status-on' : 'rule-status-off'">
+                <text class="rule-status-text">{{ rule.status === 1 ? '启用' : '禁用' }}</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 阶梯明细 -->
+          <view v-if="rule.type === 'tiered' && rule.tiers != null && (rule.tiers as UTSJSONObject[]).length > 0" class="tier-section">
+            <view
+              v-for="(tier, tIndex) in rule.tiers"
+              :key="tIndex"
+              class="tier-row"
+            >
+              <text class="tier-range">
+                ¥{{ (tier.minAmount as number ?? 0).toFixed(0) }}
+                {{ tier.maxAmount != null ? ' - ¥' + (tier.maxAmount as number).toFixed(0) : ' 以上' }}
+              </text>
+              <text class="tier-rate">{{ tier.rate ?? 0 }}%</text>
+            </view>
+          </view>
+          <view v-if="rule.type === 'tiered' && (rule.tiers == null || (rule.tiers as UTSJSONObject[]).length === 0)" class="tier-empty">
+            <text class="tier-empty-text">暂未配置阶梯明细</text>
+          </view>
+
+          <!-- 操作按钮 -->
+          <view class="rule-actions">
+            <view class="rule-action-btn" @click="handleEditRule(rule)">
+              <text class="rule-action-text">编辑</text>
+            </view>
+            <view v-if="rule.type === 'tiered'" class="rule-action-btn rule-action-warn" @click="handleEditTiers(rule)">
+              <text class="rule-action-text rule-action-warn-text">配置阶梯</text>
+            </view>
+            <view class="rule-action-btn" @click="handleToggleStatus(rule)">
+              <text class="rule-action-text">{{ rule.status === 1 ? '禁用' : '启用' }}</text>
+            </view>
+            <view class="rule-action-btn rule-action-danger" @click="handleDeleteRule(rule)">
+              <text class="rule-action-text rule-action-danger-text">删除</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <EmptyState v-if="rules.length === 0 && !loadingRules" text="暂无提成规则，点击上方按钮新增" />
+    </view>
+
+    <!-- 规则编辑弹窗 -->
+    <view v-if="showRuleDialog" class="dialog-mask" @click="closeRuleDialog">
+      <view class="dialog-content" @click.stop="">
+        <view class="dialog-header">
+          <text class="dialog-title">{{ editingRule.id > 0 ? '编辑规则' : '新增规则' }}</text>
+          <text class="dialog-close" @click="closeRuleDialog">✕</text>
+        </view>
+        <view class="dialog-body">
+          <view class="form-item">
+            <text class="form-label">规则名称 *</text>
+            <input
+              class="form-input"
+              placeholder="如：销售提成A"
+              :value="editingRule.name"
+              @input="(e: UniInputEvent) => { editingRule.name = e.detail.value }"
+            />
+          </view>
+          <view class="form-item">
+            <text class="form-label">提成类型 *</text>
+            <view class="radio-row">
+              <view
+                class="radio-item"
+                :class="editingRule.type === 'fixed' ? 'radio-item-active' : ''"
+                @click="editingRule.type = 'fixed'"
+              >
+                <text class="radio-text">固定比例</text>
+              </view>
+              <view
+                class="radio-item"
+                :class="editingRule.type === 'tiered' ? 'radio-item-active' : ''"
+                @click="editingRule.type = 'tiered'"
+              >
+                <text class="radio-text">阶梯提成</text>
+              </view>
+            </view>
+          </view>
+          <view v-if="editingRule.type === 'fixed'" class="form-item">
+            <text class="form-label">提成比例 (%) *</text>
+            <input
+              class="form-input"
+              type="digit"
+              placeholder="请输入提成比例"
+              :value="editingRule.rate > 0 ? editingRule.rate.toString() : ''"
+              @input="(e: UniInputEvent) => { editingRule.rate = parseFloat(e.detail.value) || 0 }"
+            />
+          </view>
+          <view class="form-item">
+            <text class="form-label">备注</text>
+            <input
+              class="form-input"
+              placeholder="可选"
+              :value="editingRule.remark"
+              @input="(e: UniInputEvent) => { editingRule.remark = e.detail.value }"
+            />
+          </view>
+        </view>
+        <view class="dialog-footer">
+          <view class="dialog-btn dialog-btn-cancel" @click="closeRuleDialog">
+            <text class="dialog-btn-text">取消</text>
+          </view>
+          <view class="dialog-btn dialog-btn-confirm" :class="saving ? 'dialog-btn-disabled' : ''" @click="handleSaveRule">
+            <text class="dialog-btn-text dialog-btn-confirm-text">{{ saving ? '保存中...' : '保存' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 阶梯配置弹窗 -->
+    <view v-if="showTierDialog" class="dialog-mask" @click="closeTierDialog">
+      <view class="dialog-content dialog-content-large" @click.stop="">
+        <view class="dialog-header">
+          <text class="dialog-title">配置阶梯提成</text>
+          <text class="dialog-close" @click="closeTierDialog">✕</text>
+        </view>
+        <view class="dialog-body">
+          <text class="tier-hint">按销售额区间设置不同提成比例，最高销售额留空表示不设上限</text>
+          <scroll-view scroll-y="true" style="max-height: 600rpx;">
+            <view
+              v-for="(tier, index) in editingTiers"
+              :key="index"
+              class="tier-edit-card"
+            >
+              <view class="tier-edit-row">
+                <view class="tier-edit-field">
+                  <text class="tier-edit-label">最低销售额</text>
+                  <input
+                    class="form-input"
+                    type="digit"
+                    placeholder="0"
+                    :value="tier.minAmount > 0 ? tier.minAmount.toString() : ''"
+                    @input="(e: UniInputEvent) => { tier.minAmount = parseFloat(e.detail.value) || 0 }"
+                  />
+                </view>
+                <view class="tier-edit-field">
+                  <text class="tier-edit-label">最高销售额</text>
+                  <input
+                    class="form-input"
+                    type="digit"
+                    placeholder="不限"
+                    :value="tier.maxAmount > 0 ? tier.maxAmount.toString() : ''"
+                    @input="(e: UniInputEvent) => { tier.maxAmount = parseFloat(e.detail.value) || 0 }"
+                  />
+                </view>
+                <view class="tier-edit-field">
+                  <text class="tier-edit-label">比例(%)</text>
+                  <input
+                    class="form-input"
+                    type="digit"
+                    placeholder="0"
+                    :value="tier.rate > 0 ? tier.rate.toString() : ''"
+                    @input="(e: UniInputEvent) => { tier.rate = parseFloat(e.detail.value) || 0 }"
+                  />
+                </view>
+                <view class="tier-delete-btn" @click="removeTier(index)">
+                  <text class="tier-delete-text">删除</text>
+                </view>
+              </view>
+            </view>
+          </scroll-view>
+          <view class="add-tier-btn" @click="addTier">
+            <text class="add-tier-text">+ 添加阶梯</text>
+          </view>
+        </view>
+        <view class="dialog-footer">
+          <view class="dialog-btn dialog-btn-cancel" @click="closeTierDialog">
+            <text class="dialog-btn-text">取消</text>
+          </view>
+          <view class="dialog-btn dialog-btn-confirm" :class="saving ? 'dialog-btn-disabled' : ''" @click="handleSaveTiers">
+            <text class="dialog-btn-text dialog-btn-confirm-text">{{ saving ? '保存中...' : '保存' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed, onMounted } from 'vue'
+import { loadAllRules, saveRule, deleteRule, saveTiers, calculate, loadRecords, confirmRecord } from '../../api/commission'
+import EmptyState from '../../components/EmptyState.uvue'
+import { checkPagePermission } from '../../utils/auth-guard'
+
+interface RecordItem {
+  id : number
+  operator : string
+  totalSales : number
+  totalOrders : number
+  commissionRate : number
+  commissionAmount : number
+  status : number
+  yearMonth : string
+}
+
+interface RuleItem {
+  id : number
+  name : string
+  type : string
+  rate : number
+  status : number
+  remark : string
+  tiers : UTSJSONObject[] | null
+}
+
+interface TierItem {
+  minAmount : number
+  maxAmount : number
+  rate : number
+}
+
+const tabs = [
+  { label: '计算提成' },
+  { label: '提成记录' },
+  { label: '提成规则' }
+]
+
+const activeTab = ref(0)
+const calculating = ref(false)
+const saving = ref(false)
+const loadingRules = ref(false)
+const loadingHistory = ref(false)
+
+// Tab 1: 计算提成
+const calcMonth = ref('')
+const calcRuleId = ref(0)
+const records = ref<RecordItem[]>([])
+const lastCalcMonth = ref('')
+
+// Tab 2: 提成记录
+const queryMonth = ref('')
+const historyRecords = ref<RecordItem[]>([])
+
+// Tab 3: 提成规则
+const rules = ref<RuleItem[]>([])
+const showRuleDialog = ref(false)
+const editingRule = ref({
+  id: 0,
+  name: '',
+  type: 'fixed',
+  rate: 0,
+  remark: ''
+})
+const showTierDialog = ref(false)
+const editingTiers = ref<TierItem[]>([])
+const currentTierRuleId = ref(0)
+
+// 启用的规则列表
+const enabledRules = computed((): RuleItem[] => {
+  const result : RuleItem[] = []
+  for (let i = 0; i < rules.value.length; i++) {
+    if (rules.value[i].status === 1) {
+      result.push(rules.value[i])
+    }
+  }
+  return result
+})
+
+// 汇总
+const totalSales = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < records.value.length; i++) {
+    sum += records.value[i].totalSales
+  }
+  return sum
+})
+
+const totalCommission = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < records.value.length; i++) {
+    sum += records.value[i].commissionAmount
+  }
+  return sum
+})
+
+const historyTotalSales = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < historyRecords.value.length; i++) {
+    sum += historyRecords.value[i].totalSales
+  }
+  return sum
+})
+
+const historyTotalCommission = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < historyRecords.value.length; i++) {
+    sum += historyRecords.value[i].commissionAmount
+  }
+  return sum
+})
+
+/**
+ * 格式化金额
+ */
+function formatAmount(val : number) : string {
+  if (val >= 10000) {
+    return (val / 10000).toFixed(2) + '万'
+  }
+  return val.toFixed(2)
+}
+
+/**
+ * 状态文本
+ */
+function getStatusText(status : number) : string {
+  if (status === 0) return '待确认'
+  if (status === 1) return '已确认'
+  return '已发放'
+}
+
+/**
+ * 状态样式
+ */
+function getStatusClass(status : number) : string {
+  if (status === 0) return 'status-pending'
+  if (status === 1) return 'status-confirmed'
+  return 'status-paid'
+}
+
+function getStatusTextClass(status : number) : string {
+  if (status === 0) return 'status-pending-text'
+  if (status === 1) return 'status-confirmed-text'
+  return 'status-paid-text'
+}
+
+/**
+ * 切换标签
+ */
+function switchTab(index : number) : void {
+  activeTab.value = index
+}
+
+/**
+ * 解析记录数据
+ */
+function parseRecords(data : UTSJSONObject[]) : RecordItem[] {
+  const items : RecordItem[] = []
+  for (let i = 0; i < data.length; i++) {
+    const d = data[i]
+    items.push({
+      id: (d['id'] as number) ?? 0,
+      operator: (d['operator'] as string) ?? '',
+      totalSales: (d['totalSales'] as number) ?? 0,
+      totalOrders: (d['totalOrders'] as number) ?? 0,
+      commissionRate: (d['commissionRate'] as number) ?? 0,
+      commissionAmount: (d['commissionAmount'] as number) ?? 0,
+      status: (d['status'] as number) ?? 0,
+      yearMonth: (d['yearMonth'] as string) ?? ''
+    })
+  }
+  return items
+}
+
+/**
+ * 解析规则数据
+ */
+function parseRules(data : UTSJSONObject[]) : RuleItem[] {
+  const items : RuleItem[] = []
+  for (let i = 0; i < data.length; i++) {
+    const d = data[i]
+    items.push({
+      id: (d['id'] as number) ?? 0,
+      name: (d['name'] as string) ?? '',
+      type: (d['type'] as string) ?? 'fixed',
+      rate: (d['rate'] as number) ?? 0,
+      status: (d['status'] as number) ?? 0,
+      remark: (d['remark'] as string) ?? '',
+      tiers: d['tiers'] as UTSJSONObject[] | null
+    })
+  }
+  return items
+}
+
+// ===== 加载规则 =====
+function loadRules() : void {
+  loadingRules.value = true
+  loadAllRules().then((res : any) => {
+    loadingRules.value = false
+    const result = res as UTSJSONObject
+    const data = result['data'] as UTSJSONObject[] | null
+    if (data != null) {
+      rules.value = parseRules(data!)
+    } else {
+      rules.value = []
+    }
+  }).catch((err : Error) => {
+    loadingRules.value = false
+    rules.value = []
+  })
+}
+
+// ===== 计算提成 =====
+function onCalcMonthChange(e : any) : void {
+  calcMonth.value = e.detail.value as string
+}
+
+function selectCalcRule(id : number) : void {
+  calcRuleId.value = id
+}
+
+function handleCalculate() : void {
+  if (calcMonth.value.length === 0) {
+    uni.showToast({ title: '请选择月份', icon: 'none' })
+    return
+  }
+  if (calcRuleId.value === 0) {
+    uni.showToast({ title: '请选择提成规则', icon: 'none' })
+    return
+  }
+  if (calculating.value) return
+
+  calculating.value = true
+  const data : UTSJSONObject = {
+    yearMonth: calcMonth.value,
+    ruleId: calcRuleId.value
+  }
+
+  calculate(data).then((res : any) => {
+    calculating.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      const msg = (result['msg'] as string) ?? '计算成功'
+      uni.showToast({ title: msg, icon: 'success' })
+      lastCalcMonth.value = calcMonth.value
+      // 加载计算结果
+      loadRecords({ yearMonth: calcMonth.value } as UTSJSONObject).then((res2 : any) => {
+        const r2 = res2 as UTSJSONObject
+        const data2 = r2['data'] as UTSJSONObject[] | null
+        if (data2 != null) {
+          records.value = parseRecords(data2!)
+        }
+      })
+    } else {
+      const msg = (result['msg'] as string) ?? '计算失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err : Error) => {
+    calculating.value = false
+  })
+}
+
+// ===== 提成记录 =====
+function onQueryMonthChange(e : any) : void {
+  queryMonth.value = e.detail.value as string
+}
+
+function loadHistoryRecords() : void {
+  if (queryMonth.value.length === 0) {
+    historyRecords.value = []
+    return
+  }
+  loadingHistory.value = true
+  loadRecords({ yearMonth: queryMonth.value } as UTSJSONObject).then((res : any) => {
+    loadingHistory.value = false
+    const result = res as UTSJSONObject
+    const data = result['data'] as UTSJSONObject[] | null
+    if (data != null) {
+      historyRecords.value = parseRecords(data!)
+    } else {
+      historyRecords.value = []
+    }
+  }).catch((err : Error) => {
+    loadingHistory.value = false
+    historyRecords.value = []
+  })
+}
+
+// ===== 确认操作 =====
+function handleConfirm(item : RecordItem, status : number) : void {
+  const text = status === 1 ? '确认' : '标记为已发放'
+  uni.showModal({
+    title: '确认操作',
+    content: '确认将 ' + item.operator + ' 的提成' + text + '？',
+    success: (res) => {
+      if (res.confirm) {
+        doConfirm(item.id, status).then(() => {
+          // 刷新当前列表
+          if (lastCalcMonth.value.length > 0) {
+            loadRecords({ yearMonth: lastCalcMonth.value } as UTSJSONObject).then((res2 : any) => {
+              const r2 = res2 as UTSJSONObject
+              const data2 = r2['data'] as UTSJSONObject[] | null
+              if (data2 != null) {
+                records.value = parseRecords(data2!)
+              }
+            })
+          }
+        })
+      }
+    }
+  })
+}
+
+function handleConfirmHistory(item : RecordItem, status : number) : void {
+  const text = status === 1 ? '确认' : '标记为已发放'
+  uni.showModal({
+    title: '确认操作',
+    content: '确认将 ' + item.operator + ' 的提成' + text + '？',
+    success: (res) => {
+      if (res.confirm) {
+        doConfirm(item.id, status).then(() => {
+          loadHistoryRecords()
+        })
+      }
+    }
+  })
+}
+
+function doConfirm(id : number, status : number) : Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const data : UTSJSONObject = { id: id, status: status }
+    confirmRecord(data).then((res : any) => {
+      const result = res as UTSJSONObject
+      const code = result['code'] as number ?? -1
+      if (code == 200) {
+        uni.showToast({ title: '操作成功', icon: 'success' })
+        resolve()
+      } else {
+        uni.showToast({ title: '操作失败', icon: 'none' })
+        reject(new Error('操作失败'))
+      }
+    }).catch((err : Error) => {
+      reject(err)
+    })
+  })
+}
+
+// ===== 规则管理 =====
+function handleAddRule() : void {
+  editingRule.value = {
+    id: 0,
+    name: '',
+    type: 'fixed',
+    rate: 0,
+    remark: ''
+  }
+  showRuleDialog.value = true
+}
+
+function handleEditRule(rule : RuleItem) : void {
+  editingRule.value = {
+    id: rule.id,
+    name: rule.name,
+    type: rule.type,
+    rate: rule.rate,
+    remark: rule.remark
+  }
+  showRuleDialog.value = true
+}
+
+function closeRuleDialog() : void {
+  showRuleDialog.value = false
+}
+
+function handleSaveRule() : void {
+  if (editingRule.value.name.length === 0) {
+    uni.showToast({ title: '请输入规则名称', icon: 'none' })
+    return
+  }
+  if (editingRule.value.type === 'fixed' && editingRule.value.rate <= 0) {
+    uni.showToast({ title: '请输入提成比例', icon: 'none' })
+    return
+  }
+  if (saving.value) return
+
+  saving.value = true
+  const data : UTSJSONObject = {
+    name: editingRule.value.name,
+    type: editingRule.value.type,
+    remark: editingRule.value.remark
+  }
+  if (editingRule.value.id > 0) {
+    data['id'] = editingRule.value.id
+  }
+  if (editingRule.value.type === 'fixed') {
+    data['rate'] = editingRule.value.rate
+  }
+
+  saveRule(data).then((res : any) => {
+    saving.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: editingRule.value.id > 0 ? '修改成功' : '添加成功', icon: 'success' })
+      showRuleDialog.value = false
+      loadRules()
+    } else {
+      const msg = (result['msg'] as string) ?? '保存失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err : Error) => {
+    saving.value = false
+  })
+}
+
+function handleDeleteRule(rule : RuleItem) : void {
+  uni.showModal({
+    title: '确认删除',
+    content: '确认删除规则「' + rule.name + '」？关联的阶梯明细也会一并删除。',
+    success: (res) => {
+      if (res.confirm) {
+        deleteRule({ id: rule.id } as UTSJSONObject).then((res2 : any) => {
+          const r2 = res2 as UTSJSONObject
+          const code = r2['code'] as number ?? -1
+          if (code == 200) {
+            uni.showToast({ title: '删除成功', icon: 'success' })
+            loadRules()
+          }
+        })
+      }
+    }
+  })
+}
+
+function handleToggleStatus(rule : RuleItem) : void {
+  const newStatus = rule.status === 1 ? 0 : 1
+  const data : UTSJSONObject = {
+    id: rule.id,
+    status: newStatus
+  }
+  saveRule(data).then((res : any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: newStatus === 1 ? '已启用' : '已禁用', icon: 'success' })
+      loadRules()
+    }
+  })
+}
+
+// ===== 阶梯配置 =====
+function handleEditTiers(rule : RuleItem) : void {
+  currentTierRuleId.value = rule.id
+  const tiers : TierItem[] = []
+  if (rule.tiers != null) {
+    const tierList = rule.tiers as UTSJSONObject[]
+    for (let i = 0; i < tierList.length; i++) {
+      const t = tierList[i]
+      tiers.push({
+        minAmount: (t['minAmount'] as number) ?? 0,
+        maxAmount: (t['maxAmount'] as number) ?? 0,
+        rate: (t['rate'] as number) ?? 0
+      })
+    }
+  }
+  if (tiers.length === 0) {
+    tiers.push({ minAmount: 0, maxAmount: 0, rate: 0 })
+  }
+  editingTiers.value = tiers
+  showTierDialog.value = true
+}
+
+function closeTierDialog() : void {
+  showTierDialog.value = false
+}
+
+function addTier() : void {
+  editingTiers.value.push({ minAmount: 0, maxAmount: 0, rate: 0 })
+}
+
+function removeTier(index : number) : void {
+  editingTiers.value.splice(index, 1)
+}
+
+function handleSaveTiers() : void {
+  // 验证
+  for (let i = 0; i < editingTiers.value.length; i++) {
+    if (editingTiers.value[i].rate <= 0) {
+      uni.showToast({ title: '每级提成比例必须大于0', icon: 'none' })
+      return
+    }
+  }
+  if (saving.value) return
+
+  saving.value = true
+  const tierData : UTSJSONObject[] = []
+  for (let i = 0; i < editingTiers.value.length; i++) {
+    const t = editingTiers.value[i]
+    const obj : UTSJSONObject = {
+      minAmount: t.minAmount,
+      rate: t.rate
+    }
+    if (t.maxAmount > 0) {
+      obj['maxAmount'] = t.maxAmount
+    }
+    tierData.push(obj)
+  }
+
+  const data = {
+    ruleId: currentTierRuleId.value,
+    tiers: tierData
+  }
+
+  saveTiers(data as any).then((res : any) => {
+    saving.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '阶梯配置保存成功', icon: 'success' })
+      showTierDialog.value = false
+      loadRules()
+    } else {
+      const msg = (result['msg'] as string) ?? '保存失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err : Error) => {
+    saving.value = false
+  })
+}
+
+onMounted(() => {
+  if (!checkPagePermission('/business/commission')) return
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = (now.getMonth() + 1).toString().padStart(2, '0')
+  calcMonth.value = y + '-' + m
+  queryMonth.value = y + '-' + m
+
+  // 加载规则
+  loadRules()
+
+  // 加载当月记录
+  loadRecords({ yearMonth: queryMonth.value } as UTSJSONObject).then((res : any) => {
+    const result = res as UTSJSONObject
+    const data = result['data'] as UTSJSONObject[] | null
+    if (data != null) {
+      historyRecords.value = parseRecords(data!)
+    }
+  })
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 页面标题 */
+.page-header {
+  background-color: #FFFFFF;
+  padding: 32rpx 24rpx 20rpx 24rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.page-desc {
+  font-size: 26rpx;
+  color: #909399;
+  margin-top: 8rpx;
+}
+
+/* 标签栏 */
+.tab-bar {
+  flex-direction: row;
+  background-color: #FFFFFF;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.tab-item {
+  flex: 1;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom-width: 4rpx;
+  border-bottom-style: solid;
+  border-bottom-color: transparent;
+}
+
+.tab-item-active {
+  border-bottom-color: #409EFF;
+}
+
+.tab-text {
+  font-size: 28rpx;
+  color: #606266;
+}
+
+.tab-text-active {
+  color: #409EFF;
+  font-weight: bold;
+}
+
+.tab-content {
+  padding: 20rpx 24rpx;
+}
+
+/* 计算提成区域 */
+.calc-section {
+  margin-bottom: 24rpx;
+}
+
+.calc-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 40rpx 32rpx;
+  align-items: center;
+}
+
+.calc-icon {
+  font-size: 80rpx;
+  margin-bottom: 16rpx;
+}
+
+.calc-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 12rpx;
+}
+
+.calc-desc {
+  font-size: 26rpx;
+  color: #909399;
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.calc-form {
+  width: 100%;
+  margin-bottom: 24rpx;
+}
+
+/* 表单项 */
+.form-item {
+  margin-bottom: 24rpx;
+}
+
+.form-label {
+  font-size: 26rpx;
+  color: #606266;
+  margin-bottom: 12rpx;
+}
+
+.form-input {
+  background-color: #F5F7FA;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  color: #333333;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+}
+
+.picker-display {
+  background-color: #F5F7FA;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+}
+
+.picker-value {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+/* 规则选择 */
+.rule-select-list {
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.rule-select-item {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #F5F7FA;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.rule-select-item-active {
+  border-color: #409EFF;
+  background-color: #ECF5FF;
+}
+
+.rule-select-name {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.rule-select-name-active {
+  color: #409EFF;
+  font-weight: bold;
+}
+
+.rule-select-rate {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+/* 计算按钮 */
+.calc-btn {
+  background-color: #409EFF;
+  border-radius: 12rpx;
+  padding: 24rpx 80rpx;
+  align-items: center;
+}
+
+.calc-btn-disabled {
+  background-color: #A0CFFF;
+}
+
+.calc-btn-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 查询栏 */
+.query-bar {
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.query-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 16rpx 32rpx;
+}
+
+.query-btn-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+}
+
+/* 汇总行 */
+.summary-row {
+  flex-direction: row;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.summary-card {
+  flex: 1;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  align-items: center;
+}
+
+.summary-blue {
+  background: linear-gradient(135deg, #409EFF, #66b1ff);
+}
+
+.summary-green {
+  background: linear-gradient(135deg, #67C23A, #85ce61);
+}
+
+.summary-orange {
+  background: linear-gradient(135deg, #E6A23C, #ebb563);
+}
+
+.summary-val {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+}
+
+.summary-label {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 4rpx;
+}
+
+/* 区域标题 */
+.section-header {
+  margin-bottom: 16rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+/* 记录卡片 */
+.record-card {
+  background-color: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.record-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.record-operator {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+/* 状态标签 */
+.status-tag {
+  border-radius: 8rpx;
+  padding: 6rpx 16rpx;
+}
+
+.status-pending {
+  background-color: #FDF6EC;
+}
+
+.status-confirmed {
+  background-color: #F0F9EB;
+}
+
+.status-paid {
+  background-color: #F5F7FA;
+}
+
+.status-text {
+  font-size: 22rpx;
+  font-weight: bold;
+}
+
+.status-pending-text {
+  color: #E6A23C;
+}
+
+.status-confirmed-text {
+  color: #409EFF;
+}
+
+.status-paid-text {
+  color: #67C23A;
+}
+
+.record-body {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.record-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.record-label {
+  font-size: 26rpx;
+  color: #909399;
+}
+
+.record-value {
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.record-amount {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #E6A23C;
+}
+
+/* 操作按钮 */
+.record-action {
+  flex-direction: row;
+  justify-content: flex-end;
+  margin-top: 16rpx;
+  gap: 12rpx;
+}
+
+.action-btn {
+  border-radius: 8rpx;
+  padding: 12rpx 28rpx;
+}
+
+.action-btn-primary {
+  background-color: #409EFF;
+}
+
+.action-btn-success {
+  background-color: #67C23A;
+}
+
+.action-btn-text {
+  font-size: 24rpx;
+  color: #FFFFFF;
+}
+
+/* 规则区域 */
+.top-bar {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.add-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 12rpx 24rpx;
+}
+
+.add-btn-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+}
+
+/* 规则列表 */
+.rules-list {
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.rule-card {
+  background-color: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 24rpx;
+}
+
+.rule-header {
+  margin-bottom: 12rpx;
+}
+
+.rule-info-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+.rule-type-tag {
+  border-radius: 8rpx;
+  padding: 4rpx 16rpx;
+}
+
+.rule-type-fixed {
+  background-color: #ECF5FF;
+}
+
+.rule-type-tiered {
+  background-color: #FDF6EC;
+}
+
+.rule-type-text {
+  font-size: 22rpx;
+  font-weight: bold;
+}
+
+.rule-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.rule-rate {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.rule-status-tag {
+  border-radius: 8rpx;
+  padding: 4rpx 16rpx;
+}
+
+.rule-status-on {
+  background-color: #F0F9EB;
+}
+
+.rule-status-off {
+  background-color: #F5F7FA;
+}
+
+.rule-status-text {
+  font-size: 22rpx;
+}
+
+/* 阶梯明细 */
+.tier-section {
+  margin-bottom: 16rpx;
+  padding-top: 12rpx;
+  border-top-width: 1rpx;
+  border-top-style: dashed;
+  border-top-color: #E4E7ED;
+}
+
+.tier-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8rpx 0;
+}
+
+.tier-range {
+  font-size: 26rpx;
+  color: #606266;
+}
+
+.tier-rate {
+  font-size: 26rpx;
+  color: #409EFF;
+  font-weight: bold;
+}
+
+.tier-empty {
+  padding-top: 12rpx;
+  border-top-width: 1rpx;
+  border-top-style: dashed;
+  border-top-color: #E4E7ED;
+}
+
+.tier-empty-text {
+  font-size: 24rpx;
+  color: #C0C4CC;
+}
+
+/* 规则操作 */
+.rule-actions {
+  flex-direction: row;
+  gap: 12rpx;
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+
+.rule-action-btn {
+  border-radius: 8rpx;
+  padding: 8rpx 20rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+}
+
+.rule-action-warn {
+  border-color: #E6A23C;
+}
+
+.rule-action-danger {
+  border-color: #F56C6C;
+}
+
+.rule-action-text {
+  font-size: 24rpx;
+  color: #606266;
+}
+
+.rule-action-warn-text {
+  color: #E6A23C;
+}
+
+.rule-action-danger-text {
+  color: #F56C6C;
+}
+
+/* 弹窗 */
+.dialog-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.dialog-content {
+  width: 600rpx;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.dialog-content-large {
+  width: 680rpx;
+}
+
+.dialog-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.dialog-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.dialog-close {
+  font-size: 32rpx;
+  color: #909399;
+  padding: 8rpx;
+}
+
+.dialog-body {
+  padding: 24rpx 32rpx;
+}
+
+.dialog-footer {
+  flex-direction: row;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+
+.dialog-btn {
+  flex: 1;
+  align-items: center;
+  padding: 24rpx;
+}
+
+.dialog-btn-cancel {
+  border-right-width: 1rpx;
+  border-right-style: solid;
+  border-right-color: #F0F0F0;
+}
+
+.dialog-btn-confirm {
+  background-color: #FFFFFF;
+}
+
+.dialog-btn-disabled {
+  opacity: 0.5;
+}
+
+.dialog-btn-text {
+  font-size: 28rpx;
+  color: #606266;
+}
+
+.dialog-btn-confirm-text {
+  color: #409EFF;
+  font-weight: bold;
+}
+
+/* 单选行 */
+.radio-row {
+  flex-direction: row;
+  gap: 16rpx;
+}
+
+.radio-item {
+  flex: 1;
+  align-items: center;
+  padding: 16rpx;
+  border-radius: 8rpx;
+  background-color: #F5F7FA;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.radio-item-active {
+  border-color: #409EFF;
+  background-color: #ECF5FF;
+}
+
+.radio-text {
+  font-size: 26rpx;
+  color: #333333;
+}
+
+/* 阶梯编辑 */
+.tier-hint {
+  font-size: 24rpx;
+  color: #909399;
+  margin-bottom: 16rpx;
+}
+
+.tier-edit-card {
+  background-color: #F5F7FA;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.tier-edit-row {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12rpx;
+}
+
+.tier-edit-field {
+  flex: 1;
+}
+
+.tier-edit-label {
+  font-size: 22rpx;
+  color: #909399;
+  margin-bottom: 8rpx;
+}
+
+.tier-delete-btn {
+  padding: 12rpx 16rpx;
+  margin-bottom: 4rpx;
+}
+
+.tier-delete-text {
+  font-size: 24rpx;
+  color: #F56C6C;
+}
+
+.add-tier-btn {
+  margin-top: 16rpx;
+  padding: 16rpx;
+  align-items: center;
+  border-width: 1rpx;
+  border-style: dashed;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+}
+
+.add-tier-text {
+  font-size: 26rpx;
+  color: #409EFF;
+}
+
+/* 结果区域 */
+.result-section {
+  margin-bottom: 24rpx;
+}
+</style>

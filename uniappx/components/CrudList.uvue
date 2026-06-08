@@ -1,0 +1,250 @@
+<template>
+  <view class="crud-list">
+    <!-- 搜索栏 -->
+    <view v-if="searchable" class="search-bar">
+      <input
+        class="search-input"
+        :placeholder="searchPlaceholder"
+        v-model="keyword"
+        @confirm="onSearch"
+      />
+      <view class="search-btn" @click="onSearch">
+        <text class="search-btn-text">搜索</text>
+      </view>
+    </view>
+
+    <!-- 列表 -->
+    <scroll-view
+      style="flex:1"
+      @scrolltolower="onLoadMore"
+      refresher-enabled
+      :refresher-triggered="refreshing"
+      @refresherrefresh="onRefresh"
+    >
+      <view v-if="items.length > 0" class="list-container">
+        <view
+          v-for="(item, index) in items"
+          :key="index"
+          class="list-item"
+          @click="onItemClick(item)"
+        >
+          <view class="item-content">
+            <slot name="item" :item="item" :index="index">
+              <view v-for="(col, ci) in columns" :key="ci" class="item-field">
+                <text class="field-label">{{ col.title }}：</text>
+                <text class="field-value">{{ formatValue(item, col) }}</text>
+              </view>
+            </slot>
+          </view>
+          <view class="item-actions">
+            <view class="action-btn action-edit" @click.stop="onEdit(item)">
+              <text class="action-text">编辑</text>
+            </view>
+            <view v-if="deletable" class="action-btn action-delete" @click.stop="onDelete(item)">
+              <text class="action-text">删除</text>
+            </view>
+          </view>
+        </view>
+        <view class="loading-row">
+          <text class="loading-text">{{ loadingText }}</text>
+        </view>
+      </view>
+
+      <view v-if="!loading && items.length === 0" class="empty-state">
+        <text class="empty-icon">📭</text>
+        <text class="empty-text">{{ emptyText }}</text>
+      </view>
+    </scroll-view>
+
+    <!-- FAB 新增按钮 -->
+    <view v-if="showAdd" class="fab-btn" @click="onAdd">
+      <text class="fab-icon">+</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+
+interface ColumnDef {
+  key: string
+  title: string
+  formatter: ((val: any) => string) | null
+}
+
+const props = defineProps<{
+  loadData: (params: UTSJSONObject) => Promise<any>
+  columns: ColumnDef[]
+  searchable?: boolean
+  searchPlaceholder?: string
+  searchField?: string
+  deletable?: boolean
+  deleteApi?: ((id: number) => Promise<any>) | null
+  showAdd?: boolean
+  emptyText?: string
+  idKey?: string
+}>()
+
+const searchable = props.searchable ?? true
+const searchPlaceholder = props.searchPlaceholder ?? '搜索...'
+const searchField = props.searchField ?? 'name'
+const deletable = props.deletable ?? false
+const showAdd = props.showAdd ?? true
+const emptyText = props.emptyText ?? '暂无数据'
+const idKey = props.idKey ?? 'id'
+
+const emit = defineEmits<{
+  add: []
+  edit: [item: UTSJSONObject]
+  delete: [item: UTSJSONObject]
+  loaded: [items: UTSJSONObject[]]
+}>()
+
+const keyword = ref('')
+const items = ref<UTSJSONObject[]>([])
+const loading = ref(false)
+const noMore = ref(false)
+const refreshing = ref(false)
+const page = ref(1)
+const limit = 20
+
+const loadingText = computed((): string => {
+  if (loading.value) return '加载中...'
+  if (noMore.value && items.value.length > 0) return '没有更多了'
+  return ''
+})
+
+function formatValue(item: UTSJSONObject, col: ColumnDef): string {
+  const val = item[col.key]
+  if (val == null) return ''
+  if (col.formatter != null) {
+    return col.formatter!(val)
+  }
+  return val.toString()
+}
+
+function loadDataList(isRefresh: boolean): void {
+  if (loading.value) return
+  if (isRefresh) {
+    page.value = 1
+    noMore.value = false
+    items.value = []
+  }
+  if (noMore.value) return
+
+  loading.value = true
+  const params = {} as UTSJSONObject
+  params['page'] = isRefresh ? 1 : page.value
+  params['limit'] = limit
+  if (keyword.value.length > 0) {
+    params[searchField] = keyword.value
+  }
+
+  props.loadData(params).then((res: any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null && list!.length > 0) {
+        const newItems = list!
+        items.value = items.value.concat(newItems)
+        page.value = page.value + 1
+        if (newItems.length < limit) {
+          noMore.value = true
+        }
+      } else {
+        noMore.value = true
+      }
+    }
+    loading.value = false
+    refreshing.value = false
+    emit('loaded', items.value)
+  }).catch((err: Error) => {
+    loading.value = false
+    refreshing.value = false
+  })
+}
+
+function onSearch(): void {
+  loadDataList(true)
+}
+
+function onRefresh(): void {
+  refreshing.value = true
+  loadDataList(true)
+}
+
+function onLoadMore(): void {
+  if (!noMore.value && !loading.value) {
+    loadDataList(false)
+  }
+}
+
+function onAdd(): void {
+  emit('add')
+}
+
+function onEdit(item: UTSJSONObject): void {
+  emit('edit', item)
+}
+
+function onDelete(item: UTSJSONObject): void {
+  uni.showModal({
+    title: '确认删除',
+    content: '确定要删除这条记录吗？',
+    success: (res) => {
+      if (res.confirm) {
+        if (props.deleteApi != null) {
+          const id = item[idKey] as number
+          props.deleteApi!(id).then((r: any) => {
+            uni.showToast({ title: '删除成功', icon: 'success' })
+            loadDataList(true)
+          }).catch((err: Error) => {
+            uni.showToast({ title: '删除失败', icon: 'none' })
+          })
+        } else {
+          emit('delete', item)
+        }
+      }
+    }
+  })
+}
+
+function onItemClick(item: UTSJSONObject): void {
+  emit('edit', item)
+}
+
+function reload(): void {
+  loadDataList(true)
+}
+
+defineExpose({ reload })
+</script>
+
+<style>
+.crud-list { flex: 1; background-color: #F5F7FA; }
+.search-bar { flex-direction: row; padding: 16rpx 24rpx; background-color: #FFFFFF; gap: 16rpx; align-items: center; }
+.search-input { flex: 1; height: 72rpx; background-color: #F5F7FA; border-radius: 36rpx; padding: 0 24rpx; font-size: 28rpx; }
+.search-btn { background-color: #409EFF; border-radius: 36rpx; padding: 0 32rpx; height: 72rpx; align-items: center; justify-content: center; }
+.search-btn-text { color: #FFFFFF; font-size: 28rpx; }
+.list-container { padding: 16rpx 24rpx; gap: 16rpx; }
+.list-item { background-color: #FFFFFF; border-radius: 16rpx; padding: 24rpx; flex-direction: column; gap: 16rpx; }
+.item-content { flex-direction: column; gap: 8rpx; }
+.item-field { flex-direction: row; align-items: center; }
+.field-label { font-size: 26rpx; color: #909399; width: 160rpx; }
+.field-value { font-size: 28rpx; color: #333333; flex: 1; }
+.item-actions { flex-direction: row; justify-content: flex-end; gap: 16rpx; border-top-width: 1rpx; border-top-color: #F0F0F0; border-top-style: solid; padding-top: 16rpx; }
+.action-btn { padding: 8rpx 24rpx; border-radius: 8rpx; }
+.action-edit { background-color: #E6F7FF; }
+.action-delete { background-color: #FFF1F0; }
+.action-text { font-size: 24rpx; }
+.action-edit .action-text { color: #409EFF; }
+.action-delete .action-text { color: #F56C6C; }
+.loading-row { flex-direction: row; justify-content: center; padding: 24rpx; }
+.loading-text { font-size: 26rpx; color: #999999; }
+.empty-state { align-items: center; justify-content: center; padding: 120rpx 0; gap: 16rpx; }
+.empty-icon { font-size: 80rpx; }
+.empty-text { font-size: 28rpx; color: #909399; }
+.fab-btn { position: fixed; right: 40rpx; bottom: 120rpx; width: 100rpx; height: 100rpx; border-radius: 50rpx; background-color: #409EFF; align-items: center; justify-content: center; box-shadow: 0 4rpx 16rpx rgba(64, 158, 255, 0.4); }
+.fab-icon { font-size: 48rpx; color: #FFFFFF; font-weight: bold; }
+</style>

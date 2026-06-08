@@ -1,0 +1,19 @@
+import { get, postWithParams } from './request'
+
+export function loadAllRetailback(params: any) {
+  return get('/retailback/loadAllRetailback', params as UTSJSONObject)
+}
+
+export function addRetailback(id: number, num: number, remark: string) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  params['number'] = num
+  params['remark'] = remark
+  return postWithParams('/retailback/addRetailback', params)
+}
+
+export function cancelRetailback(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/retailback/cancelRetailback', params)
+}

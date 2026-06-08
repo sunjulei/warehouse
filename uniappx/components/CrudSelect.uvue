@@ -1,0 +1,112 @@
+<template>
+  <view class="crud-select" @click="openPicker">
+    <text class="select-text" :class="{ 'select-placeholder': !selectedLabel }">
+      {{ selectedLabel || placeholder }}
+    </text>
+    <text class="select-arrow">▼</text>
+
+    <view v-if="pickerVisible" class="select-overlay" @click="closePicker">
+      <view class="select-popup" @click.stop>
+        <view class="select-header">
+          <text class="select-title">请选择{{ label }}</text>
+          <view @click="closePicker">
+            <text class="close-icon">✕</text>
+          </view>
+        </view>
+        <view class="select-search">
+          <input class="search-input" placeholder="搜索..." v-model="keyword" @confirm="onSearch" />
+        </view>
+        <scroll-view style="flex:1; max-height: 600rpx;">
+          <view class="option-list">
+            <view
+              v-for="(opt, index) in filteredOptions"
+              :key="index"
+              class="option-item"
+              :class="{ 'option-selected': opt.value === modelValue }"
+              @click="onSelect(opt)"
+            >
+              <text class="option-text">{{ opt.label }}</text>
+              <text v-if="opt.value === modelValue" class="option-check">✓</text>
+            </view>
+            <view v-if="filteredOptions.length === 0" class="empty-options">
+              <text class="empty-text">暂无选项</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+
+interface SelectOption {
+  label: string
+  value: any
+}
+
+const props = defineProps<{
+  modelValue: any
+  options: SelectOption[]
+  placeholder?: string
+  label?: string
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: any]
+  change: [value: any]
+}>()
+
+const pickerVisible = ref(false)
+const keyword = ref('')
+
+const selectedLabel = computed((): string => {
+  if (props.modelValue == null) return ''
+  const opt = props.options.find((o: SelectOption) => o.value == props.modelValue)
+  return opt != null ? opt.label : ''
+})
+
+const filteredOptions = computed((): SelectOption[] => {
+  if (keyword.value.length == 0) return props.options
+  return props.options.filter((opt: SelectOption) => opt.label.includes(keyword.value))
+})
+
+function openPicker(): void {
+  pickerVisible.value = true
+  keyword.value = ''
+}
+
+function closePicker(): void {
+  pickerVisible.value = false
+}
+
+function onSelect(opt: SelectOption): void {
+  emit('update:modelValue', opt.value)
+  emit('change', opt.value)
+  closePicker()
+}
+
+function onSearch(): void {}
+</script>
+
+<style>
+.crud-select { flex-direction: row; align-items: center; justify-content: space-between; height: 80rpx; border-width: 1rpx; border-color: #DCDFE6; border-style: solid; border-radius: 8rpx; padding: 0 24rpx; }
+.select-text { font-size: 28rpx; color: #333333; flex: 1; }
+.select-placeholder { color: #C0C4CC; }
+.select-arrow { font-size: 24rpx; color: #C0C4CC; }
+.select-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 999; }
+.select-popup { position: fixed; left: 0; right: 0; bottom: 0; max-height: 70vh; background-color: #FFFFFF; border-top-left-radius: 24rpx; border-top-right-radius: 24rpx; flex-direction: column; }
+.select-header { flex-direction: row; justify-content: space-between; align-items: center; padding: 24rpx 32rpx; border-bottom-width: 1rpx; border-bottom-color: #F0F0F0; border-bottom-style: solid; }
+.select-title { font-size: 32rpx; font-weight: bold; color: #333333; }
+.close-icon { font-size: 32rpx; color: #909399; }
+.select-search { padding: 16rpx 32rpx; }
+.search-input { height: 72rpx; background-color: #F5F7FA; border-radius: 36rpx; padding: 0 24rpx; font-size: 28rpx; }
+.option-list { flex-direction: column; padding: 0 32rpx; }
+.option-item { flex-direction: row; justify-content: space-between; align-items: center; padding: 24rpx 0; border-bottom-width: 1rpx; border-bottom-color: #F0F0F0; border-bottom-style: solid; }
+.option-selected { background-color: #F0F9FF; }
+.option-text { font-size: 30rpx; color: #333333; }
+.option-check { font-size: 30rpx; color: #409EFF; }
+.empty-options { align-items: center; padding: 48rpx; }
+.empty-text { font-size: 28rpx; color: #909399; }
+</style>

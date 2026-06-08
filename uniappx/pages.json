@@ -96,7 +96,33 @@
 			"style": {
 				"navigationBarTitleText": "操作日志"
 			}
-		}
+		},
+		{ "path": "pages/business/inport-pos", "style": { "navigationBarTitleText": "进货开单" } },
+		{ "path": "pages/business/inport-order", "style": { "navigationBarTitleText": "进货订单" } },
+		{ "path": "pages/business/inport-record", "style": { "navigationBarTitleText": "进货记录" } },
+		{ "path": "pages/business/sales-pos", "style": { "navigationBarTitleText": "销售POS" } },
+		{ "path": "pages/business/sales-order", "style": { "navigationBarTitleText": "销售订单" } },
+		{ "path": "pages/business/sales-record", "style": { "navigationBarTitleText": "销售记录" } },
+		{ "path": "pages/business/retail", "style": { "navigationBarTitleText": "零售开单" } },
+		{ "path": "pages/business/retail-order", "style": { "navigationBarTitleText": "零售订单" } },
+		{ "path": "pages/business/retail-record", "style": { "navigationBarTitleText": "零售记录" } },
+		{ "path": "pages/business/customer-manage", "style": { "navigationBarTitleText": "客户管理" } },
+		{ "path": "pages/business/provider-manage", "style": { "navigationBarTitleText": "供应商管理" } },
+		{ "path": "pages/business/category", "style": { "navigationBarTitleText": "分类管理" } },
+		{ "path": "pages/business/member", "style": { "navigationBarTitleText": "会员管理" } },
+		{ "path": "pages/business/member-level", "style": { "navigationBarTitleText": "会员等级" } },
+		{ "path": "pages/business/report", "style": { "navigationBarTitleText": "报表分析" } },
+		{ "path": "pages/business/performance", "style": { "navigationBarTitleText": "业绩排名" } },
+		{ "path": "pages/business/commission", "style": { "navigationBarTitleText": "提成管理" } },
+		{ "path": "pages/business/my-commission", "style": { "navigationBarTitleText": "我的提成" } },
+		{ "path": "pages/system/user", "style": { "navigationBarTitleText": "用户管理" } },
+		{ "path": "pages/system/role", "style": { "navigationBarTitleText": "角色管理" } },
+		{ "path": "pages/system/dept", "style": { "navigationBarTitleText": "部门管理" } },
+		{ "path": "pages/system/menu", "style": { "navigationBarTitleText": "菜单管理" } },
+		{ "path": "pages/system/permission", "style": { "navigationBarTitleText": "权限管理" } },
+		{ "path": "pages/system/notice-manage", "style": { "navigationBarTitleText": "公告管理" } },
+		{ "path": "pages/system/loginfo", "style": { "navigationBarTitleText": "登录日志" } },
+		{ "path": "pages/system/icon", "style": { "navigationBarTitleText": "图标管理" } }
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",

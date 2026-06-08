@@ -1,0 +1,5 @@
+import { get } from './request'
+
+export function loadAllOperationLog(params: any) {
+  return get('/operationLog/loadAllOperationLog', params as UTSJSONObject)
+}

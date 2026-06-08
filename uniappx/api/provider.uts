@@ -1,7 +1,21 @@
-import { get } from './request'
+import { get, post, postWithParams } from './request'
 
 export function loadAllProvider(params: any) {
-  return get('/provider/loadAllProvider', params)
+  return get('/provider/loadAllProvider', params as UTSJSONObject)
+}
+
+export function addProvider(data: any) {
+  return post('/provider/addProvider', data as UTSJSONObject)
+}
+
+export function updateProvider(data: any) {
+  return post('/provider/updateProvider', data as UTSJSONObject)
+}
+
+export function deleteProvider(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/provider/deleteProvider', params)
 }
 
 export function loadAllProviderForSelect() {

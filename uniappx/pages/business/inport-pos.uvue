@@ -1,0 +1,807 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 顶部：供应商选择 + 搜索 -->
+    <view class="top-bar">
+      <picker
+        :range="providerNames"
+        :value="selectedProviderIndex"
+        @change="onProviderChange"
+      >
+        <view class="provider-picker">
+          <text class="picker-text" :class="{ 'picker-placeholder': selectedProviderIndex < 0 }">
+            {{ selectedProviderIndex >= 0 ? providerNames[selectedProviderIndex] : '选择供应商' }}
+          </text>
+          <text class="picker-arrow">▼</text>
+        </view>
+      </picker>
+      <view class="search-box">
+        <input
+          class="search-input"
+          placeholder="搜索商品名称"
+          :value="searchKeyword"
+          @input="onSearchInput"
+          @confirm="onSearch"
+        />
+      </view>
+    </view>
+
+    <!-- 中部：商品网格 -->
+    <view class="goods-section">
+      <view class="section-header">
+        <text class="section-title">商品选择</text>
+        <text class="section-hint" v-if="selectedProviderIndex < 0">请先选择供应商</text>
+      </view>
+
+      <view v-if="goodsLoading" class="loading-box">
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <view v-if="!goodsLoading && goodsList.length == 0" class="empty-box">
+        <text class="empty-text">{{ selectedProviderIndex >= 0 ? '暂无商品' : '请先选择供应商' }}</text>
+      </view>
+
+      <view v-if="!goodsLoading && goodsList.length > 0" class="goods-grid">
+        <view
+          v-for="(goods, index) in goodsList"
+          :key="index"
+          class="goods-card"
+          @click="addToCart(goods)"
+        >
+          <text class="goods-card-name">{{ goods['goodsname'] ?? '' }}</text>
+          <text class="goods-card-price">¥{{ formatPrice(goods['price']) }}</text>
+          <text class="goods-card-stock">库存: {{ goods['number'] ?? 0 }}</text>
+        </view>
+      </view>
+
+      <!-- 分页 -->
+      <view v-if="totalPages > 1" class="pagination-bar">
+        <view class="page-btn" :class="{ 'page-disabled': currentPage <= 1 }" @click="prevPage">
+          <text class="page-btn-text">上一页</text>
+        </view>
+        <text class="page-info">{{ currentPage }} / {{ totalPages }}</text>
+        <view class="page-btn" :class="{ 'page-disabled': currentPage >= totalPages }" @click="nextPage">
+          <text class="page-btn-text">下一页</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部：购物车面板 -->
+    <view class="cart-section">
+      <view class="cart-header">
+        <text class="cart-title">进货清单 ({{ cartItems.length }}种)</text>
+        <view v-if="cartItems.length > 0" class="clear-btn" @click="clearCart">
+          <text class="clear-btn-text">清空</text>
+        </view>
+      </view>
+
+      <!-- 购物车列表 -->
+      <view v-if="cartItems.length > 0" class="cart-list">
+        <view v-for="(item, index) in cartItems" :key="index" class="cart-item">
+          <view class="cart-item-info">
+            <text class="cart-item-name">{{ item['goodsname'] ?? '' }}</text>
+            <text class="cart-item-price">单价: ¥{{ formatPrice(item['inportprice']) }}</text>
+          </view>
+          <view class="cart-item-right">
+            <text class="cart-item-subtotal">¥{{ formatSubtotal(item) }}</text>
+            <view class="cart-item-actions">
+              <view class="qty-btn" @click="decreaseQty(index)">
+                <text class="qty-btn-text">-</text>
+              </view>
+              <text class="qty-value">{{ item['number'] ?? 1 }}</text>
+              <view class="qty-btn" @click="increaseQty(index)">
+                <text class="qty-btn-text">+</text>
+              </view>
+              <view class="remove-btn" @click="removeFromCart(index)">
+                <text class="remove-btn-text">删</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view v-if="cartItems.length == 0" class="cart-empty">
+        <text class="cart-empty-text">进货清单为空，点击商品添加</text>
+      </view>
+
+      <!-- 汇总和结算 -->
+      <view v-if="cartItems.length > 0" class="cart-footer">
+        <view class="summary-row">
+          <text class="summary-text">总数量: {{ totalQuantity }}</text>
+          <text class="summary-total">合计: ¥{{ totalAmountStr }}</text>
+        </view>
+        <view class="submit-btn" @click="handleSubmit">
+          <text class="submit-btn-text">{{ submitting ? '提交中...' : '确认进货' }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { loadGoodsForPOS } from '../../api/goods'
+import { loadAllProviderForSelect } from '../../api/provider'
+import { addToOrder } from '../../api/inport'
+
+// 供应商相关
+const providerList = ref<UTSJSONObject[]>([])
+const providerNames = ref<string[]>([])
+const selectedProviderIndex = ref(-1)
+
+// 商品相关
+const goodsList = ref<UTSJSONObject[]>([])
+const allGoodsList = ref<UTSJSONObject[]>([])
+const goodsLoading = ref(false)
+const searchKeyword = ref('')
+const currentPage = ref(1)
+const pageSize = 30
+
+// 购物车相关
+interface CartItemData {
+  goodsid: number
+  goodsname: string
+  inportprice: number
+  number: number
+}
+
+const cartItems = ref<CartItemData[]>([])
+const submitting = ref(false)
+
+// 总页数
+const totalPages = computed((): number => {
+  return Math.ceil(allGoodsList.value.length / pageSize)
+})
+
+// 购物车总数量
+const totalQuantity = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < cartItems.value.length; i++) {
+    sum = sum + cartItems.value[i].number
+  }
+  return sum
+})
+
+// 购物车总金额
+const totalAmount = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < cartItems.value.length; i++) {
+    const item = cartItems.value[i]
+    sum = sum + item.inportprice * item.number
+  }
+  return sum
+})
+
+const totalAmountStr = computed((): string => {
+  return totalAmount.value.toFixed(2)
+})
+
+/**
+ * 格式化价格
+ */
+function formatPrice(val: any): string {
+  if (val == null) return '0.00'
+  const num = val as number
+  return num.toFixed(2)
+}
+
+/**
+ * 格式化小计
+ */
+function formatSubtotal(item: CartItemData): string {
+  return (item.inportprice * item.number).toFixed(2)
+}
+
+/**
+ * 加载供应商列表
+ */
+function loadProviders(): void {
+  loadAllProviderForSelect().then((res: any) => {
+    const result = res as UTSJSONObject
+    const dataList = result['data'] as UTSJSONObject[] | null
+    if (dataList != null) {
+      providerList.value = dataList!
+      const names: string[] = []
+      for (let i = 0; i < dataList!.length; i++) {
+        const name = (dataList![i]['providername'] as string) ?? ''
+        names.push(name)
+      }
+      providerNames.value = names
+    }
+  }).catch((err: Error) => {
+    // ignore
+  })
+}
+
+/**
+ * 加载商品列表（根据供应商）
+ */
+function loadGoods(): void {
+  if (selectedProviderIndex.value < 0) {
+    allGoodsList.value = []
+    goodsList.value = []
+    return
+  }
+  goodsLoading.value = true
+  const providerid = providerList.value[selectedProviderIndex.value]['id'] as number ?? 0
+  loadGoodsForPOS(1, 1000, '').then((res: any) => {
+    const result = res as UTSJSONObject
+    const dataList = result['data'] as UTSJSONObject[] | null
+    if (dataList != null) {
+      // 按供应商筛选
+      const filtered: UTSJSONObject[] = []
+      for (let i = 0; i < dataList!.length; i++) {
+        const item = dataList![i]
+        const pid = item['providerid'] as number ?? 0
+        if (pid == providerid) {
+          filtered.push(item)
+        }
+      }
+      allGoodsList.value = filtered
+      currentPage.value = 1
+      updatePagedGoods()
+    } else {
+      allGoodsList.value = []
+      goodsList.value = []
+    }
+    goodsLoading.value = false
+  }).catch((err: Error) => {
+    goodsLoading.value = false
+    allGoodsList.value = []
+    goodsList.value = []
+  })
+}
+
+/**
+ * 更新分页商品列表
+ */
+function updatePagedGoods(): void {
+  // 搜索过滤
+  let filtered = allGoodsList.value
+  if (searchKeyword.value.length > 0) {
+    const keyword = searchKeyword.value.toLowerCase()
+    const temp: UTSJSONObject[] = []
+    for (let i = 0; i < filtered.length; i++) {
+      const name = (filtered[i]['goodsname'] as string ?? '').toLowerCase()
+      if (name.includes(keyword)) {
+        temp.push(filtered[i])
+      }
+    }
+    filtered = temp
+  }
+  // 按库存排序
+  filtered.sort((a, b) => {
+    const na = a['number'] as number ?? 0
+    const nb = b['number'] as number ?? 0
+    return na - nb
+  })
+  // 分页
+  const start = (currentPage.value - 1) * pageSize
+  const end = start + pageSize
+  const paged: UTSJSONObject[] = []
+  for (let i = start; i < end && i < filtered.length; i++) {
+    paged.push(filtered[i])
+  }
+  goodsList.value = paged
+}
+
+/**
+ * 供应商变更
+ */
+function onProviderChange(e: any): void {
+  const newIndex = e.detail.value as number
+  if (cartItems.value.length > 0) {
+    uni.showModal({
+      title: '提示',
+      content: '切换供应商将清空当前进货清单，是否继续？',
+      success: (res) => {
+        if (res.confirm) {
+          cartItems.value = []
+          selectedProviderIndex.value = newIndex
+          loadGoods()
+        }
+      }
+    })
+  } else {
+    selectedProviderIndex.value = newIndex
+    loadGoods()
+  }
+}
+
+/**
+ * 搜索输入
+ */
+function onSearchInput(e: UniInputEvent): void {
+  searchKeyword.value = e.detail.value
+  currentPage.value = 1
+  updatePagedGoods()
+}
+
+/**
+ * 搜索确认
+ */
+function onSearch(): void {
+  currentPage.value = 1
+  updatePagedGoods()
+}
+
+/**
+ * 上一页
+ */
+function prevPage(): void {
+  if (currentPage.value > 1) {
+    currentPage.value = currentPage.value - 1
+    updatePagedGoods()
+  }
+}
+
+/**
+ * 下一页
+ */
+function nextPage(): void {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value = currentPage.value + 1
+    updatePagedGoods()
+  }
+}
+
+/**
+ * 添加到购物车
+ */
+function addToCart(goods: UTSJSONObject): void {
+  const goodsid = goods['id'] as number ?? 0
+  const goodsname = goods['goodsname'] as string ?? ''
+  const price = goods['price'] as number ?? 0
+
+  // 查找是否已在购物车中
+  for (let i = 0; i < cartItems.value.length; i++) {
+    if (cartItems.value[i].goodsid == goodsid) {
+      cartItems.value[i].number = cartItems.value[i].number + 1
+      return
+    }
+  }
+  // 新增
+  cartItems.value.push({
+    goodsid: goodsid,
+    goodsname: goodsname,
+    inportprice: price,
+    number: 1
+  })
+}
+
+/**
+ * 增加数量
+ */
+function increaseQty(index: number): void {
+  cartItems.value[index].number = cartItems.value[index].number + 1
+}
+
+/**
+ * 减少数量
+ */
+function decreaseQty(index: number): void {
+  if (cartItems.value[index].number <= 1) {
+    removeFromCart(index)
+  } else {
+    cartItems.value[index].number = cartItems.value[index].number - 1
+  }
+}
+
+/**
+ * 从购物车移除
+ */
+function removeFromCart(index: number): void {
+  cartItems.value.splice(index, 1)
+}
+
+/**
+ * 清空购物车
+ */
+function clearCart(): void {
+  uni.showModal({
+    title: '确认',
+    content: '确定清空进货清单吗？',
+    success: (res) => {
+      if (res.confirm) {
+        cartItems.value = []
+      }
+    }
+  })
+}
+
+/**
+ * 提交进货
+ */
+function handleSubmit(): void {
+  if (selectedProviderIndex.value < 0) {
+    uni.showToast({ title: '请先选择供应商', icon: 'none' })
+    return
+  }
+  if (cartItems.value.length == 0) {
+    uni.showToast({ title: '进货清单为空', icon: 'none' })
+    return
+  }
+  if (submitting.value) return
+
+  submitting.value = true
+  const providerid = providerList.value[selectedProviderIndex.value]['id'] as number ?? 0
+
+  // 构建提交数据
+  const data: UTSJSONObject[] = []
+  for (let i = 0; i < cartItems.value.length; i++) {
+    const item = cartItems.value[i]
+    const obj = {} as UTSJSONObject
+    obj['goodsid'] = item.goodsid
+    obj['number'] = item.number
+    obj['inportprice'] = item.inportprice
+    obj['providerid'] = providerid
+    data.push(obj)
+  }
+
+  addToOrder(data).then((res: any) => {
+    submitting.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '进货成功', icon: 'success' })
+      cartItems.value = []
+      loadGoods()
+    } else {
+      const msg = result['msg'] as string ?? '进货失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err: Error) => {
+    submitting.value = false
+  })
+}
+
+/**
+ * 页面加载
+ */
+onShow(() => {
+  loadProviders()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 顶部栏 */
+.top-bar {
+  flex-direction: row;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  background-color: #FFFFFF;
+  gap: 16rpx;
+}
+
+.provider-picker {
+  flex-direction: row;
+  align-items: center;
+  height: 72rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+  min-width: 200rpx;
+}
+
+.picker-text {
+  font-size: 26rpx;
+  color: #303133;
+  flex: 1;
+}
+
+.picker-placeholder {
+  color: #C0C4CC;
+}
+
+.picker-arrow {
+  font-size: 22rpx;
+  color: #C0C4CC;
+  margin-left: 8rpx;
+}
+
+.search-box {
+  flex: 1;
+}
+
+.search-input {
+  height: 72rpx;
+  background-color: #F5F7FA;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  font-size: 26rpx;
+}
+
+/* 商品区域 */
+.goods-section {
+  flex: 1;
+  padding: 16rpx 24rpx;
+}
+
+.section-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.section-hint {
+  font-size: 24rpx;
+  color: #E6A23C;
+}
+
+.loading-box {
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+.empty-box {
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+/* 商品网格 */
+.goods-grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.goods-card {
+  width: 47%;
+  background-color: #FFFFFF;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #E4E7ED;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 8rpx;
+}
+
+.goods-card-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 8rpx;
+  /* 单行截断在uts中通过maxlines实现较复杂，此处简化 */
+}
+
+.goods-card-price {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #F56C6C;
+  margin-bottom: 8rpx;
+}
+
+.goods-card-stock {
+  font-size: 22rpx;
+  color: #909399;
+}
+
+/* 分页栏 */
+.pagination-bar {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 0;
+  gap: 24rpx;
+}
+
+.page-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 12rpx 24rpx;
+}
+
+.page-disabled {
+  background-color: #DCDFE6;
+}
+
+.page-btn-text {
+  font-size: 24rpx;
+  color: #FFFFFF;
+}
+
+.page-info {
+  font-size: 26rpx;
+  color: #606266;
+}
+
+/* 购物车区域 */
+.cart-section {
+  background-color: #FFFFFF;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #EBEEF5;
+  padding: 24rpx;
+}
+
+.cart-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.cart-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.clear-btn {
+  padding: 8rpx 20rpx;
+}
+
+.clear-btn-text {
+  font-size: 26rpx;
+  color: #F56C6C;
+}
+
+/* 购物车列表 */
+.cart-list {
+  max-height: 400rpx;
+}
+
+.cart-item {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.cart-item-info {
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.cart-item-name {
+  font-size: 28rpx;
+  color: #303133;
+}
+
+.cart-item-price {
+  font-size: 22rpx;
+  color: #909399;
+}
+
+.cart-item-right {
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+.cart-item-subtotal {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #F56C6C;
+}
+
+.cart-item-actions {
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.qty-btn {
+  width: 56rpx;
+  height: 56rpx;
+  background-color: #F5F7FA;
+  border-radius: 8rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-btn-text {
+  font-size: 32rpx;
+  color: #303133;
+  font-weight: bold;
+}
+
+.qty-value {
+  font-size: 28rpx;
+  color: #303133;
+  min-width: 48rpx;
+  text-align: center;
+}
+
+.remove-btn {
+  width: 56rpx;
+  height: 56rpx;
+  background-color: #FFF1F0;
+  border-radius: 8rpx;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8rpx;
+}
+
+.remove-btn-text {
+  font-size: 24rpx;
+  color: #F56C6C;
+}
+
+/* 购物车空状态 */
+.cart-empty {
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 0;
+}
+
+.cart-empty-text {
+  font-size: 26rpx;
+  color: #C0C4CC;
+}
+
+/* 购物车底部 */
+.cart-footer {
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #EBEEF5;
+  padding-top: 20rpx;
+  margin-top: 16rpx;
+}
+
+.summary-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.summary-text {
+  font-size: 26rpx;
+  color: #606266;
+}
+
+.summary-total {
+  font-size: 26rpx;
+  color: #606266;
+}
+
+.submit-btn {
+  background-color: #67C23A;
+  border-radius: 12rpx;
+  height: 88rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-btn-text {
+  font-size: 32rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+</style>

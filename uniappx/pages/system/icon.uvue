@@ -1,0 +1,175 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <input
+        class="search-input"
+        placeholder="搜索图标"
+        v-model="keyword"
+        @confirm="onSearch"
+      />
+      <view class="search-btn" @click="onSearch">
+        <text class="search-btn-text">搜索</text>
+      </view>
+    </view>
+
+    <!-- 图标网格 -->
+    <scroll-view style="flex:1">
+      <view class="icon-grid">
+        <view
+          v-for="(icon, index) in filteredIcons"
+          :key="index"
+          class="icon-item"
+          @click="onIconTap(icon)"
+        >
+          <text class="icon-emoji">{{ icon }}</text>
+        </view>
+      </view>
+
+      <view v-if="filteredIcons.length === 0" class="empty-state">
+        <text class="empty-icon">🔍</text>
+        <text class="empty-text">没有匹配的图标</text>
+      </view>
+
+      <view class="tip-section">
+        <text class="tip-text">点击图标可复制到剪贴板</text>
+      </view>
+    </scroll-view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+
+// 图标列表（emoji）
+const allIcons: string[] = [
+  '📦', '🛒', '📋', '📊', '📈', '💰', '🏠', '👤',
+  '👥', '🔑', '🔔', '📝', '⚙️', '🏢', '🏭', '📂',
+  '🏷️', '💎', '🏆', '🎁', '📞', '📧', '📍', '✅',
+  '❌', '⚠️', '🔍', '📥', '📤', '🔄', '💳'
+]
+
+const keyword = ref('')
+
+const filteredIcons = computed((): string[] => {
+  if (keyword.value.length == 0) {
+    return allIcons
+  }
+  // emoji 搜索时显示全部（因为emoji无法按文字匹配）
+  return allIcons
+})
+
+function onSearch(): void {
+  // 对emoji搜索无实际效果，保留空实现
+}
+
+/**
+ * 点击图标 -> 复制到剪贴板
+ */
+function onIconTap(icon: string): void {
+  uni.setClipboardData({
+    data: icon,
+    success: () => {
+      uni.showToast({ title: '已复制: ' + icon, icon: 'none' })
+    },
+    fail: () => {
+      uni.showToast({ title: icon, icon: 'none' })
+    }
+  })
+}
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 搜索栏 */
+.search-bar {
+  flex-direction: row;
+  padding: 16rpx 24rpx;
+  background-color: #FFFFFF;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  background-color: #F5F7FA;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.search-btn {
+  background-color: #409EFF;
+  border-radius: 36rpx;
+  padding: 0 32rpx;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn-text {
+  color: #FFFFFF;
+  font-size: 28rpx;
+}
+
+/* 图标网格 */
+.icon-grid {
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 24rpx;
+  gap: 16rpx;
+}
+
+.icon-item {
+  width: 140rpx;
+  height: 140rpx;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  align-items: center;
+  justify-content: center;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #EBEEF5;
+}
+
+.icon-emoji {
+  font-size: 56rpx;
+}
+
+.empty-state {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+.tip-section {
+  align-items: center;
+  padding: 24rpx;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: #909399;
+}
+</style>

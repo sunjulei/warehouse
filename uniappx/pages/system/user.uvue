@@ -1,0 +1,1047 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <input
+        class="search-input"
+        placeholder="搜索用户名"
+        v-model="searchKeyword"
+        @confirm="onSearch"
+      />
+      <view class="search-btn" @click="onSearch">
+        <text class="search-btn-text">搜索</text>
+      </view>
+    </view>
+
+    <!-- 用户列表 -->
+    <scroll-view
+      style="flex:1"
+      @scrolltolower="onLoadMore"
+      refresher-enabled
+      :refresher-triggered="refreshing"
+      @refresherrefresh="onRefresh"
+    >
+      <view v-if="userList.length > 0" class="list-container">
+        <view v-for="(item, index) in userList" :key="index" class="user-card">
+          <view class="user-info">
+            <view class="user-row">
+              <text class="user-label">姓名：</text>
+              <text class="user-value">{{ item['name'] ?? '' }}</text>
+            </view>
+            <view class="user-row">
+              <text class="user-label">登录名：</text>
+              <text class="user-value">{{ item['loginname'] ?? '' }}</text>
+            </view>
+            <view class="user-row">
+              <text class="user-label">部门：</text>
+              <text class="user-value">{{ item['deptname'] ?? '' }}</text>
+            </view>
+            <view class="user-row">
+              <text class="user-label">性别：</text>
+              <text class="user-value">{{ (item['sex'] as number) == 1 ? '男' : '女' }}</text>
+            </view>
+            <view class="user-row">
+              <text class="user-label">可用：</text>
+              <text class="user-value" :class="(item['available'] as number) == 1 ? 'status-on' : 'status-off'">
+                {{ (item['available'] as number) == 1 ? '是' : '否' }}
+              </text>
+            </view>
+          </view>
+          <view class="user-actions">
+            <view class="action-btn action-edit" @click="openForm(item)">
+              <text class="action-text edit-text">编辑</text>
+            </view>
+            <view class="action-btn action-reset" @click="handleResetPwd(item)">
+              <text class="action-text reset-text">重置密码</text>
+            </view>
+            <view class="action-btn action-role" @click="openRoleAssign(item)">
+              <text class="action-text role-text">分配角色</text>
+            </view>
+            <view class="action-btn action-delete" @click="handleDelete(item)">
+              <text class="action-text delete-text">删除</text>
+            </view>
+          </view>
+        </view>
+        <view class="loading-row">
+          <text class="loading-text">{{ loadingText }}</text>
+        </view>
+      </view>
+
+      <view v-if="!loading && userList.length === 0" class="empty-state">
+        <text class="empty-icon">📭</text>
+        <text class="empty-text">暂无用户数据</text>
+      </view>
+    </scroll-view>
+
+    <!-- FAB 新增按钮 -->
+    <view class="fab-btn" @click="openForm()">
+      <text class="fab-icon">+</text>
+    </view>
+
+    <!-- 添加/编辑用户弹窗 -->
+    <view v-if="formVisible" class="form-overlay" @click="closeForm">
+      <view class="form-popup" @click.stop>
+        <view class="form-header">
+          <text class="form-title">{{ isEdit ? '编辑用户' : '添加用户' }}</text>
+          <view class="form-close" @click="closeForm">
+            <text class="close-icon">✕</text>
+          </view>
+        </view>
+
+        <scroll-view style="flex:1" class="form-body">
+          <view class="form-fields">
+            <view class="form-item">
+              <text class="form-label">姓名 <text class="required-mark">*</text></text>
+              <input class="form-input" placeholder="请输入姓名" :value="formData['name']" @input="onFormInput($event, 'name')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">登录名 <text class="required-mark">*</text></text>
+              <input class="form-input" placeholder="请输入登录名" :value="formData['loginname']" @input="onFormInput($event, 'loginname')" />
+            </view>
+            <view v-if="!isEdit" class="form-item">
+              <text class="form-label">密码</text>
+              <input class="form-input" placeholder="请输入密码（默认123456）" :value="formData['pwd']" @input="onFormInput($event, 'pwd')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">性别</text>
+              <view class="gender-row">
+                <view class="gender-btn" :class="{ 'gender-active': (formData['sex'] as number) == 1 }" @click="setSex(1)">
+                  <text class="gender-text" :class="{ 'gender-active-text': (formData['sex'] as number) == 1 }">男</text>
+                </view>
+                <view class="gender-btn" :class="{ 'gender-active': (formData['sex'] as number) == 0 }" @click="setSex(0)">
+                  <text class="gender-text" :class="{ 'gender-active-text': (formData['sex'] as number) == 0 }">女</text>
+                </view>
+              </view>
+            </view>
+            <view class="form-item">
+              <text class="form-label">部门</text>
+              <picker :range="deptLabels" @change="onDeptChange">
+                <view class="form-picker">
+                  <text class="picker-text">{{ selectedDeptLabel || '请选择部门' }}</text>
+                  <text class="picker-arrow">▼</text>
+                </view>
+              </picker>
+            </view>
+            <view class="form-item">
+              <text class="form-label">地址</text>
+              <input class="form-input" placeholder="请输入地址" :value="formData['address']" @input="onFormInput($event, 'address')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">备注</text>
+              <textarea class="form-textarea" placeholder="请输入备注" :value="formData['remark']" @input="onFormInput($event, 'remark')" />
+            </view>
+            <view class="form-item">
+              <text class="form-label">是否可用</text>
+              <switch :checked="(formData['available'] as number) == 1" @change="onAvailableChange" />
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="form-footer">
+          <view class="btn-cancel" @click="closeForm">
+            <text class="btn-text">取消</text>
+          </view>
+          <view class="btn-submit" @click="handleSubmit">
+            <text class="btn-text btn-text-white">{{ submitting ? '提交中...' : '保存' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 分配角色弹窗 -->
+    <view v-if="roleVisible" class="form-overlay" @click="closeRoleAssign">
+      <view class="form-popup role-popup" @click.stop>
+        <view class="form-header">
+          <text class="form-title">分配角色</text>
+          <view class="form-close" @click="closeRoleAssign">
+            <text class="close-icon">✕</text>
+          </view>
+        </view>
+
+        <scroll-view style="flex:1" class="form-body">
+          <view v-if="roleLoading" class="role-loading">
+            <text class="loading-text">加载角色中...</text>
+          </view>
+          <view v-if="!roleLoading" class="role-list">
+            <view v-for="(role, index) in allRoles" :key="index" class="role-item" @click="toggleRoleCheck(role)">
+              <view class="role-check" @click.stop="toggleRoleCheck(role)">
+                <view class="checkbox" :class="{ 'checkbox-checked': isRoleChecked(role) }">
+                  <text v-if="isRoleChecked(role)" class="check-mark">✓</text>
+                </view>
+              </view>
+              <view class="role-detail">
+                <text class="role-name">{{ role['name'] ?? '' }}</text>
+                <text class="role-remark">{{ role['remark'] ?? '' }}</text>
+              </view>
+            </view>
+            <view v-if="allRoles.length == 0 && !roleLoading" class="empty-roles">
+              <text class="empty-text">暂无可分配角色</text>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="form-footer">
+          <view class="btn-cancel" @click="closeRoleAssign">
+            <text class="btn-text">取消</text>
+          </view>
+          <view class="btn-submit" @click="handleSaveUserRole">
+            <text class="btn-text btn-text-white">{{ roleSaving ? '保存中...' : '确定' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import {
+  loadAllUser, addUser, updateUser, deleteUser, resetPwd,
+  initRoleByUserId, saveUserRole
+} from '../../api/user'
+import { loadDeptManagerLeftTreeJson } from '../../api/dept'
+import { checkPagePermission } from '../../utils/auth-guard'
+
+// 用户列表
+const userList = ref<UTSJSONObject[]>([])
+const loading = ref(false)
+const noMore = ref(false)
+const refreshing = ref(false)
+const page = ref(1)
+const limit = 20
+const searchKeyword = ref('')
+
+// 表单
+const formVisible = ref(false)
+const isEdit = ref(false)
+const editId = ref<number | null>(null)
+const submitting = ref(false)
+const formData = ref<UTSJSONObject>({} as UTSJSONObject)
+
+// 部门选择
+const deptLabels = ref<string[]>([])
+const deptIds = ref<number[]>([])
+const selectedDeptLabel = ref('')
+
+// 角色分配
+const roleVisible = ref(false)
+const roleLoading = ref(false)
+const roleSaving = ref(false)
+const currentUserId = ref(0)
+const allRoles = ref<UTSJSONObject[]>([])
+const selectedRoleIds = ref<number[]>([])
+
+const loadingText = computed((): string => {
+  if (loading.value) return '加载中...'
+  if (noMore.value && userList.value.length > 0) return '没有更多了'
+  return ''
+})
+
+/**
+ * 加载部门树（用于部门选择器）
+ */
+function loadDeptTree(): void {
+  loadDeptManagerLeftTreeJson().then((res: any) => {
+    const result = res as UTSJSONObject
+    const data = result['data'] as UTSJSONObject[] | null
+    if (data != null) {
+      const labels: string[] = []
+      const ids: number[] = []
+      function flattenDept(nodes: UTSJSONObject[], prefix: string): void {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i]
+          labels.push(prefix + (node['title'] as string))
+          ids.push(node['id'] as number)
+          const children = node['children'] as UTSJSONObject[] | null
+          if (children != null && children!.length > 0) {
+            flattenDept(children!, prefix + '  ')
+          }
+        }
+      }
+      flattenDept(data!, '')
+      deptLabels.value = labels
+      deptIds.value = ids
+    }
+  }).catch((err: Error) => {
+    console.error('加载部门树失败:', err.message)
+  })
+}
+
+function onDeptChange(e: any): void {
+  const index = e.detail.value as number
+  if (index < deptIds.value.length) {
+    formData.value['deptid'] = deptIds.value[index]
+    selectedDeptLabel.value = deptLabels.value[index]
+  }
+}
+
+/**
+ * 加载用户列表
+ */
+function loadUserList(isRefresh: boolean): void {
+  if (loading.value) return
+  if (isRefresh) {
+    page.value = 1
+    noMore.value = false
+    userList.value = []
+  }
+  if (noMore.value) return
+
+  loading.value = true
+  const params = {} as UTSJSONObject
+  params['page'] = isRefresh ? 1 : page.value
+  params['limit'] = limit
+  if (searchKeyword.value.length > 0) {
+    params['name'] = searchKeyword.value
+  }
+
+  loadAllUser(params).then((res: any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null && list!.length > 0) {
+        const newItems = list!
+        userList.value = userList.value.concat(newItems)
+        page.value = page.value + 1
+        if (newItems.length < limit) {
+          noMore.value = true
+        }
+      } else {
+        noMore.value = true
+      }
+    }
+    loading.value = false
+    refreshing.value = false
+  }).catch((err: Error) => {
+    loading.value = false
+    refreshing.value = false
+    console.error('加载用户列表失败:', err.message)
+  })
+}
+
+function onSearch(): void {
+  loadUserList(true)
+}
+
+function onRefresh(): void {
+  refreshing.value = true
+  loadUserList(true)
+}
+
+function onLoadMore(): void {
+  if (!noMore.value && !loading.value) {
+    loadUserList(false)
+  }
+}
+
+/**
+ * 表单输入处理
+ */
+function onFormInput(e: UniInputEvent, key: string): void {
+  formData.value[key] = e.detail.value
+}
+
+function setSex(val: number): void {
+  formData.value['sex'] = val
+}
+
+function onAvailableChange(e: any): void {
+  formData.value['available'] = e.detail.value ? 1 : 0
+}
+
+/**
+ * 打开表单
+ */
+function openForm(data: UTSJSONObject | null = null): void {
+  loadDeptTree()
+
+  if (data != null) {
+    isEdit.value = true
+    editId.value = data['id'] as number
+    const deptid = data['deptid'] as number | null
+    formData.value = {
+      name: (data['name'] as string) ?? '',
+      loginname: (data['loginname'] as string) ?? '',
+      sex: (data['sex'] as number) ?? 1,
+      deptid: deptid,
+      address: (data['address'] as string) ?? '',
+      remark: (data['remark'] as string) ?? '',
+      available: (data['available'] as number) ?? 1
+    } as UTSJSONObject
+
+    // 设置部门显示
+    if (deptid != null) {
+      const idx = deptIds.value.indexOf(deptid!)
+      selectedDeptLabel.value = idx >= 0 ? deptLabels.value[idx] : (data['deptname'] as string) ?? ''
+    } else {
+      selectedDeptLabel.value = ''
+    }
+  } else {
+    isEdit.value = false
+    editId.value = null
+    formData.value = {
+      name: '',
+      loginname: '',
+      pwd: '',
+      sex: 1,
+      deptid: null,
+      address: '',
+      remark: '',
+      available: 1
+    } as UTSJSONObject
+    selectedDeptLabel.value = ''
+  }
+  formVisible.value = true
+}
+
+function closeForm(): void {
+  formVisible.value = false
+}
+
+/**
+ * 提交表单
+ */
+function handleSubmit(): void {
+  if (submitting.value) return
+
+  const name = (formData.value['name'] as string) ?? ''
+  if (name.length == 0) {
+    uni.showToast({ title: '请输入姓名', icon: 'none' })
+    return
+  }
+  const loginname = (formData.value['loginname'] as string) ?? ''
+  if (loginname.length == 0) {
+    uni.showToast({ title: '请输入登录名', icon: 'none' })
+    return
+  }
+
+  submitting.value = true
+  const submitData = {} as UTSJSONObject
+  submitData['name'] = formData.value['name']
+  submitData['loginname'] = formData.value['loginname']
+  submitData['sex'] = formData.value['sex']
+  submitData['deptid'] = formData.value['deptid']
+  submitData['address'] = formData.value['address']
+  submitData['remark'] = formData.value['remark']
+  submitData['available'] = formData.value['available']
+
+  if (!isEdit.value) {
+    const pwd = (formData.value['pwd'] as string) ?? ''
+    if (pwd.length > 0) {
+      submitData['pwd'] = pwd
+    }
+  }
+
+  let api: Promise<any>
+  if (isEdit.value && editId.value != null) {
+    submitData['id'] = editId.value
+    api = updateUser(submitData)
+  } else {
+    api = addUser(submitData)
+  }
+
+  api.then((res: any) => {
+    submitting.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '操作成功', icon: 'success' })
+      closeForm()
+      loadUserList(true)
+    } else {
+      const msg = result['msg'] as string ?? '操作失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err: Error) => {
+    submitting.value = false
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  })
+}
+
+/**
+ * 删除用户
+ */
+function handleDelete(item: UTSJSONObject): void {
+  const name = (item['name'] as string) ?? ''
+  uni.showModal({
+    title: '确认删除',
+    content: '确认删除用户「' + name + '」？',
+    success: (res) => {
+      if (res.confirm) {
+        const id = item['id'] as number
+        deleteUser(id).then((r: any) => {
+          const result = r as UTSJSONObject
+          const code = result['code'] as number ?? -1
+          if (code == 200) {
+            uni.showToast({ title: '删除成功', icon: 'success' })
+            loadUserList(true)
+          } else {
+            const msg = result['msg'] as string ?? '删除失败'
+            uni.showToast({ title: msg, icon: 'none' })
+          }
+        }).catch((err: Error) => {
+          uni.showToast({ title: '删除失败', icon: 'none' })
+        })
+      }
+    }
+  })
+}
+
+/**
+ * 重置密码
+ */
+function handleResetPwd(item: UTSJSONObject): void {
+  const name = (item['name'] as string) ?? ''
+  uni.showModal({
+    title: '重置密码',
+    content: '确认将「' + name + '」的密码重置为 123456？',
+    success: (res) => {
+      if (res.confirm) {
+        const id = item['id'] as number
+        resetPwd(id).then((r: any) => {
+          const result = r as UTSJSONObject
+          const code = result['code'] as number ?? -1
+          if (code == 200) {
+            uni.showToast({ title: '重置成功', icon: 'success' })
+          } else {
+            const msg = result['msg'] as string ?? '重置失败'
+            uni.showToast({ title: msg, icon: 'none' })
+          }
+        }).catch((err: Error) => {
+          uni.showToast({ title: '重置失败', icon: 'none' })
+        })
+      }
+    }
+  })
+}
+
+/**
+ * 打开角色分配
+ */
+function openRoleAssign(item: UTSJSONObject): void {
+  currentUserId.value = item['id'] as number
+  roleLoading.value = true
+  roleVisible.value = true
+  selectedRoleIds.value = []
+  allRoles.value = []
+
+  initRoleByUserId(currentUserId.value).then((res: any) => {
+    roleLoading.value = false
+    const result = res as UTSJSONObject
+    const data = result['data'] as UTSJSONObject[] | null
+    if (data != null) {
+      allRoles.value = data!
+      // 设置已选中的角色
+      for (let i = 0; i < data!.length; i++) {
+        const role = data![i]
+        const checked = role['LAY_CHECKED'] as boolean ?? false
+        if (checked) {
+          selectedRoleIds.value.push(role['id'] as number)
+        }
+      }
+    }
+  }).catch((err: Error) => {
+    roleLoading.value = false
+    console.error('加载角色失败:', err.message)
+  })
+}
+
+function closeRoleAssign(): void {
+  roleVisible.value = false
+}
+
+function isRoleChecked(role: UTSJSONObject): boolean {
+  const id = role['id'] as number
+  return selectedRoleIds.value.indexOf(id) >= 0
+}
+
+function toggleRoleCheck(role: UTSJSONObject): void {
+  const id = role['id'] as number
+  const idx = selectedRoleIds.value.indexOf(id)
+  if (idx >= 0) {
+    selectedRoleIds.value.splice(idx, 1)
+  } else {
+    selectedRoleIds.value.push(id)
+  }
+}
+
+/**
+ * 保存角色分配
+ */
+function handleSaveUserRole(): void {
+  if (roleSaving.value) return
+  roleSaving.value = true
+
+  saveUserRole(currentUserId.value, selectedRoleIds.value).then((res: any) => {
+    roleSaving.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 200) {
+      uni.showToast({ title: '分配成功', icon: 'success' })
+      closeRoleAssign()
+    } else {
+      const msg = result['msg'] as string ?? '操作失败'
+      uni.showToast({ title: msg, icon: 'none' })
+    }
+  }).catch((err: Error) => {
+    roleSaving.value = false
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  })
+}
+
+/**
+ * 页面加载
+ */
+onShow(() => {
+  if (!checkPagePermission('/system/user')) return
+  loadUserList(true)
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 搜索栏 */
+.search-bar {
+  flex-direction: row;
+  padding: 16rpx 24rpx;
+  background-color: #FFFFFF;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  background-color: #F5F7FA;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.search-btn {
+  background-color: #409EFF;
+  border-radius: 36rpx;
+  padding: 0 32rpx;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn-text {
+  color: #FFFFFF;
+  font-size: 28rpx;
+}
+
+.list-container {
+  padding: 16rpx 24rpx;
+  gap: 16rpx;
+}
+
+/* 用户卡片 */
+.user-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.user-info {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.user-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.user-label {
+  font-size: 26rpx;
+  color: #909399;
+  width: 140rpx;
+}
+
+.user-value {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+
+.status-on {
+  color: #67C23A;
+}
+
+.status-off {
+  color: #F56C6C;
+}
+
+.user-actions {
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 12rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+  padding-top: 16rpx;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+}
+
+.action-text {
+  font-size: 24rpx;
+}
+
+.action-edit {
+  background-color: #E6F7FF;
+}
+
+.edit-text {
+  color: #409EFF;
+}
+
+.action-reset {
+  background-color: #FDF6EC;
+}
+
+.reset-text {
+  color: #E6A23C;
+}
+
+.action-role {
+  background-color: #F0F9EB;
+}
+
+.role-text {
+  color: #67C23A;
+}
+
+.action-delete {
+  background-color: #FFF1F0;
+}
+
+.delete-text {
+  color: #F56C6C;
+}
+
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 24rpx;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.empty-state {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+/* FAB 按钮 */
+.fab-btn {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50rpx;
+  background-color: #409EFF;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(64, 158, 255, 0.4);
+}
+
+.fab-icon {
+  font-size: 48rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 弹窗 */
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.form-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 80vh;
+  background-color: #FFFFFF;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  flex-direction: column;
+}
+
+.role-popup {
+  max-height: 85vh;
+}
+
+.form-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.form-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.form-close {
+  width: 48rpx;
+  height: 48rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-icon {
+  font-size: 32rpx;
+  color: #909399;
+}
+
+.form-body {
+  padding: 24rpx 32rpx;
+}
+
+.form-fields {
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.form-item {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.form-label {
+  font-size: 28rpx;
+  color: #606266;
+  font-weight: 500;
+}
+
+.required-mark {
+  color: #F56C6C;
+}
+
+.form-input {
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.form-textarea {
+  height: 160rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding: 16rpx 24rpx;
+  font-size: 28rpx;
+}
+
+.form-picker {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 80rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  padding: 0 24rpx;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.picker-arrow {
+  font-size: 24rpx;
+  color: #C0C4CC;
+}
+
+.form-footer {
+  flex-direction: row;
+  padding: 24rpx 32rpx;
+  gap: 24rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+}
+
+.btn-cancel {
+  flex: 1;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+}
+
+.btn-submit {
+  flex: 2;
+  height: 80rpx;
+  align-items: center;
+  justify-content: center;
+  background-color: #409EFF;
+  border-radius: 8rpx;
+}
+
+.btn-text {
+  font-size: 30rpx;
+  color: #606266;
+}
+
+.btn-text-white {
+  color: #FFFFFF;
+}
+
+/* 性别选择 */
+.gender-row {
+  flex-direction: row;
+  gap: 16rpx;
+}
+
+.gender-btn {
+  padding: 12rpx 32rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 8rpx;
+  background-color: #FFFFFF;
+}
+
+.gender-active {
+  background-color: #409EFF;
+  border-color: #409EFF;
+}
+
+.gender-text {
+  font-size: 28rpx;
+  color: #606266;
+}
+
+.gender-active-text {
+  color: #FFFFFF;
+}
+
+/* 角色分配列表 */
+.role-loading {
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+}
+
+.role-list {
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.role-item {
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx;
+  background-color: #F5F7FA;
+  border-radius: 12rpx;
+}
+
+.role-check {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border-width: 2rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+  border-radius: 6rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox-checked {
+  background-color: #409EFF;
+  border-color: #409EFF;
+}
+
+.check-mark {
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.role-detail {
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.role-name {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.role-remark {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.empty-roles {
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+}
+</style>

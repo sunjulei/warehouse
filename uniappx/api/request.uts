@@ -23,13 +23,13 @@ export function clearSaToken() : void {
 
 // 根据平台设置不同的 BASE_URL
 // #ifdef APP-ANDROID
-export const BASE_URL = 'http://10.0.2.2:8899'
+export const BASE_URL = 'http://10.0.2.2:8888'
 // #endif
 // #ifdef MP-WEIXIN
-export const BASE_URL = 'http://172.20.10.3:8899'
+export const BASE_URL = 'http://172.20.10.3:8888'
 // #endif
 // #ifdef H5
-export const BASE_URL = 'http://localhost:8899'
+export const BASE_URL = 'http://localhost:8888'
 // #endif
 
 /**
@@ -236,6 +236,26 @@ export function post<T>(url : string, data : UTSJSONObject | null = null) : Prom
 		url: url,
 		method: 'POST',
 		data: data,
+		contentType: 'application/x-www-form-urlencoded'
+	})
+}
+
+/**
+ * POST 请求（参数通过 URL query string 传递，body 为空）
+ * 适配 warehouse-front 中 POST + params 模式
+ */
+export function postWithParams<T>(url : string, params : UTSJSONObject | null = null) : Promise<T> {
+	let fullUrl = url
+	if (params != null) {
+		const qs = buildQueryString(params!!)
+		if (qs.length > 0) {
+			fullUrl = url + '?' + qs
+		}
+	}
+	return request<T>({
+		url: fullUrl,
+		method: 'POST',
+		data: null,
 		contentType: 'application/x-www-form-urlencoded'
 	})
 }

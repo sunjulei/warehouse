@@ -125,7 +125,7 @@ function handleLogin() {
   }
 
   loading.value = true
-  login(name, password, captchaCode, captchaId.value).then(() => {
+  login(name, password, captchaCode).then(() => {
     return fetchCurrentUser()
   }).then(() => {
     uni.showToast({ title: '登录成功', icon: 'success' })

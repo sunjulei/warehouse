@@ -1,0 +1,418 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title">我的提成</text>
+      <text class="page-desc">查看个人月度提成明细</text>
+    </view>
+
+    <!-- 月份选择 -->
+    <view class="query-bar">
+      <picker mode="date" fields="month" :value="selectedMonth" @change="onMonthChange">
+        <view class="picker-display">
+          <text class="picker-value">{{ selectedMonth || '选择月份' }}</text>
+        </view>
+      </picker>
+      <view class="query-btn" @click="loadData">
+        <text class="query-btn-text">查询</text>
+      </view>
+    </view>
+
+    <!-- 汇总卡片 -->
+    <view v-if="records.length > 0" class="summary-row">
+      <view class="summary-card summary-blue">
+        <text class="summary-val">¥{{ formatAmount(totalSales) }}</text>
+        <text class="summary-label">累计销售额</text>
+      </view>
+      <view class="summary-card summary-green">
+        <text class="summary-val">{{ totalOrders }}</text>
+        <text class="summary-label">累计订单数</text>
+      </view>
+      <view class="summary-card summary-orange">
+        <text class="summary-val">¥{{ formatAmount(totalCommission) }}</text>
+        <text class="summary-label">累计提成</text>
+      </view>
+    </view>
+
+    <!-- 提成记录列表 -->
+    <view v-if="records.length > 0" class="records-list">
+      <view
+        v-for="(item, index) in records"
+        :key="index"
+        class="record-card"
+      >
+        <view class="record-header">
+          <text class="record-month">{{ item.yearMonth }}</text>
+          <view class="status-tag" :class="getStatusClass(item.status)">
+            <text class="status-text" :class="getStatusTextClass(item.status)">{{ getStatusText(item.status) }}</text>
+          </view>
+        </view>
+        <view class="record-body">
+          <view class="record-row">
+            <text class="record-label">月销售额</text>
+            <text class="record-value record-bold">¥{{ (item.totalSales as number ?? 0).toFixed(2) }}</text>
+          </view>
+          <view class="record-row">
+            <text class="record-label">订单数</text>
+            <text class="record-value">{{ item.totalOrders ?? 0 }}</text>
+          </view>
+          <view class="record-row">
+            <text class="record-label">提成比例</text>
+            <text class="record-value">{{ item.commissionRate ?? 0 }}%</text>
+          </view>
+          <view class="record-row">
+            <text class="record-label">提成金额</text>
+            <text class="record-value record-amount">¥{{ (item.commissionAmount as number ?? 0).toFixed(2) }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <EmptyState v-if="!loading && records.length === 0" text="暂无提成记录" />
+
+    <!-- 加载中 -->
+    <view v-if="loading" class="loading-row">
+      <text class="loading-text">加载中...</text>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed, onMounted } from 'vue'
+import { loadMyCommission } from '../../api/commission'
+import EmptyState from '../../components/EmptyState.uvue'
+
+interface CommissionRecord {
+  id : number
+  yearMonth : string
+  totalSales : number
+  totalOrders : number
+  commissionRate : number
+  commissionAmount : number
+  status : number
+}
+
+const selectedMonth = ref('')
+const records = ref<CommissionRecord[]>([])
+const loading = ref(false)
+
+// 汇总
+const totalSales = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < records.value.length; i++) {
+    sum += records.value[i].totalSales
+  }
+  return sum
+})
+
+const totalOrders = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < records.value.length; i++) {
+    sum += records.value[i].totalOrders
+  }
+  return sum
+})
+
+const totalCommission = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < records.value.length; i++) {
+    sum += records.value[i].commissionAmount
+  }
+  return sum
+})
+
+/**
+ * 格式化金额
+ */
+function formatAmount(val : number) : string {
+  if (val >= 10000) {
+    return (val / 10000).toFixed(2) + '万'
+  }
+  return val.toFixed(2)
+}
+
+/**
+ * 状态文本
+ */
+function getStatusText(status : number) : string {
+  if (status === 0) return '待确认'
+  if (status === 1) return '已确认'
+  return '已发放'
+}
+
+/**
+ * 状态样式
+ */
+function getStatusClass(status : number) : string {
+  if (status === 0) return 'status-pending'
+  if (status === 1) return 'status-confirmed'
+  return 'status-paid'
+}
+
+function getStatusTextClass(status : number) : string {
+  if (status === 0) return 'status-pending-text'
+  if (status === 1) return 'status-confirmed-text'
+  return 'status-paid-text'
+}
+
+/**
+ * 月份变更
+ */
+function onMonthChange(e : any) : void {
+  selectedMonth.value = e.detail.value as string
+}
+
+/**
+ * 加载数据
+ */
+function loadData() : void {
+  loading.value = true
+  records.value = []
+
+  const params : UTSJSONObject = {}
+  if (selectedMonth.value.length > 0) {
+    params['yearMonth'] = selectedMonth.value
+  }
+
+  loadMyCommission(params).then((res : any) => {
+    loading.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 0 || code == 200) {
+      const data = result['data'] as UTSJSONObject[] | null
+      if (data != null) {
+        const items : CommissionRecord[] = []
+        for (let i = 0; i < data!.length; i++) {
+          const d = data![i]
+          items.push({
+            id: (d['id'] as number) ?? 0,
+            yearMonth: (d['yearMonth'] as string) ?? '',
+            totalSales: (d['totalSales'] as number) ?? 0,
+            totalOrders: (d['totalOrders'] as number) ?? 0,
+            commissionRate: (d['commissionRate'] as number) ?? 0,
+            commissionAmount: (d['commissionAmount'] as number) ?? 0,
+            status: (d['status'] as number) ?? 0
+          })
+        }
+        records.value = items
+      }
+    }
+  }).catch((err : Error) => {
+    loading.value = false
+    console.error('加载提成数据失败:', err.message)
+  })
+}
+
+onMounted(() => {
+  loadData()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 页面标题 */
+.page-header {
+  background-color: #FFFFFF;
+  padding: 32rpx 24rpx 20rpx 24rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.page-desc {
+  font-size: 26rpx;
+  color: #909399;
+  margin-top: 8rpx;
+}
+
+/* 查询栏 */
+.query-bar {
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+}
+
+.picker-display {
+  flex: 1;
+  background-color: #FFFFFF;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+}
+
+.picker-value {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.query-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 16rpx 32rpx;
+}
+
+.query-btn-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+}
+
+/* 汇总行 */
+.summary-row {
+  flex-direction: row;
+  gap: 12rpx;
+  padding: 0 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.summary-card {
+  flex: 1;
+  border-radius: 12rpx;
+  padding: 24rpx 16rpx;
+  align-items: center;
+}
+
+.summary-blue {
+  background: linear-gradient(135deg, #409EFF, #66b1ff);
+}
+
+.summary-green {
+  background: linear-gradient(135deg, #67C23A, #85ce61);
+}
+
+.summary-orange {
+  background: linear-gradient(135deg, #E6A23C, #ebb563);
+}
+
+.summary-val {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+}
+
+.summary-label {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 8rpx;
+}
+
+/* 记录列表 */
+.records-list {
+  padding: 0 24rpx;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.record-card {
+  background-color: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 24rpx;
+}
+
+.record-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.record-month {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+/* 状态标签 */
+.status-tag {
+  border-radius: 8rpx;
+  padding: 6rpx 16rpx;
+}
+
+.status-pending {
+  background-color: #FDF6EC;
+}
+
+.status-confirmed {
+  background-color: #E6F1FC;
+}
+
+.status-paid {
+  background-color: #F0F9EB;
+}
+
+.status-text {
+  font-size: 22rpx;
+  font-weight: bold;
+}
+
+.status-pending-text {
+  color: #E6A23C;
+}
+
+.status-confirmed-text {
+  color: #409EFF;
+}
+
+.status-paid-text {
+  color: #67C23A;
+}
+
+.record-body {
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.record-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.record-label {
+  font-size: 26rpx;
+  color: #909399;
+}
+
+.record-value {
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.record-bold {
+  font-weight: bold;
+}
+
+.record-amount {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #E6A23C;
+}
+
+/* 加载状态 */
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 40rpx;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #909399;
+}
+</style>

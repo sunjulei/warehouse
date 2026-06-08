@@ -1,0 +1,85 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <CrudList
+      ref="listRef"
+      :loadData="loadAllCustomer"
+      :columns="columns"
+      :deletable="true"
+      :deleteApi="deleteCustomer"
+      :searchable="true"
+      searchPlaceholder="搜索客户名称"
+      searchField="customername"
+      @add="openForm()"
+      @edit="openForm($event)"
+    />
+    <CrudForm
+      ref="formRef"
+      :fields="fields"
+      :submitApi="submitApi"
+      @success="onFormSuccess"
+    />
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import CrudList from '../../components/CrudList.uvue'
+import CrudForm from '../../components/CrudForm.uvue'
+import { loadAllCustomer, addCustomer, updateCustomer, deleteCustomer } from '../../api/customer'
+import { checkPagePermission } from '../../utils/auth-guard'
+
+onShow(() => {
+  checkPagePermission('/business/customer')
+})
+
+const columns = [
+  { key: 'customername', title: '客户名称', formatter: null },
+  { key: 'connectionperson', title: '联系人', formatter: null },
+  { key: 'phone', title: '电话', formatter: null },
+  { key: 'address', title: '地址', formatter: null }
+]
+
+const fields = [
+  { key: 'customername', label: '客户名称', type: 'text' as 'text', required: true },
+  { key: 'connectionperson', label: '联系人', type: 'text' as 'text', required: true },
+  { key: 'phone', label: '电话', type: 'text' as 'text', required: false },
+  { key: 'address', label: '地址', type: 'text' as 'text', required: false }
+]
+
+const listRef = ref<InstanceType<typeof CrudList> | null>(null)
+const formRef = ref<InstanceType<typeof CrudForm> | null>(null)
+
+function openForm(data: UTSJSONObject | null = null): void {
+  if (formRef.value != null) {
+    formRef.value!.open(data)
+  }
+}
+
+function submitApi(data: UTSJSONObject): Promise<any> {
+  const id = data['id']
+  if (id != null) {
+    return updateCustomer(data)
+  } else {
+    return addCustomer(data)
+  }
+}
+
+function onFormSuccess(): void {
+  if (listRef.value != null) {
+    listRef.value!.reload()
+  }
+}
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+</style>

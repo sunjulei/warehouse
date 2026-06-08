@@ -1,13 +1,78 @@
-import { get, post } from './request'
+import { get, post, postWithParams } from './request'
+
+export function loadAllUser(params: any) {
+  return get('/user/loadAllUser', params as UTSJSONObject)
+}
+
+export function addUser(data: any) {
+  return post('/user/addUser', data as UTSJSONObject)
+}
+
+export function updateUser(data: any) {
+  return post('/user/updateUser', data as UTSJSONObject)
+}
+
+export function deleteUser(id: number) {
+  return post('/user/deleteUser/' + id.toString())
+}
+
+export function resetPwd(id: number) {
+  return post('/user/resetPwd/' + id.toString())
+}
+
+export function loadUserMaxOrderNum() {
+  return get('/user/loadUserMaxOrderNum')
+}
+
+export function changeChineseToPinyin(username: string) {
+  const params = {} as UTSJSONObject
+  params['username'] = username
+  return get('/user/changeChineseToPinyin', params)
+}
+
+export function loadUsersByDeptId(deptId: number) {
+  const params = {} as UTSJSONObject
+  params['deptId'] = deptId
+  return get('/user/loadUsersByDeptId', params)
+}
+
+export function loadUserById(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return get('/user/loadUserById', params)
+}
+
+export function queryMgrByUserId(userId: number) {
+  const params = {} as UTSJSONObject
+  params['userId'] = userId
+  return get('/user/queryMgrByUserId', params)
+}
+
+export function initRoleByUserId(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return get('/user/initRoleByUserId', params)
+}
+
+export function saveUserRole(uid: number, ids: number[]) {
+  const params = {} as UTSJSONObject
+  params['uid'] = uid
+  params['ids'] = ids.join(',')
+  return postWithParams('/user/saveUserRole', params)
+}
 
 export function getNowUser() {
   return get('/user/getNowUser')
 }
 
 export function updateUserInfo(data: any) {
-  return post('/user/updateUserInfo', data)
+  return post('/user/updateUserInfo', data as UTSJSONObject)
 }
 
 export function changePassword(oldPassword: string, newPwdOne: string, newPwdTwo: string) {
-  return post('/user/changePassword', { oldPassword, newPwdOne, newPwdTwo })
+  const params = {} as UTSJSONObject
+  params['oldPassword'] = oldPassword
+  params['newPwdOne'] = newPwdOne
+  params['newPwdTwo'] = newPwdTwo
+  return postWithParams('/user/changePassword', params)
 }

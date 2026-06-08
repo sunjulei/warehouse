@@ -1,0 +1,33 @@
+import { get, post, postJson } from './request'
+
+export function loadAllRules() {
+  return get('/commission/loadAllRules')
+}
+
+export function saveRule(data: any) {
+  return post('/commission/saveRule', data as UTSJSONObject)
+}
+
+export function deleteRule(data: any) {
+  return post('/commission/deleteRule', data as UTSJSONObject)
+}
+
+export function saveTiers(data: any) {
+  return postJson('/commission/saveTiers', data)
+}
+
+export function calculate(data: any) {
+  return post('/commission/calculate', data as UTSJSONObject)
+}
+
+export function loadRecords(params: any) {
+  return get('/commission/loadRecords', params as UTSJSONObject)
+}
+
+export function confirmRecord(data: any) {
+  return post('/commission/confirmRecord', data as UTSJSONObject)
+}
+
+export function loadMyCommission(params: any) {
+  return get('/commission/loadMyCommission', params as UTSJSONObject)
+}

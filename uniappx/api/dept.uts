@@ -1,0 +1,33 @@
+import { get, post, postWithParams } from './request'
+
+export function loadDeptManagerLeftTreeJson() {
+  return get('/dept/loadDeptManagerLeftTreeJson')
+}
+
+export function loadAllDept(params: any) {
+  return get('/dept/loadAllDept', params as UTSJSONObject)
+}
+
+export function addDept(data: any) {
+  return post('/dept/addDept', data as UTSJSONObject)
+}
+
+export function updateDept(data: any) {
+  return post('/dept/updateDept', data as UTSJSONObject)
+}
+
+export function deleteDept(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/dept/deleteDept', params)
+}
+
+export function loadDeptMaxOrderNum() {
+  return get('/dept/loadDeptMaxOrderNum')
+}
+
+export function checkDeptHasChildrenNode(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return get('/dept/checkDeptHasChildrenNode', params)
+}

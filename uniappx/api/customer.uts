@@ -1,7 +1,21 @@
-import { get } from './request'
+import { get, post, postWithParams } from './request'
 
 export function loadAllCustomer(params: any) {
-  return get('/customer/loadAllCustomer', params)
+  return get('/customer/loadAllCustomer', params as UTSJSONObject)
+}
+
+export function addCustomer(data: any) {
+  return post('/customer/addCustomer', data as UTSJSONObject)
+}
+
+export function updateCustomer(data: any) {
+  return post('/customer/updateCustomer', data as UTSJSONObject)
+}
+
+export function deleteCustomer(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/customer/deleteCustomer', params)
 }
 
 export function loadAllCustomerForSelect() {

@@ -1,0 +1,27 @@
+import { get, post, postWithParams } from './request'
+
+export function loadPermissionManagerLeftTreeJson() {
+  return get('/permission/loadPermissionManagerLeftTreeJson')
+}
+
+export function loadAllPermission(params: any) {
+  return get('/permission/loadAllPermission', params as UTSJSONObject)
+}
+
+export function addPermission(data: any) {
+  return post('/permission/addPermission', data as UTSJSONObject)
+}
+
+export function updatePermission(data: any) {
+  return post('/permission/updatePermission', data as UTSJSONObject)
+}
+
+export function deletePermission(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/permission/deletePermission', params)
+}
+
+export function loadPermissionMaxOrderNum() {
+  return get('/permission/loadPermissionMaxOrderNum')
+}

@@ -1,28 +1,31 @@
-/**
- * 公告相关 API
- */
-import { get } from './request'
+import { get, post, postWithParams } from './request'
 
-/**
- * 加载公告列表（分页）
- * @param page 页码
- * @param limit 每页条数
- */
-export function loadAllNotice(page : number = 1, limit : number = 20) : Promise<any> {
-	const params = {
-		page: page,
-		limit: limit
-	} as UTSJSONObject
-	return get('/notice/loadAllNotice', params)
+export function loadAllNotice(params: any) {
+  return get('/notice/loadAllNotice', params as UTSJSONObject)
 }
 
-/**
- * 根据 ID 加载公告详情
- * @param id 公告ID
- */
-export function loadNoticeById(id : number) : Promise<any> {
-	const params = {
-		id: id
-	} as UTSJSONObject
-	return get('/notice/loadNoticeById', params)
+export function loadNoticeById(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return get('/notice/loadNoticeById', params)
+}
+
+export function addNotice(data: any) {
+  return post('/notice/addNotice', data as UTSJSONObject)
+}
+
+export function updateNotice(data: any) {
+  return post('/notice/updateNotice', data as UTSJSONObject)
+}
+
+export function deleteNotice(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/notice/deleteNotice', params)
+}
+
+export function batchDeleteNotice(ids: number[]) {
+  const params = {} as UTSJSONObject
+  params['ids'] = ids.join(',')
+  return postWithParams('/notice/batchDeleteNotice', params)
 }

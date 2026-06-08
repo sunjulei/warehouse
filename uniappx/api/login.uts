@@ -1,13 +1,11 @@
-import { post, BASE_URL } from './request.uts'
+import { get, post, BASE_URL } from './request.uts'
 
-// 登录
-export function login(loginname: string, pwd: string, code: string, captchaId: string) {
+// 登录 — 参数与 warehouse-front 一致
+export function login(loginname: string, pwd: string, code: string) {
   const data = {} as UTSJSONObject
   data['loginname'] = loginname
   data['pwd'] = pwd
   data['code'] = code
-  data['captchaId'] = captchaId
-  data['platform'] = 'mobile'
   return post('/login/login', data)
 }
 
@@ -34,9 +32,9 @@ export function getCaptchaBase64(): Promise<UTSJSONObject> {
   })
 }
 
-// 获取当前用户信息
+// 获取当前用户信息 — 改为 GET，与 warehouse-front 一致
 export function getNowUser() {
-  return post('/login/currentUser', null)
+  return get('/login/currentUser')
 }
 
 // 退出登录

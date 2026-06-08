@@ -1,0 +1,594 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title">报表分析</text>
+      <text class="page-desc">进货与销售数据分析</text>
+    </view>
+
+    <!-- 标签栏 -->
+    <view class="tab-bar">
+      <scroll-view scroll-x="true" class="tab-scroll">
+        <view class="tab-list">
+          <view
+            v-for="(tab, index) in tabs"
+            :key="index"
+            class="tab-item"
+            :class="activeTab === index ? 'tab-item-active' : ''"
+            @click="switchTab(index)"
+          >
+            <text class="tab-text" :class="activeTab === index ? 'tab-text-active' : ''">{{ tab.label }}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 时间周期选择 -->
+    <view class="period-section">
+      <view class="period-list">
+        <view
+          v-for="(p, index) in periods"
+          :key="index"
+          class="period-item"
+          :class="activePeriod === p.value ? 'period-item-active' : ''"
+          @click="selectPeriod(p.value)"
+        >
+          <text class="period-text" :class="activePeriod === p.value ? 'period-text-active' : ''">{{ p.label }}</text>
+        </view>
+      </view>
+
+      <!-- 自定义日期 -->
+      <view v-if="activePeriod === 'custom'" class="custom-date-row">
+        <view class="date-picker-wrap">
+          <text class="date-label">开始</text>
+          <picker mode="date" :value="startDate" @change="onStartDateChange">
+            <view class="date-display">
+              <text class="date-value">{{ startDate }}</text>
+            </view>
+          </picker>
+        </view>
+        <text class="date-separator">至</text>
+        <view class="date-picker-wrap">
+          <text class="date-label">结束</text>
+          <picker mode="date" :value="endDate" @change="onEndDateChange">
+            <view class="date-display">
+              <text class="date-value">{{ endDate }}</text>
+            </view>
+          </picker>
+        </view>
+        <view class="query-btn" @click="loadData">
+          <text class="query-btn-text">查询</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 数据列表 -->
+    <view v-if="dataList.length > 0" class="data-section">
+      <view class="data-header">
+        <text class="data-title">{{ tabs[activeTab].label }}</text>
+        <text class="data-count">共 {{ dataList.length }} 项</text>
+      </view>
+
+      <!-- 汇总 -->
+      <view class="summary-card">
+        <text class="summary-label">总金额</text>
+        <text class="summary-value">¥{{ formatAmount(totalAmount) }}</text>
+      </view>
+
+      <!-- 数据列表 -->
+      <view
+        v-for="(item, index) in dataList"
+        :key="index"
+        class="data-item"
+      >
+        <view class="data-item-top">
+          <text class="data-item-name">{{ item.name }}</text>
+          <text class="data-item-amount">¥{{ formatAmount(item.amount) }}</text>
+        </view>
+        <view class="progress-bar-bg">
+          <view
+            class="progress-bar-fill"
+            :style="{ width: getBarWidth(item.amount) + '%' }"
+          ></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <EmptyState v-if="!loading && dataList.length === 0" text="暂无数据" />
+
+    <!-- 加载中 -->
+    <view v-if="loading" class="loading-row">
+      <text class="loading-text">加载中...</text>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed, onMounted } from 'vue'
+import { inportAnalysis, salesAnalysis, inportGoodsAnalysis, salesGoodsAnalysis, profitAnalysis } from '../../api/report'
+import EmptyState from '../../components/EmptyState.uvue'
+
+interface DataItem {
+  name : string
+  amount : number
+}
+
+// 标签页
+const tabs = [
+  { label: '进货金额分析', api: 'inportAnalysis' },
+  { label: '销售金额分析', api: 'salesAnalysis' },
+  { label: '商品进货分析', api: 'inportGoodsAnalysis' },
+  { label: '商品销售分析', api: 'salesGoodsAnalysis' },
+  { label: '利润分析', api: 'profitAnalysis' }
+]
+
+const activeTab = ref(0)
+
+// 时间周期
+const periods = [
+  { label: '今天', value: 'today' },
+  { label: '本周', value: 'week' },
+  { label: '本月', value: 'month' },
+  { label: '本季', value: 'quarter' },
+  { label: '本年', value: 'year' },
+  { label: '自定义', value: 'custom' }
+]
+
+const activePeriod = ref('month')
+const startDate = ref('')
+const endDate = ref('')
+const dataList = ref<DataItem[]>([])
+const loading = ref(false)
+
+// 总金额
+const totalAmount = computed((): number => {
+  let sum = 0
+  for (let i = 0; i < dataList.value.length; i++) {
+    sum += dataList.value[i].amount
+  }
+  return sum
+})
+
+// 最大金额（用于计算进度条宽度）
+const maxAmount = computed((): number => {
+  if (dataList.value.length === 0) return 1
+  let max = 0
+  for (let i = 0; i < dataList.value.length; i++) {
+    if (dataList.value[i].amount > max) {
+      max = dataList.value[i].amount
+    }
+  }
+  return max > 0 ? max : 1
+})
+
+/**
+ * 格式化金额
+ */
+function formatAmount(val : number) : string {
+  if (val >= 10000) {
+    return (val / 10000).toFixed(2) + '万'
+  }
+  return val.toFixed(2)
+}
+
+/**
+ * 计算进度条宽度百分比
+ */
+function getBarWidth(amount : number) : number {
+  return (amount / maxAmount.value) * 100
+}
+
+/**
+ * 获取今天日期 YYYY-MM-DD
+ */
+function getToday() : string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = (now.getMonth() + 1).toString().padStart(2, '0')
+  const d = now.getDate().toString().padStart(2, '0')
+  return y + '-' + m + '-' + d
+}
+
+/**
+ * 获取本周一日期
+ */
+function getWeekStart() : string {
+  const now = new Date()
+  const day = now.getDay()
+  const diff = day === 0 ? 6 : day - 1
+  const monday = new Date(now.getTime() - diff * 86400000)
+  const y = monday.getFullYear()
+  const m = (monday.getMonth() + 1).toString().padStart(2, '0')
+  const d = monday.getDate().toString().padStart(2, '0')
+  return y + '-' + m + '-' + d
+}
+
+/**
+ * 获取本月1日
+ */
+function getMonthStart() : string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = (now.getMonth() + 1).toString().padStart(2, '0')
+  return y + '-' + m + '-01'
+}
+
+/**
+ * 获取本季度第一天
+ */
+function getQuarterStart() : string {
+  const now = new Date()
+  const quarter = Math.floor(now.getMonth() / 3)
+  const m = (quarter * 3 + 1).toString().padStart(2, '0')
+  return now.getFullYear() + '-' + m + '-01'
+}
+
+/**
+ * 获取本年1月1日
+ */
+function getYearStart() : string {
+  const now = new Date()
+  return now.getFullYear() + '-01-01'
+}
+
+/**
+ * 根据周期计算日期范围
+ */
+function calcDateRange(period : string) : void {
+  endDate.value = getToday()
+  if (period === 'today') {
+    startDate.value = getToday()
+  } else if (period === 'week') {
+    startDate.value = getWeekStart()
+  } else if (period === 'month') {
+    startDate.value = getMonthStart()
+  } else if (period === 'quarter') {
+    startDate.value = getQuarterStart()
+  } else if (period === 'year') {
+    startDate.value = getYearStart()
+  }
+}
+
+/**
+ * 切换标签
+ */
+function switchTab(index : number) : void {
+  activeTab.value = index
+  if (activePeriod.value !== 'custom') {
+    loadData()
+  }
+}
+
+/**
+ * 选择时间周期
+ */
+function selectPeriod(period : string) : void {
+  activePeriod.value = period
+  if (period !== 'custom') {
+    calcDateRange(period)
+    loadData()
+  }
+}
+
+/**
+ * 开始日期变更
+ */
+function onStartDateChange(e : any) : void {
+  startDate.value = e.detail.value as string
+}
+
+/**
+ * 结束日期变更
+ */
+function onEndDateChange(e : any) : void {
+  endDate.value = e.detail.value as string
+}
+
+/**
+ * 加载数据
+ */
+function loadData() : void {
+  if (startDate.value.length === 0 || endDate.value.length === 0) {
+    uni.showToast({ title: '请选择日期范围', icon: 'none' })
+    return
+  }
+
+  loading.value = true
+  dataList.value = []
+
+  const tab = tabs[activeTab.value]
+  const apiFunc = getApiFunc(tab.api)
+
+  apiFunc(tab.api, startDate.value, endDate.value).then((res : any) => {
+    loading.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 0 || code == 200) {
+      const data = result['data'] as UTSJSONObject[] | null
+      if (data != null) {
+        const items : DataItem[] = []
+        for (let i = 0; i < data!.length; i++) {
+          const d = data![i]
+          items.push({
+            name: (d['name'] as string) ?? '',
+            amount: (d['amount'] as number) ?? 0
+          })
+        }
+        dataList.value = items
+      }
+    }
+  }).catch((err : Error) => {
+    loading.value = false
+    console.error('加载报表数据失败:', err.message)
+  })
+}
+
+/**
+ * 根据API名称获取API函数
+ */
+function getApiFunc(apiName : string) : (type: string, startDate: string, endDate: string) => Promise<any> {
+  if (apiName === 'inportAnalysis') return inportAnalysis
+  if (apiName === 'salesAnalysis') return salesAnalysis
+  if (apiName === 'inportGoodsAnalysis') return inportGoodsAnalysis
+  if (apiName === 'salesGoodsAnalysis') return salesGoodsAnalysis
+  return profitAnalysis
+}
+
+onMounted(() => {
+  const today = getToday()
+  startDate.value = today
+  endDate.value = today
+  calcDateRange('month')
+  loadData()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 页面标题 */
+.page-header {
+  background-color: #FFFFFF;
+  padding: 32rpx 24rpx 20rpx 24rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.page-desc {
+  font-size: 26rpx;
+  color: #909399;
+  margin-top: 8rpx;
+}
+
+/* 标签栏 */
+.tab-bar {
+  background-color: #FFFFFF;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.tab-scroll {
+  white-space: nowrap;
+}
+
+.tab-list {
+  flex-direction: row;
+  padding: 0 12rpx;
+}
+
+.tab-item {
+  padding: 20rpx 24rpx;
+  border-bottom-width: 4rpx;
+  border-bottom-style: solid;
+  border-bottom-color: transparent;
+}
+
+.tab-item-active {
+  border-bottom-color: #409EFF;
+}
+
+.tab-text {
+  font-size: 26rpx;
+  color: #606266;
+}
+
+.tab-text-active {
+  color: #409EFF;
+  font-weight: bold;
+}
+
+/* 时间周期 */
+.period-section {
+  background-color: #FFFFFF;
+  padding: 20rpx 24rpx;
+}
+
+.period-list {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.period-item {
+  padding: 12rpx 24rpx;
+  border-radius: 8rpx;
+  background-color: #F5F7FA;
+}
+
+.period-item-active {
+  background-color: #409EFF;
+}
+
+.period-text {
+  font-size: 24rpx;
+  color: #606266;
+}
+
+.period-text-active {
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 自定义日期 */
+.custom-date-row {
+  flex-direction: row;
+  align-items: center;
+  margin-top: 16rpx;
+  gap: 12rpx;
+}
+
+.date-picker-wrap {
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.date-label {
+  font-size: 22rpx;
+  color: #909399;
+}
+
+.date-display {
+  background-color: #F5F7FA;
+  border-radius: 8rpx;
+  padding: 12rpx 16rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+}
+
+.date-value {
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.date-separator {
+  font-size: 26rpx;
+  color: #909399;
+  margin-top: 28rpx;
+}
+
+.query-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 12rpx 28rpx;
+  margin-top: 28rpx;
+}
+
+.query-btn-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+}
+
+/* 数据区域 */
+.data-section {
+  padding: 20rpx 24rpx;
+}
+
+.data-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.data-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.data-count {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+/* 汇总卡片 */
+.summary-card {
+  background: linear-gradient(135deg, #409EFF, #66b1ff);
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  align-items: center;
+}
+
+.summary-label {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 8rpx;
+}
+
+.summary-value {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+}
+
+/* 数据项 */
+.data-item {
+  background-color: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 12rpx;
+}
+
+.data-item-top {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.data-item-name {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+
+.data-item-amount {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #F56C6C;
+}
+
+/* 进度条 */
+.progress-bar-bg {
+  height: 12rpx;
+  background-color: #F0F0F0;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 12rpx;
+  background-color: #409EFF;
+  border-radius: 6rpx;
+}
+
+/* 加载状态 */
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 40rpx;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #909399;
+}
+</style>

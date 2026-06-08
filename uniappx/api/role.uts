@@ -1,0 +1,32 @@
+import { get, post, postWithParams } from './request'
+
+export function loadAllRole(params: any) {
+  return get('/role/loadAllRole', params as UTSJSONObject)
+}
+
+export function addRole(data: any) {
+  return post('/role/addRole', data as UTSJSONObject)
+}
+
+export function updateRole(data: any) {
+  return post('/role/updateRole', data as UTSJSONObject)
+}
+
+export function deleteRole(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/role/deleteRole', params)
+}
+
+export function initPermissionByRoleId(roleId: number) {
+  const params = {} as UTSJSONObject
+  params['roleId'] = roleId
+  return get('/role/initPermissionByRoleId', params)
+}
+
+export function saveRolePermission(rid: number, ids: number[]) {
+  const params = {} as UTSJSONObject
+  params['rid'] = rid
+  params['ids'] = ids.join(',')
+  return postWithParams('/role/saveRolePermission', params)
+}

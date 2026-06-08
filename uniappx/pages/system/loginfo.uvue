@@ -1,0 +1,315 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <input
+        class="search-input"
+        placeholder="搜索登录名"
+        v-model="searchKeyword"
+        @confirm="onSearch"
+      />
+      <view class="search-btn" @click="onSearch">
+        <text class="search-btn-text">搜索</text>
+      </view>
+    </view>
+
+    <!-- 日志列表 -->
+    <scroll-view
+      style="flex:1"
+      @scrolltolower="onLoadMore"
+      refresher-enabled
+      :refresher-triggered="refreshing"
+      @refresherrefresh="onRefresh"
+    >
+      <view v-if="logList.length > 0" class="list-container">
+        <view v-for="(item, index) in logList" :key="index" class="log-card">
+          <view class="log-info">
+            <view class="log-row">
+              <text class="log-label">登录名：</text>
+              <text class="log-value">{{ item['loginname'] ?? '' }}</text>
+            </view>
+            <view class="log-row">
+              <text class="log-label">登录IP：</text>
+              <text class="log-value log-ip">{{ item['loginip'] ?? '' }}</text>
+            </view>
+            <view class="log-row">
+              <text class="log-label">登录时间：</text>
+              <text class="log-value">{{ item['logintime'] ?? '' }}</text>
+            </view>
+          </view>
+          <view class="log-actions">
+            <view class="action-btn action-delete" @click="handleDelete(item)">
+              <text class="action-text delete-text">删除</text>
+            </view>
+          </view>
+        </view>
+        <view class="loading-row">
+          <text class="loading-text">{{ loadingText }}</text>
+        </view>
+      </view>
+
+      <view v-if="!loading && logList.length === 0" class="empty-state">
+        <text class="empty-icon">📭</text>
+        <text class="empty-text">暂无登录日志</text>
+      </view>
+    </scroll-view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { loadAllLoginfo, deleteLoginfo } from '../../api/loginfo'
+import { checkPagePermission } from '../../utils/auth-guard'
+
+// 日志列表
+const logList = ref<UTSJSONObject[]>([])
+const loading = ref(false)
+const noMore = ref(false)
+const refreshing = ref(false)
+const page = ref(1)
+const limit = 20
+const searchKeyword = ref('')
+
+const loadingText = computed((): string => {
+  if (loading.value) return '加载中...'
+  if (noMore.value && logList.value.length > 0) return '没有更多了'
+  return ''
+})
+
+/**
+ * 加载日志列表
+ */
+function loadLogList(isRefresh: boolean): void {
+  if (loading.value) return
+  if (isRefresh) {
+    page.value = 1
+    noMore.value = false
+    logList.value = []
+  }
+  if (noMore.value) return
+
+  loading.value = true
+  const params = {} as UTSJSONObject
+  params['page'] = isRefresh ? 1 : page.value
+  params['limit'] = limit
+  if (searchKeyword.value.length > 0) {
+    params['loginname'] = searchKeyword.value
+  }
+
+  loadAllLoginfo(params).then((res: any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number
+    if (code == 0) {
+      const list = result['data'] as UTSJSONObject[] | null
+      if (list != null && list!.length > 0) {
+        const newItems = list!
+        logList.value = logList.value.concat(newItems)
+        page.value = page.value + 1
+        if (newItems.length < limit) {
+          noMore.value = true
+        }
+      } else {
+        noMore.value = true
+      }
+    }
+    loading.value = false
+    refreshing.value = false
+  }).catch((err: Error) => {
+    loading.value = false
+    refreshing.value = false
+    console.error('加载日志列表失败:', err.message)
+  })
+}
+
+function onSearch(): void {
+  loadLogList(true)
+}
+
+function onRefresh(): void {
+  refreshing.value = true
+  loadLogList(true)
+}
+
+function onLoadMore(): void {
+  if (!noMore.value && !loading.value) {
+    loadLogList(false)
+  }
+}
+
+/**
+ * 删除日志
+ */
+function handleDelete(item: UTSJSONObject): void {
+  const loginname = (item['loginname'] as string) ?? ''
+  uni.showModal({
+    title: '确认删除',
+    content: '确认删除「' + loginname + '」的登录日志？',
+    success: (res) => {
+      if (res.confirm) {
+        const id = item['id'] as number
+        deleteLoginfo(id).then((r: any) => {
+          const result = r as UTSJSONObject
+          const code = result['code'] as number ?? -1
+          if (code == 200) {
+            uni.showToast({ title: '删除成功', icon: 'success' })
+            loadLogList(true)
+          } else {
+            const msg = result['msg'] as string ?? '删除失败'
+            uni.showToast({ title: msg, icon: 'none' })
+          }
+        }).catch((err: Error) => {
+          uni.showToast({ title: '删除失败', icon: 'none' })
+        })
+      }
+    }
+  })
+}
+
+/**
+ * 页面加载
+ */
+onShow(() => {
+  if (!checkPagePermission('/system/loginfo')) return
+  loadLogList(true)
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 搜索栏 */
+.search-bar {
+  flex-direction: row;
+  padding: 16rpx 24rpx;
+  background-color: #FFFFFF;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  background-color: #F5F7FA;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.search-btn {
+  background-color: #409EFF;
+  border-radius: 36rpx;
+  padding: 0 32rpx;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn-text {
+  color: #FFFFFF;
+  font-size: 28rpx;
+}
+
+.list-container {
+  padding: 16rpx 24rpx;
+  gap: 16rpx;
+}
+
+/* 日志卡片 */
+.log-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.log-info {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.log-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.log-label {
+  font-size: 26rpx;
+  color: #909399;
+  width: 160rpx;
+}
+
+.log-value {
+  font-size: 28rpx;
+  color: #333333;
+  flex: 1;
+}
+
+.log-ip {
+  color: #409EFF;
+  font-weight: 500;
+}
+
+.log-actions {
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 16rpx;
+  border-top-width: 1rpx;
+  border-top-style: solid;
+  border-top-color: #F0F0F0;
+  padding-top: 16rpx;
+}
+
+.action-btn {
+  padding: 8rpx 24rpx;
+  border-radius: 8rpx;
+}
+
+.action-text {
+  font-size: 24rpx;
+}
+
+.action-delete {
+  background-color: #FFF1F0;
+}
+
+.delete-text {
+  color: #F56C6C;
+}
+
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 24rpx;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.empty-state {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+</style>

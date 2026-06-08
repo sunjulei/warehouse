@@ -1,0 +1,16 @@
+import { hasMenu } from '../stores/auth'
+
+/**
+ * 页面权限守卫
+ * 在页面 onLoad 中调用，无权限则返回
+ */
+export function checkPagePermission(menuHref : string) : boolean {
+  if (!hasMenu(menuHref)) {
+    uni.showToast({ title: '无权限访问', icon: 'none' })
+    setTimeout(() => {
+      uni.navigateBack()
+    }, 1500)
+    return false
+  }
+  return true
+}

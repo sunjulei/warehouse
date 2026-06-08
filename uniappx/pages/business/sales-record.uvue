@@ -1,0 +1,317 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <input
+        class="search-input"
+        placeholder="搜索商品名称"
+        :value="searchKeyword"
+        @input="onSearchInput"
+        @confirm="onSearch"
+      />
+      <view class="search-btn" @click="onSearch">
+        <text class="search-btn-text">搜索</text>
+      </view>
+    </view>
+
+    <!-- 加载中 -->
+    <view v-if="loading && records.length == 0" class="loading-box">
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view v-if="!loading && records.length == 0" class="empty-box">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">暂无出入库记录</text>
+    </view>
+
+    <!-- 记录列表 -->
+    <view v-if="records.length > 0" class="record-list">
+      <view v-for="(record, index) in records" :key="index" class="record-card">
+        <view class="record-header">
+          <text class="record-goods-name">{{ record['goodsname'] ?? '' }}</text>
+          <view class="record-type-badge" :class="getTypeBadgeClass(record)">
+            <text class="record-type-text">{{ getTypeText(record) }}</text>
+          </view>
+        </view>
+        <view class="record-info">
+          <view class="record-field">
+            <text class="field-label">数量：</text>
+            <text class="field-value">{{ record['number'] ?? 0 }}</text>
+          </view>
+          <view class="record-field">
+            <text class="field-label">时间：</text>
+            <text class="field-value">{{ record['createtime'] ?? '' }}</text>
+          </view>
+          <view v-if="record['remark'] != null && (record['remark'] as string).length > 0" class="record-field">
+            <text class="field-label">备注：</text>
+            <text class="field-value">{{ record['remark'] ?? '' }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 加载更多 -->
+      <view class="loading-row">
+        <text class="loading-text">{{ loadingMore ? '加载中...' : (noMore ? '没有更多了' : '') }}</text>
+      </view>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import { loadReturnAddRecords } from '../../api/sales'
+
+// 搜索
+const searchKeyword = ref('')
+
+// 记录列表
+const records = ref<UTSJSONObject[]>([])
+const loading = ref(false)
+const loadingMore = ref(false)
+const noMore = ref(false)
+const page = ref(1)
+const limit = 20
+
+/**
+ * 获取类型文字
+ * type: 0=出库, 1=退货
+ */
+function getTypeText(record: UTSJSONObject): string {
+  const type = record['type'] as number ?? 0
+  if (type == 0) return '出库'
+  if (type == 1) return '退货'
+  return '未知'
+}
+
+/**
+ * 获取类型徽章样式
+ */
+function getTypeBadgeClass(record: UTSJSONObject): string {
+  const type = record['type'] as number ?? 0
+  if (type == 0) return 'type-out'
+  if (type == 1) return 'type-return'
+  return ''
+}
+
+/**
+ * 加载记录列表
+ */
+function loadRecords(isRefresh: boolean): void {
+  if (loading.value || loadingMore.value) return
+
+  if (isRefresh) {
+    page.value = 1
+    noMore.value = false
+    records.value = []
+    loading.value = true
+  } else {
+    if (noMore.value) return
+    loadingMore.value = true
+  }
+
+  const params = {} as UTSJSONObject
+  params['page'] = page.value
+  params['limit'] = limit
+  if (searchKeyword.value.length > 0) {
+    params['goodsname'] = searchKeyword.value
+  }
+
+  loadReturnAddRecords(params).then((res: any) => {
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 0) {
+      const dataList = result['data'] as UTSJSONObject[] | null
+      if (dataList != null && dataList!.length > 0) {
+        records.value = records.value.concat(dataList!)
+        page.value = page.value + 1
+        if (dataList!.length < limit) {
+          noMore.value = true
+        }
+      } else {
+        noMore.value = true
+      }
+    }
+    loading.value = false
+    loadingMore.value = false
+  }).catch((err: Error) => {
+    loading.value = false
+    loadingMore.value = false
+  })
+}
+
+/**
+ * 搜索输入
+ */
+function onSearchInput(e: UniInputEvent): void {
+  searchKeyword.value = e.detail.value
+}
+
+/**
+ * 搜索确认
+ */
+function onSearch(): void {
+  loadRecords(true)
+}
+
+/**
+ * 页面加载
+ */
+onShow(() => {
+  loadRecords(true)
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 搜索栏 */
+.search-bar {
+  flex-direction: row;
+  padding: 16rpx 24rpx;
+  background-color: #FFFFFF;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  height: 72rpx;
+  background-color: #F5F7FA;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.search-btn {
+  background-color: #409EFF;
+  border-radius: 36rpx;
+  padding: 0 32rpx;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn-text {
+  color: #FFFFFF;
+  font-size: 28rpx;
+}
+
+/* 加载和空状态 */
+.loading-box {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+.empty-box {
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #909399;
+}
+
+/* 记录列表 */
+.record-list {
+  padding: 16rpx 24rpx;
+  gap: 16rpx;
+}
+
+.record-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.record-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.record-goods-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+  flex: 1;
+}
+
+.record-type-badge {
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.type-out {
+  background-color: #E6F7FF;
+}
+
+.type-return {
+  background-color: #FFF1F0;
+}
+
+.record-type-text {
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.type-out .record-type-text {
+  color: #409EFF;
+}
+
+.type-return .record-type-text {
+  color: #F56C6C;
+}
+
+.record-info {
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.record-field {
+  flex-direction: row;
+  align-items: center;
+}
+
+.field-label {
+  font-size: 26rpx;
+  color: #909399;
+  width: 120rpx;
+}
+
+.field-value {
+  font-size: 26rpx;
+  color: #606266;
+  flex: 1;
+}
+
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 24rpx;
+}
+</style>

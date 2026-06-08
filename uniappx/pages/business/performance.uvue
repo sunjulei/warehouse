@@ -1,0 +1,637 @@
+<template>
+  <!-- #ifdef APP -->
+  <scroll-view style="flex:1">
+  <!-- #endif -->
+  <view class="container">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title">业绩排名</text>
+      <text class="page-desc">销售员业绩和商品销量排名</text>
+    </view>
+
+    <!-- 标签栏 -->
+    <view class="tab-bar">
+      <view
+        class="tab-item"
+        :class="activeTab === 0 ? 'tab-item-active' : ''"
+        @click="switchTab(0)"
+      >
+        <text class="tab-icon">🏆</text>
+        <text class="tab-text" :class="activeTab === 0 ? 'tab-text-active' : ''">销售人员排名</text>
+      </view>
+      <view
+        class="tab-item"
+        :class="activeTab === 1 ? 'tab-item-active' : ''"
+        @click="switchTab(1)"
+      >
+        <text class="tab-icon">📦</text>
+        <text class="tab-text" :class="activeTab === 1 ? 'tab-text-active' : ''">商品销量排名</text>
+      </view>
+    </view>
+
+    <!-- 时间周期选择 -->
+    <view class="period-section">
+      <view class="period-list">
+        <view
+          v-for="(p, index) in periods"
+          :key="index"
+          class="period-item"
+          :class="activePeriod === p.value ? 'period-item-active' : ''"
+          @click="selectPeriod(p.value)"
+        >
+          <text class="period-text" :class="activePeriod === p.value ? 'period-text-active' : ''">{{ p.label }}</text>
+        </view>
+      </view>
+
+      <!-- 自定义日期 -->
+      <view v-if="activePeriod === 'custom'" class="custom-date-row">
+        <view class="date-picker-wrap">
+          <text class="date-label">开始</text>
+          <picker mode="date" :value="startDate" @change="onStartDateChange">
+            <view class="date-display">
+              <text class="date-value">{{ startDate }}</text>
+            </view>
+          </picker>
+        </view>
+        <text class="date-separator">至</text>
+        <view class="date-picker-wrap">
+          <text class="date-label">结束</text>
+          <picker mode="date" :value="endDate" @change="onEndDateChange">
+            <view class="date-display">
+              <text class="date-value">{{ endDate }}</text>
+            </view>
+          </picker>
+        </view>
+        <view class="query-btn" @click="loadData">
+          <text class="query-btn-text">查询</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 排名列表 -->
+    <view v-if="rankList.length > 0" class="rank-section">
+      <view class="rank-header">
+        <text class="rank-title">{{ activeTab === 0 ? '销售员业绩排名' : '商品销量排名' }}</text>
+        <text class="rank-count">共 {{ rankList.length }} 项</text>
+      </view>
+
+      <view
+        v-for="(item, index) in rankList"
+        :key="index"
+        class="rank-item"
+      >
+        <!-- 排名 -->
+        <view class="rank-badge" :class="getRankClass(index)">
+          <text class="rank-badge-text" :class="index < 3 ? 'rank-badge-text-top' : ''">
+            {{ getRankDisplay(index) }}
+          </text>
+        </view>
+
+        <!-- 名称和金额 -->
+        <view class="rank-info">
+          <text class="rank-name">{{ item.name }}</text>
+          <view class="rank-bar-bg">
+            <view
+              class="rank-bar-fill"
+              :class="getBarClass(index)"
+              :style="{ width: getBarWidth(item.amount) + '%' }"
+            ></view>
+          </view>
+        </view>
+
+        <!-- 金额 -->
+        <text class="rank-amount">¥{{ formatAmount(item.amount) }}</text>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <EmptyState v-if="!loading && rankList.length === 0" text="暂无排名数据" />
+
+    <!-- 加载中 -->
+    <view v-if="loading" class="loading-row">
+      <text class="loading-text">加载中...</text>
+    </view>
+  </view>
+  <!-- #ifdef APP -->
+  </scroll-view>
+  <!-- #endif -->
+</template>
+
+<script setup lang="uts">
+import { ref, computed, onMounted } from 'vue'
+import { salesRanking, goodsRanking } from '../../api/performance'
+import EmptyState from '../../components/EmptyState.uvue'
+
+interface RankItem {
+  name : string
+  amount : number
+}
+
+const activeTab = ref(0)
+
+// 时间周期
+const periods = [
+  { label: '今天', value: 'today' },
+  { label: '本周', value: 'week' },
+  { label: '本月', value: 'month' },
+  { label: '本季', value: 'quarter' },
+  { label: '本年', value: 'year' },
+  { label: '自定义', value: 'custom' }
+]
+
+const activePeriod = ref('month')
+const startDate = ref('')
+const endDate = ref('')
+const rankList = ref<RankItem[]>([])
+const loading = ref(false)
+
+// 最大金额
+const maxAmount = computed((): number => {
+  if (rankList.value.length === 0) return 1
+  let max = 0
+  for (let i = 0; i < rankList.value.length; i++) {
+    if (rankList.value[i].amount > max) {
+      max = rankList.value[i].amount
+    }
+  }
+  return max > 0 ? max : 1
+})
+
+/**
+ * 格式化金额
+ */
+function formatAmount(val : number) : string {
+  if (val >= 10000) {
+    return (val / 10000).toFixed(2) + '万'
+  }
+  return val.toFixed(2)
+}
+
+/**
+ * 获取排名显示
+ */
+function getRankDisplay(index : number) : string {
+  if (index === 0) return '🥇'
+  if (index === 1) return '🥈'
+  if (index === 2) return '🥉'
+  return (index + 1).toString()
+}
+
+/**
+ * 获取排名样式
+ */
+function getRankClass(index : number) : string {
+  if (index === 0) return 'rank-gold'
+  if (index === 1) return 'rank-silver'
+  if (index === 2) return 'rank-bronze'
+  return 'rank-normal'
+}
+
+/**
+ * 获取进度条样式
+ */
+function getBarClass(index : number) : string {
+  if (index === 0) return 'bar-gold'
+  if (index === 1) return 'bar-silver'
+  if (index === 2) return 'bar-bronze'
+  return 'bar-normal'
+}
+
+/**
+ * 计算进度条宽度
+ */
+function getBarWidth(amount : number) : number {
+  return (amount / maxAmount.value) * 100
+}
+
+/**
+ * 获取今天日期
+ */
+function getToday() : string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = (now.getMonth() + 1).toString().padStart(2, '0')
+  const d = now.getDate().toString().padStart(2, '0')
+  return y + '-' + m + '-' + d
+}
+
+/**
+ * 获取本周一
+ */
+function getWeekStart() : string {
+  const now = new Date()
+  const day = now.getDay()
+  const diff = day === 0 ? 6 : day - 1
+  const monday = new Date(now.getTime() - diff * 86400000)
+  const y = monday.getFullYear()
+  const m = (monday.getMonth() + 1).toString().padStart(2, '0')
+  const d = monday.getDate().toString().padStart(2, '0')
+  return y + '-' + m + '-' + d
+}
+
+/**
+ * 获取本月1日
+ */
+function getMonthStart() : string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = (now.getMonth() + 1).toString().padStart(2, '0')
+  return y + '-' + m + '-01'
+}
+
+/**
+ * 获取本季度第一天
+ */
+function getQuarterStart() : string {
+  const now = new Date()
+  const quarter = Math.floor(now.getMonth() / 3)
+  const m = (quarter * 3 + 1).toString().padStart(2, '0')
+  return now.getFullYear() + '-' + m + '-01'
+}
+
+/**
+ * 获取本年1月1日
+ */
+function getYearStart() : string {
+  const now = new Date()
+  return now.getFullYear() + '-01-01'
+}
+
+/**
+ * 根据周期计算日期范围
+ */
+function calcDateRange(period : string) : void {
+  endDate.value = getToday()
+  if (period === 'today') {
+    startDate.value = getToday()
+  } else if (period === 'week') {
+    startDate.value = getWeekStart()
+  } else if (period === 'month') {
+    startDate.value = getMonthStart()
+  } else if (period === 'quarter') {
+    startDate.value = getQuarterStart()
+  } else if (period === 'year') {
+    startDate.value = getYearStart()
+  }
+}
+
+/**
+ * 切换标签
+ */
+function switchTab(index : number) : void {
+  activeTab.value = index
+  loadData()
+}
+
+/**
+ * 选择时间周期
+ */
+function selectPeriod(period : string) : void {
+  activePeriod.value = period
+  if (period !== 'custom') {
+    calcDateRange(period)
+    loadData()
+  }
+}
+
+/**
+ * 开始日期变更
+ */
+function onStartDateChange(e : any) : void {
+  startDate.value = e.detail.value as string
+}
+
+/**
+ * 结束日期变更
+ */
+function onEndDateChange(e : any) : void {
+  endDate.value = e.detail.value as string
+}
+
+/**
+ * 加载数据
+ */
+function loadData() : void {
+  loading.value = true
+  rankList.value = []
+
+  const params : UTSJSONObject = {}
+  if (activePeriod.value !== 'custom') {
+    params['period'] = activePeriod.value
+  }
+  if (startDate.value.length > 0) {
+    params['startTime'] = startDate.value
+  }
+  if (endDate.value.length > 0) {
+    params['endTime'] = endDate.value
+  }
+
+  const apiFunc = activeTab.value === 0 ? salesRanking : goodsRanking
+
+  apiFunc(params).then((res : any) => {
+    loading.value = false
+    const result = res as UTSJSONObject
+    const code = result['code'] as number ?? -1
+    if (code == 0 || code == 200) {
+      const data = result['data'] as UTSJSONObject[] | null
+      if (data != null) {
+        const items : RankItem[] = []
+        for (let i = 0; i < data!.length; i++) {
+          const d = data![i]
+          items.push({
+            name: (d['name'] as string) ?? (d['operator'] as string) ?? (d['goodsname'] as string) ?? '',
+            amount: (d['amount'] as number) ?? (d['totalAmount'] as number) ?? 0
+          })
+        }
+        rankList.value = items
+      }
+    }
+  }).catch((err : Error) => {
+    loading.value = false
+    console.error('加载排名数据失败:', err.message)
+  })
+}
+
+onMounted(() => {
+  calcDateRange('month')
+  loadData()
+})
+</script>
+
+<style>
+.container {
+  flex: 1;
+  background-color: #F5F7FA;
+}
+
+/* 页面标题 */
+.page-header {
+  background-color: #FFFFFF;
+  padding: 32rpx 24rpx 20rpx 24rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.page-desc {
+  font-size: 26rpx;
+  color: #909399;
+  margin-top: 8rpx;
+}
+
+/* 标签栏 */
+.tab-bar {
+  flex-direction: row;
+  background-color: #FFFFFF;
+  border-bottom-width: 1rpx;
+  border-bottom-style: solid;
+  border-bottom-color: #F0F0F0;
+}
+
+.tab-item {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 0;
+  gap: 8rpx;
+  border-bottom-width: 4rpx;
+  border-bottom-style: solid;
+  border-bottom-color: transparent;
+}
+
+.tab-item-active {
+  border-bottom-color: #409EFF;
+}
+
+.tab-icon {
+  font-size: 32rpx;
+}
+
+.tab-text {
+  font-size: 28rpx;
+  color: #606266;
+}
+
+.tab-text-active {
+  color: #409EFF;
+  font-weight: bold;
+}
+
+/* 时间周期 */
+.period-section {
+  background-color: #FFFFFF;
+  padding: 20rpx 24rpx;
+}
+
+.period-list {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.period-item {
+  padding: 12rpx 24rpx;
+  border-radius: 8rpx;
+  background-color: #F5F7FA;
+}
+
+.period-item-active {
+  background-color: #409EFF;
+}
+
+.period-text {
+  font-size: 24rpx;
+  color: #606266;
+}
+
+.period-text-active {
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 自定义日期 */
+.custom-date-row {
+  flex-direction: row;
+  align-items: center;
+  margin-top: 16rpx;
+  gap: 12rpx;
+}
+
+.date-picker-wrap {
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.date-label {
+  font-size: 22rpx;
+  color: #909399;
+}
+
+.date-display {
+  background-color: #F5F7FA;
+  border-radius: 8rpx;
+  padding: 12rpx 16rpx;
+  border-width: 1rpx;
+  border-style: solid;
+  border-color: #DCDFE6;
+}
+
+.date-value {
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.date-separator {
+  font-size: 26rpx;
+  color: #909399;
+  margin-top: 28rpx;
+}
+
+.query-btn {
+  background-color: #409EFF;
+  border-radius: 8rpx;
+  padding: 12rpx 28rpx;
+  margin-top: 28rpx;
+}
+
+.query-btn-text {
+  font-size: 26rpx;
+  color: #FFFFFF;
+}
+
+/* 排名区域 */
+.rank-section {
+  padding: 20rpx 24rpx;
+}
+
+.rank-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.rank-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.rank-count {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+/* 排名项 */
+.rank-item {
+  flex-direction: row;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 12rpx;
+  gap: 16rpx;
+}
+
+/* 排名徽章 */
+.rank-badge {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  align-items: center;
+  justify-content: center;
+}
+
+.rank-gold {
+  background-color: #FFF7E6;
+}
+
+.rank-silver {
+  background-color: #F5F5F5;
+}
+
+.rank-bronze {
+  background-color: #FFF1E6;
+}
+
+.rank-normal {
+  background-color: #F5F7FA;
+}
+
+.rank-badge-text {
+  font-size: 26rpx;
+  color: #606266;
+  font-weight: bold;
+}
+
+.rank-badge-text-top {
+  font-size: 36rpx;
+}
+
+/* 排名信息 */
+.rank-info {
+  flex: 1;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.rank-name {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.rank-bar-bg {
+  height: 12rpx;
+  background-color: #F0F0F0;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.rank-bar-fill {
+  height: 12rpx;
+  border-radius: 6rpx;
+}
+
+.bar-gold {
+  background-color: #FFD700;
+}
+
+.bar-silver {
+  background-color: #C0C0C0;
+}
+
+.bar-bronze {
+  background-color: #CD7F32;
+}
+
+.bar-normal {
+  background-color: #409EFF;
+}
+
+/* 金额 */
+.rank-amount {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #F56C6C;
+  min-width: 140rpx;
+  text-align: right;
+}
+
+/* 加载状态 */
+.loading-row {
+  flex-direction: row;
+  justify-content: center;
+  padding: 40rpx;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #909399;
+}
+</style>

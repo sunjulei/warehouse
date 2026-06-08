@@ -1,0 +1,217 @@
+<template>
+  <view v-if="visible" class="form-overlay" @click="onOverlayClick">
+    <view class="form-popup" @click.stop>
+      <view class="form-header">
+        <text class="form-title">{{ isEdit ? '编辑' : '新增' }}</text>
+        <view class="form-close" @click="close">
+          <text class="close-icon">✕</text>
+        </view>
+      </view>
+
+      <scroll-view style="flex:1" class="form-body">
+        <view class="form-fields">
+          <view v-for="(field, index) in fields" :key="index" class="form-item">
+            <text class="form-label">
+              {{ field.label }}
+              <text v-if="field.required" class="required-mark">*</text>
+            </text>
+
+            <input
+              v-if="field.type === 'text' || field.type === 'number'"
+              class="form-input"
+              :type="field.type"
+              :placeholder="field.placeholder ?? '请输入' + field.label"
+              v-model="formData[field.key]"
+            />
+
+            <textarea
+              v-if="field.type === 'textarea'"
+              class="form-textarea"
+              :placeholder="field.placeholder ?? '请输入' + field.label"
+              v-model="formData[field.key]"
+            />
+
+            <picker
+              v-if="field.type === 'select'"
+              :range="getOptionLabels(field)"
+              @change="onPickerChange($event, field)"
+            >
+              <view class="form-picker">
+                <text class="picker-text">{{ getSelectedLabel(field) || ('请选择' + field.label) }}</text>
+                <text class="picker-arrow">▼</text>
+              </view>
+            </picker>
+
+            <switch
+              v-if="field.type === 'switch'"
+              :checked="formData[field.key] == 1"
+              @change="onSwitchChange($event, field)"
+            />
+          </view>
+        </view>
+      </scroll-view>
+
+      <view class="form-footer">
+        <view class="btn-cancel" @click="close">
+          <text class="btn-text">取消</text>
+        </view>
+        <view class="btn-submit" @click="onSubmit">
+          <text class="btn-text btn-text-white">{{ submitting ? '提交中...' : '保存' }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+
+interface FieldOption {
+  label: string
+  value: any
+}
+
+interface FormFieldDef {
+  key: string
+  label: string
+  type: 'text' | 'number' | 'select' | 'textarea' | 'date' | 'switch'
+  options?: FieldOption[]
+  required?: boolean
+  placeholder?: string
+}
+
+const props = defineProps<{
+  fields: FormFieldDef[]
+  submitApi: (data: UTSJSONObject) => Promise<any>
+}>()
+
+const emit = defineEmits<{
+  success: []
+}>()
+
+const visible = ref(false)
+const isEdit = ref(false)
+const editId = ref<number | null>(null)
+const submitting = ref(false)
+const formData = ref<UTSJSONObject>({} as UTSJSONObject)
+
+function getOptionLabels(field: FormFieldDef): string[] {
+  if (field.options == null) return []
+  return field.options!.map((opt: FieldOption) => opt.label)
+}
+
+function getSelectedLabel(field: FormFieldDef): string {
+  if (field.options == null) return ''
+  const val = formData.value[field.key]
+  if (val == null) return ''
+  const opt = field.options!.find((o: FieldOption) => o.value == val)
+  return opt != null ? opt.label : ''
+}
+
+function onPickerChange(e: any, field: FormFieldDef): void {
+  const index = e.detail.value as number
+  if (field.options != null && index < field.options!.length) {
+    formData.value[field.key] = field.options![index].value
+  }
+}
+
+function onSwitchChange(e: any, field: FormFieldDef): void {
+  formData.value[field.key] = e.detail.value ? 1 : 0
+}
+
+function open(data: UTSJSONObject | null = null): void {
+  const init = {} as UTSJSONObject
+  for (let i = 0; i < props.fields.length; i++) {
+    const field = props.fields[i]
+    if (data != null && data[field.key] != null) {
+      init[field.key] = data[field.key]
+    } else {
+      if (field.type === 'number') {
+        init[field.key] = 0
+      } else if (field.type === 'switch') {
+        init[field.key] = 0
+      } else {
+        init[field.key] = ''
+      }
+    }
+  }
+  formData.value = init
+
+  if (data != null && data['id'] != null) {
+    isEdit.value = true
+    editId.value = data['id'] as number
+  } else {
+    isEdit.value = false
+    editId.value = null
+  }
+
+  visible.value = true
+}
+
+function close(): void {
+  visible.value = false
+}
+
+function onOverlayClick(): void {
+  close()
+}
+
+function validate(): boolean {
+  for (let i = 0; i < props.fields.length; i++) {
+    const field = props.fields[i]
+    if (field.required == true) {
+      const val = formData.value[field.key]
+      if (val == null || val.toString().length == 0) {
+        uni.showToast({ title: '请填写' + field.label, icon: 'none' })
+        return false
+      }
+    }
+  }
+  return true
+}
+
+function onSubmit(): void {
+  if (submitting.value) return
+  if (!validate()) return
+
+  submitting.value = true
+  if (isEdit.value && editId.value != null) {
+    formData.value['id'] = editId.value
+  }
+
+  props.submitApi(formData.value).then((res: any) => {
+    submitting.value = false
+    uni.showToast({ title: '操作成功', icon: 'success' })
+    close()
+    emit('success')
+  }).catch((err: Error) => {
+    submitting.value = false
+  })
+}
+
+defineExpose({ open, close })
+</script>
+
+<style>
+.form-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 999; }
+.form-popup { position: fixed; left: 0; right: 0; bottom: 0; max-height: 80vh; background-color: #FFFFFF; border-top-left-radius: 24rpx; border-top-right-radius: 24rpx; flex-direction: column; }
+.form-header { flex-direction: row; justify-content: space-between; align-items: center; padding: 24rpx 32rpx; border-bottom-width: 1rpx; border-bottom-color: #F0F0F0; border-bottom-style: solid; }
+.form-title { font-size: 32rpx; font-weight: bold; color: #333333; }
+.form-close { width: 48rpx; height: 48rpx; align-items: center; justify-content: center; }
+.close-icon { font-size: 32rpx; color: #909399; }
+.form-body { padding: 24rpx 32rpx; }
+.form-fields { flex-direction: column; gap: 24rpx; }
+.form-item { flex-direction: column; gap: 8rpx; }
+.form-label { font-size: 28rpx; color: #606266; font-weight: 500; }
+.required-mark { color: #F56C6C; }
+.form-input { height: 80rpx; border-width: 1rpx; border-color: #DCDFE6; border-style: solid; border-radius: 8rpx; padding: 0 24rpx; font-size: 28rpx; }
+.form-textarea { height: 160rpx; border-width: 1rpx; border-color: #DCDFE6; border-style: solid; border-radius: 8rpx; padding: 16rpx 24rpx; font-size: 28rpx; }
+.form-picker { flex-direction: row; align-items: center; justify-content: space-between; height: 80rpx; border-width: 1rpx; border-color: #DCDFE6; border-style: solid; border-radius: 8rpx; padding: 0 24rpx; }
+.picker-text { font-size: 28rpx; color: #333333; }
+.picker-arrow { font-size: 24rpx; color: #C0C4CC; }
+.form-footer { flex-direction: row; padding: 24rpx 32rpx; gap: 24rpx; border-top-width: 1rpx; border-top-color: #F0F0F0; border-top-style: solid; }
+.btn-cancel { flex: 1; height: 80rpx; align-items: center; justify-content: center; border-width: 1rpx; border-color: #DCDFE6; border-style: solid; border-radius: 8rpx; }
+.btn-submit { flex: 2; height: 80rpx; align-items: center; justify-content: center; background-color: #409EFF; border-radius: 8rpx; }
+.btn-text { font-size: 30rpx; color: #606266; }
+.btn-text-white { color: #FFFFFF; }
+</style>

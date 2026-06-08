@@ -1,0 +1,26 @@
+import { BASE_URL } from './request'
+
+export function uploadFile(filePath: string): Promise<UTSJSONObject> {
+  return new Promise((resolve, reject) => {
+    uni.uploadFile({
+      url: BASE_URL + '/file/uploadFile',
+      filePath: filePath,
+      name: 'mf',
+      success: (res) => {
+        const data = JSON.parse(res.data) as UTSJSONObject
+        if (data['code'] == 200) {
+          resolve(data)
+        } else {
+          reject(new Error((data['msg'] as string) ?? '上传失败'))
+        }
+      },
+      fail: (err) => {
+        reject(new Error(err.errMsg))
+      }
+    })
+  })
+}
+
+export function getImageUrl(path: string): string {
+  return BASE_URL + '/file/showImageByPath?path=' + encodeURIComponent(path)
+}

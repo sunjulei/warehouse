@@ -1,0 +1,19 @@
+import { get, postWithParams } from './request'
+
+export function loadAllSalesback(params: any) {
+  return get('/salesback/loadAllSalesback', params as UTSJSONObject)
+}
+
+export function addSalesback(id: number, num: number, remark: string) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  params['number'] = num
+  params['remark'] = remark
+  return postWithParams('/salesback/addSalesback', params)
+}
+
+export function cancelSalesback(id: number) {
+  const params = {} as UTSJSONObject
+  params['id'] = id
+  return postWithParams('/salesback/cancelSalesback', params)
+}
