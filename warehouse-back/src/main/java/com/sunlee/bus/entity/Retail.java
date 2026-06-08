@@ -23,6 +23,10 @@ public class Retail implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
+    private String orderno;
+
+    private Integer orderStatus;
+
     private Integer goodsid;
 
     private String paytype;

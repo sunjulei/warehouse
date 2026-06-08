@@ -21,3 +21,29 @@ export function batchAddRetail(data: any[]) {
     headers: { 'Content-Type': 'application/json' }
   })
 }
+
+export function loadAllOrders(params: any) {
+  return request.get('/retail/loadAllOrders', { params })
+}
+
+export function loadOrderDetail(orderNo: string) {
+  return request.get('/retail/loadOrderDetail', { params: { orderNo } })
+}
+
+export function returnSingleGoods(retailId: number, returnNumber?: number) {
+  return request.post('/retail/returnSingleGoods', null, { params: { retailId, returnNumber } })
+}
+
+export function returnOrder(orderNo: string) {
+  return request.post('/retail/returnOrder', null, { params: { orderNo } })
+}
+
+export function addToOrder(data: any[]) {
+  return request.post('/retail/addToOrder', data, {
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+export function loadReturnAddRecords(params: any) {
+  return request.get('/retail/loadReturnAddRecords', { params })
+}

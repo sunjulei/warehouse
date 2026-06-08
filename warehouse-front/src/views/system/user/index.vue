@@ -1,7 +1,7 @@
 <template>
   <div class="page-container">
     <div class="page-header animate-fade-in-up">
-      <h1 class="page-header-title">用户管理</h1>
+      <h1 class="page-header-title">人员管理</h1>
       <p class="page-header-desc">管理系统用户账号和权限</p>
     </div>
     <el-card>

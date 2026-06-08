@@ -5,10 +5,13 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Retail;
+import com.sunlee.bus.entity.RetailLog;
 import com.sunlee.bus.service.IGoodsService;
+import com.sunlee.bus.service.IOperationLogService;
 import com.sunlee.bus.service.IRetailService;
 import com.sunlee.bus.vo.RetailVo;
 import com.sunlee.sys.annotation.OperationLog;
+import com.sunlee.sys.common.Constast;
 import com.sunlee.sys.common.DataGridView;
 import com.sunlee.sys.common.ResultObj;
 import com.sunlee.sys.common.WebUtils;
@@ -32,6 +35,9 @@ public class RetailController {
 
     @Autowired
     private IGoodsService goodsService;
+
+    @Autowired
+    private IOperationLogService operationLogService;
 
     @RequestMapping("loadAllRetail")
     public DataGridView loadAllRetail(RetailVo retailVo) {
@@ -68,21 +74,35 @@ public class RetailController {
         }
     }
 
-    @OperationLog(type = "添加", module = "散客零售", description = "'批量零售, 共' + #args[0].size() + '种商品'")
+    @OperationLog(type = "添加", module = "散客零售", description = "''")
     @RequestMapping("batchAddRetail")
     public ResultObj batchAddRetail(@RequestBody List<Retail> list) {
         try {
             User user = (User) WebUtils.getSession().getAttribute("user");
             Date now = new Date();
+            // 生成订单号：RO + 时间戳
+            String orderNo = "RO" + System.currentTimeMillis() + String.format("%04d", (int)(Math.random() * 10000));
+            int totalNumber = 0;
             for (Retail retail : list) {
+                retail.setOrderno(orderNo);
                 retail.setOperateperson(user.getName());
                 retail.setRetailtime(now);
+                totalNumber += retail.getNumber();
             }
             retailService.batchSave(list);
+            // 手动记录操作日志
+            com.sunlee.bus.entity.OperationLog logEntity = new com.sunlee.bus.entity.OperationLog();
+            logEntity.setType("添加");
+            logEntity.setModule("散客零售");
+            logEntity.setDescription("批量零售, 订单号: " + orderNo + ", 共" + list.size() + "种商品, 总数量: " + totalNumber);
+            logEntity.setOperateperson(user.getName());
+            logEntity.setOperatetime(now);
+            operationLogService.save(logEntity);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
             log.error("批量零售失败: {}", e.getMessage(), e);
-            return ResultObj.ADD_ERROR;
+            e.printStackTrace();
+            return new ResultObj(Constast.ERROR, "添加失败: " + e.getMessage());
         }
     }
 
@@ -108,5 +128,88 @@ public class RetailController {
             log.error("删除零售记录失败: {}", e.getMessage(), e);
             return ResultObj.DELETE_ERROR;
         }
+    }
+
+    /**
+     * 查询零售订单列表（按订单号分组）
+     */
+    @RequestMapping("loadAllOrders")
+    public DataGridView loadAllOrders(RetailVo retailVo) {
+        return retailService.queryOrders(retailVo);
+    }
+
+    /**
+     * 查询订单详情
+     */
+    @RequestMapping("loadOrderDetail")
+    public DataGridView loadOrderDetail(String orderNo) {
+        List<Retail> list = retailService.queryOrderDetail(orderNo);
+        for (Retail retail : list) {
+            Goods goods = goodsService.getById(retail.getGoodsid());
+            if (goods != null) {
+                retail.setGoodsname(goods.getGoodsname());
+                retail.setSize(goods.getSize());
+            }
+        }
+        return new DataGridView((long) list.size(), list);
+    }
+
+    /**
+     * 单商品退货
+     */
+    @OperationLog(type = "退货", module = "散客零售", description = "'单商品退货, 零售ID: ' + #args[0]")
+    @RequestMapping("returnSingleGoods")
+    public ResultObj returnSingleGoods(Integer retailId, Integer returnNumber) {
+        try {
+            retailService.returnSingleGoods(retailId, returnNumber);
+            return new ResultObj(Constast.OK, "退货成功");
+        } catch (Exception e) {
+            log.error("单商品退货失败: {}", e.getMessage(), e);
+            return new ResultObj(Constast.ERROR, "退货失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 整单退货
+     */
+    @OperationLog(type = "退货", module = "散客零售", description = "'整单退货, 订单号: ' + #args[0]")
+    @RequestMapping("returnOrder")
+    public ResultObj returnOrder(String orderNo) {
+        try {
+            retailService.returnOrder(orderNo);
+            return new ResultObj(Constast.OK, "退货成功");
+        } catch (Exception e) {
+            log.error("整单退货失败: {}", e.getMessage(), e);
+            return new ResultObj(Constast.ERROR, "退货失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 向订单添加商品
+     */
+    @OperationLog(type = "加货", module = "散客零售", description = "'向订单 ' + #args[0].orderno + ' 添加商品'")
+    @RequestMapping("addToOrder")
+    public ResultObj addToOrder(@RequestBody List<Retail> list) {
+        try {
+            User user = (User) WebUtils.getSession().getAttribute("user");
+            Date now = new Date();
+            for (Retail retail : list) {
+                retail.setOperateperson(user.getName());
+                retail.setRetailtime(now);
+            }
+            retailService.addToOrder(list);
+            return new ResultObj(Constast.OK, "加货成功");
+        } catch (Exception e) {
+            log.error("加货失败: {}", e.getMessage(), e);
+            return new ResultObj(Constast.ERROR, "加货失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 查询退加货记录
+     */
+    @RequestMapping("loadReturnAddRecords")
+    public DataGridView loadReturnAddRecords(RetailVo retailVo) {
+        return retailService.queryReturnAddRecords(retailVo);
     }
 }

@@ -27,7 +27,7 @@ const router = createRouter({
           path: 'system/user',
           name: 'UserManager',
           component: () => import('@/views/system/user/index.vue'),
-          meta: { title: '用户管理' }
+          meta: { title: '人员管理' }
         },
         {
           path: 'system/user/profile',
@@ -157,9 +157,21 @@ const router = createRouter({
         },
         {
           path: 'business/retail',
-          name: 'RetailManager',
+          name: 'RetailPOS',
           component: () => import('@/views/business/retail/index.vue'),
           meta: { title: '散客零售' }
+        },
+        {
+          path: 'business/retail-order',
+          name: 'RetailOrder',
+          component: () => import('@/views/business/retail-order/index.vue'),
+          meta: { title: '零售订单' }
+        },
+        {
+          path: 'business/retail-record',
+          name: 'RetailRecord',
+          component: () => import('@/views/business/retail-record/index.vue'),
+          meta: { title: '零售退回记录' }
         },
         {
           path: 'business/retailback',

@@ -10,11 +10,16 @@ Warehouse Management System (仓库管理系统) — frontend-backend separated 
 
 ## Build & Run
 
+**本地 MySQL 安装路径**: `C:\Program Files\MySQL\MySQL Server 8.0`
+
+**开发环境使用 `application-test.yml` 配置**（数据库账号密码等信息从该文件获取）。
+
 ```bash
 # Backend
 mvn clean package                    # Build JAR
 mvn spring-boot:run                  # Start on port 8888
-mysql -u root -p < warehouse.sql     # Init database
+# 使用本地 MySQL 初始化数据库
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p < warehouse.sql
 
 # Frontend
 cd warehouse-frontend
@@ -66,6 +71,9 @@ utils/        — Axios instance (request.ts) with interceptors
 ## Database
 
 MySQL `warehouse` schema, 15 tables. Prefixes: `bus_*` (business), `sys_*` (system). Schema + seed data in `warehouse.sql`. Connection pool: Alibaba Druid.
+
+- **本地 MySQL 路径**: `C:\Program Files\MySQL\MySQL Server 8.0`
+- **开发环境配置文件**: `warehouse-back/src/main/resources/application-test.yml`（数据库连接、账号密码等均在此文件中配置）
 
 ## Code Conventions
 
