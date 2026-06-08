@@ -193,6 +193,14 @@
 			</activation>
 		</profile>
 
+		<!-- 测试环境 -->
+		<profile>
+			<id>test</id>
+			<properties>
+				<spring.profiles.active>test</spring.profiles.active>
+			</properties>
+		</profile>
+
 		<!-- 生产环境 -->
 		<profile>
 			<id>pro</id>
