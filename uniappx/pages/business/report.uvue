@@ -306,7 +306,7 @@ function loadData() : void {
   const tab = tabs[activeTab.value]
   const apiFunc = getApiFunc(tab.api)
 
-  apiFunc(tab.api, startDate.value, endDate.value).then((res : any) => {
+  apiFunc(activePeriod.value, startDate.value, endDate.value).then((res : any) => {
     loading.value = false
     const result = res as UTSJSONObject
     const code = result['code'] as number ?? -1

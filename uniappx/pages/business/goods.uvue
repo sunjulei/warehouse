@@ -1,155 +1,147 @@
 <template>
-  <scroll-view style="flex:1" @scrolltolower="onScrollToLower">
   <view class="container">
-    <!-- 搜索栏 -->
-    <SearchBar placeholder="搜索商品名称" v-model="searchKeyword" @search="onSearch" />
-
-    <!-- 商品列表 -->
-    <view v-if="goodsList.length > 0" class="goods-list">
-      <view v-for="(item, index) in goodsList" :key="index" class="goods-item">
-        <GoodsCard :goods="item" @click="onGoodsClick(item)" />
-      </view>
-      <!-- 加载状态 -->
-      <view v-if="loading" class="loading-row">
-        <text class="loading-text">加载中...</text>
-      </view>
-      <view v-if="noMore && goodsList.length > 0" class="loading-row">
-        <text class="loading-text">没有更多了</text>
-      </view>
-    </view>
-
-    <!-- 空状态 -->
-    <EmptyState v-if="!loading && goodsList.length === 0" text="暂无商品数据" />
+    <!-- 商品列表（CrudList 只读模式） -->
+    <CrudList
+      ref="listRef"
+      :loadData="loadAllGoods"
+      :columns="columns"
+      :searchable="true"
+      searchPlaceholder="搜索商品名称"
+      searchField="goodsname"
+      :deletable="false"
+      :showAdd="false"
+      emptyText="暂无商品数据"
+      @edit="onItemClick"
+    >
+      <!-- 自定义卡片：使用 GoodsCard 样式 -->
+      <template #item="{ item }">
+        <view class="goods-card" @click="onItemClick(item)">
+          <view class="goods-header">
+            <text class="goods-name">{{ item['goodsname'] ?? '' }}</text>
+            <text class="goods-code">{{ item['goodscode'] ?? '' }}</text>
+          </view>
+          <view class="goods-body">
+            <view class="goods-stat">
+              <text class="stat-label">库存</text>
+              <text class="stat-value" :style="{ color: getStockColor(item) }">{{ item['number'] ?? 0 }}</text>
+            </view>
+            <view class="goods-stat">
+              <text class="stat-label">预警线</text>
+              <text class="stat-value">{{ item['warning'] ?? 0 }}</text>
+            </view>
+          </view>
+          <view class="goods-status" :style="{ backgroundColor: getStatusBg(item) }">
+            <text class="status-text" :style="{ color: getStockColor(item) }">{{ getStatusText(item) }}</text>
+          </view>
+        </view>
+      </template>
+    </CrudList>
   </view>
-  </scroll-view>
 </template>
 
 <script setup lang="uts">
 import { ref } from 'vue'
 import { loadAllGoods } from '../../api/goods'
-import SearchBar from '../../components/SearchBar.uvue'
-import GoodsCard from '../../components/GoodsCard.uvue'
-import EmptyState from '../../components/EmptyState.uvue'
+import CrudList from '../../components/CrudList.uvue'
 
-interface GoodsItem {
-  id : number
-  goodsname : string
-  goodscode : string
-  number : number
-  warning : number
-  [key : string] : any
+const listRef = ref<InstanceType<typeof CrudList> | null>(null)
+
+const columns = [
+  { key: 'goodsname', title: '商品名称', formatter: null },
+  { key: 'goodscode', title: '编号', formatter: null },
+  { key: 'number', title: '库存', formatter: null },
+  { key: 'warning', title: '预警线', formatter: null }
+]
+
+function getStockColor(item: UTSJSONObject): string {
+  const number = (item['number'] as number) ?? 0
+  const warning = (item['warning'] as number) ?? 0
+  if (number <= 0) return '#F56C6C'
+  if (number <= warning) return '#E6A23C'
+  return '#67C23A'
 }
 
-const searchKeyword = ref('')
-const goodsList = ref<GoodsItem[]>([])
-const loading = ref(false)
-const noMore = ref(false)
-const page = ref(1)
-const limit = 20
-
-// 加载商品列表
-function loadGoods(isRefresh : boolean) : void {
-  if (loading.value) return
-  if (isRefresh) {
-    page.value = 1
-    noMore.value = false
-    goodsList.value = []
-  }
-  if (noMore.value) return
-
-  loading.value = true
-
-  const params : UTSJSONObject = {
-    page: page.value,
-    limit: limit
-  }
-  if (searchKeyword.value.length > 0) {
-    params['goodsname'] = searchKeyword.value
-  }
-
-  loadAllGoods(params).then((res : any) => {
-    const result = res as UTSJSONObject
-    const code = result['code'] as number
-    if (code == 0) {
-      const list = result['data'] as UTSJSONObject[] | null
-      if (list != null && list!.length > 0) {
-        const newItems = list!.map((item : UTSJSONObject) => {
-          return {
-            id: (item['id'] as number) ?? 0,
-            goodsname: (item['goodsname'] as string) ?? (item['name'] as string) ?? '',
-            goodscode: (item['goodscode'] as string) ?? (item['code'] as string) ?? '',
-            number: (item['number'] as number) ?? 0,
-            warning: (item['warning'] as number) ?? 0
-          } as GoodsItem
-        })
-        goodsList.value = goodsList.value.concat(newItems)
-        page.value = page.value + 1
-        if (newItems.length < limit) {
-          noMore.value = true
-        }
-      } else {
-        noMore.value = true
-      }
-    }
-    loading.value = false
-  }).catch((err : Error) => {
-    loading.value = false
-    console.error('加载商品失败:', err.message)
-  })
+function getStatusBg(item: UTSJSONObject): string {
+  const number = (item['number'] as number) ?? 0
+  const warning = (item['warning'] as number) ?? 0
+  if (number <= 0) return '#FFF1F0'
+  if (number <= warning) return '#FDF6EC'
+  return '#F0F9EB'
 }
 
-// 搜索
-function onSearch(keyword : string) : void {
-  searchKeyword.value = keyword
-  loadGoods(true)
+function getStatusText(item: UTSJSONObject): string {
+  const number = (item['number'] as number) ?? 0
+  const warning = (item['warning'] as number) ?? 0
+  if (number <= 0) return '缺货'
+  if (number <= warning) return '库存预警'
+  return '库存充足'
 }
 
-// 触底加载更多
-function onScrollToLower() : void {
-  if (!noMore.value && !loading.value) {
-    loadGoods(false)
-  }
-}
-
-// 点击商品项
-function onGoodsClick(item : GoodsItem) : void {
+function onItemClick(item: UTSJSONObject): void {
+  const id = item['id'] as number
   uni.navigateTo({
-    url: '/pages/business/goods-detail?id=' + item.id.toString()
+    url: '/pages/business/goods-detail?id=' + id.toString()
   })
 }
-
-onShow(() => {
-  loadGoods(true)
-})
 </script>
 
 <style>
 .container {
   flex: 1;
   background-color: #F5F7FA;
-  padding: 24rpx;
-  gap: 20rpx;
 }
 
-/* 商品列表 */
-.goods-list {
+/* 商品卡片 */
+.goods-card {
   flex-direction: column;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
-.goods-item {
+.goods-header {
   flex-direction: column;
+  gap: 4rpx;
 }
 
-/* 加载状态 */
-.loading-row {
+.goods-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.goods-code {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.goods-body {
   flex-direction: row;
-  justify-content: center;
-  padding: 24rpx;
+  gap: 32rpx;
 }
 
-.loading-text {
-  font-size: 26rpx;
-  color: #999999;
+.goods-stat {
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: #909399;
+}
+
+.stat-value {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.goods-status {
+  align-self: flex-start;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  margin-top: 8rpx;
+}
+
+.status-text {
+  font-size: 22rpx;
+  font-weight: 500;
 }
 </style>

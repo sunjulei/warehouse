@@ -125,7 +125,7 @@
 
 <script setup lang="uts">
 import { ref, computed } from 'vue'
-import { loadGoodsForPOS } from '../../api/goods'
+import { loadGoodsForPOS, loadGoodsByProviderId } from '../../api/goods'
 import { loadAllProviderForSelect } from '../../api/provider'
 import { addToOrder } from '../../api/inport'
 
@@ -219,7 +219,7 @@ function loadProviders(): void {
 }
 
 /**
- * 加载商品列表（根据供应商）
+ * 加载商品列表（根据供应商，服务端过滤）
  */
 function loadGoods(): void {
   if (selectedProviderIndex.value < 0) {
@@ -229,22 +229,19 @@ function loadGoods(): void {
   }
   goodsLoading.value = true
   const providerid = providerList.value[selectedProviderIndex.value]['id'] as number ?? 0
-  loadGoodsForPOS(1, 1000, '').then((res: any) => {
+  loadGoodsByProviderId(providerid).then((res: any) => {
     const result = res as UTSJSONObject
-    const dataList = result['data'] as UTSJSONObject[] | null
-    if (dataList != null) {
-      // 按供应商筛选
-      const filtered: UTSJSONObject[] = []
-      for (let i = 0; i < dataList!.length; i++) {
-        const item = dataList![i]
-        const pid = item['providerid'] as number ?? 0
-        if (pid == providerid) {
-          filtered.push(item)
-        }
+    const code = result['code'] as number
+    if (code == 0 || code == 200) {
+      const dataList = result['data'] as UTSJSONObject[] | null
+      if (dataList != null) {
+        allGoodsList.value = dataList!
+        currentPage.value = 1
+        updatePagedGoods()
+      } else {
+        allGoodsList.value = []
+        goodsList.value = []
       }
-      allGoodsList.value = filtered
-      currentPage.value = 1
-      updatePagedGoods()
     } else {
       allGoodsList.value = []
       goodsList.value = []
@@ -585,7 +582,6 @@ onShow(() => {
   border-color: #E4E7ED;
   border-radius: 16rpx;
   padding: 20rpx;
-  margin-bottom: 8rpx;
 }
 
 .goods-card-name {

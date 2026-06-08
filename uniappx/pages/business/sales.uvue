@@ -1,5 +1,7 @@
 <template>
+  <!-- #ifdef APP -->
   <scroll-view style="flex:1">
+  <!-- #endif -->
   <view class="container">
     <!-- 顶部模式切换 -->
     <view class="mode-section">
@@ -137,7 +139,9 @@
       <text class="submit-btn-text">确认结算</text>
     </view>
   </view>
+  <!-- #ifdef APP -->
   </scroll-view>
+  <!-- #endif -->
 </template>
 
 <script setup lang="uts">

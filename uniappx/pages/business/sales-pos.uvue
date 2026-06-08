@@ -593,7 +593,6 @@ onShow(() => {
   border-color: #E4E7ED;
   border-radius: 16rpx;
   padding: 20rpx;
-  margin-bottom: 8rpx;
 }
 
 .goods-card-name {

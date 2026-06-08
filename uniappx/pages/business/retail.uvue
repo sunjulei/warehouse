@@ -202,11 +202,11 @@ function selectPaytype(pt: string): void {
 }
 
 /**
- * 加载商品列表
+ * 加载商品列表（服务端分页 + 搜索）
  */
 function loadGoods(): void {
   goodsLoading.value = true
-  loadGoodsForPOS(1, 1000, '').then((res: any) => {
+  loadGoodsForPOS(1, 100, searchKeyword.value).then((res: any) => {
     const result = res as UTSJSONObject
     const dataList = result['data'] as UTSJSONObject[] | null
     if (dataList != null) {
@@ -229,20 +229,8 @@ function loadGoods(): void {
  * 更新分页商品列表
  */
 function updatePagedGoods(): void {
-  // 搜索过滤
-  let filtered = allGoodsList.value
-  if (searchKeyword.value.length > 0) {
-    const keyword = searchKeyword.value.toLowerCase()
-    const temp: UTSJSONObject[] = []
-    for (let i = 0; i < filtered.length; i++) {
-      const name = (filtered[i]['goodsname'] as string ?? '').toLowerCase()
-      if (name.includes(keyword)) {
-        temp.push(filtered[i])
-      }
-    }
-    filtered = temp
-  }
   // 按库存排序
+  const filtered = allGoodsList.value
   filtered.sort((a, b) => {
     const na = a['number'] as number ?? 0
     const nb = b['number'] as number ?? 0
@@ -263,16 +251,14 @@ function updatePagedGoods(): void {
  */
 function onSearchInput(e: UniInputEvent): void {
   searchKeyword.value = e.detail.value
-  currentPage.value = 1
-  updatePagedGoods()
+  loadGoods()
 }
 
 /**
  * 搜索确认
  */
 function onSearch(): void {
-  currentPage.value = 1
-  updatePagedGoods()
+  loadGoods()
 }
 
 /**
@@ -548,7 +534,6 @@ onShow(() => {
   border-color: #E4E7ED;
   border-radius: 16rpx;
   padding: 20rpx;
-  margin-bottom: 8rpx;
 }
 
 .goods-card-name {

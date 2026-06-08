@@ -393,7 +393,9 @@ onShow(() => {
 }
 
 .grid-item {
-  width: 30%;
+  flex: 1;
+  max-width: 32%;
+  min-width: 28%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
