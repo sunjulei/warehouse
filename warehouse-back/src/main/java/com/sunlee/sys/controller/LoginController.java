@@ -80,15 +80,15 @@ public class LoginController {
     private IUserService userService;
 
     @RequestMapping("login")
-    public ResultObj login(UserVo userVo, String code, HttpSession session, String captchaId, HttpServletResponse response, String platform) {
+    public ResultObj login(UserVo userVo, String code, HttpSession session, String captchaId, String captchaCode, HttpServletResponse response, String platform) {
         boolean codeValid = false;
-        // 移动端跳过验证码校验（小程序 session 不可靠）
-        if ("mobile".equals(platform)) {
-            codeValid = true;
-        } else if (code != null) {
+        if (code != null) {
             String sessionCode;
-            if (captchaId != null && !captchaId.isEmpty()) {
-                // 移动端：通过 captchaId 从 session 获取验证码
+            if (captchaCode != null && !captchaCode.isEmpty()) {
+                // 移动端：直接使用请求中传递的验证码代码（小程序 session 不可靠）
+                sessionCode = captchaCode;
+            } else if (captchaId != null && !captchaId.isEmpty()) {
+                // 通过 captchaId 从 session 获取验证码
                 sessionCode = (String) session.getAttribute("captcha_" + captchaId);
             } else {
                 // PC 端：直接从 session 获取验证码
@@ -177,6 +177,7 @@ public class LoginController {
             String base64 = java.util.Base64.getEncoder().encodeToString(baos.toByteArray());
             map.put("code", 200);
             map.put("captchaId", captchaId);
+            map.put("captchaCode", lineCaptcha.getCode());
             map.put("image", "data:image/png;base64," + base64);
         } catch (Exception e) {
             log.error("获取验证码失败: {}", e.getMessage(), e);

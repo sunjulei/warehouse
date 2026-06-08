@@ -74,10 +74,11 @@ import { ref, onMounted } from 'vue'
 import { login, getCaptchaBase64 } from '../../api/login'
 import { fetchCurrentUser } from '../../stores/auth'
 
-const loginname = ref('')
-const pwd = ref('')
+const loginname = ref('admin')
+const pwd = ref('123456')
 const code = ref('')
 const captchaId = ref('')
+const captchaAnswer = ref('')
 const captchaImage = ref('')
 const loading = ref(false)
 const showPwd = ref(false)
@@ -97,11 +98,25 @@ function onCodeInput(e: UniInputEvent) {
 function refreshCaptcha() {
   captchaImage.value = ''
   code.value = ''
-  getCaptchaBase64().then((data: UTSJSONObject) => {
-    captchaId.value = data['captchaId'] as string
-    captchaImage.value = data['image'] as string
+  captchaAnswer.value = ''
+  getCaptchaBase64().then((res: any) => {
+    const data = res as UTSJSONObject
+    const code200 = data['code'] as number
+    if (code200 == 200) {
+      captchaId.value = (data['captchaId'] as string) ?? ''
+      captchaAnswer.value = (data['captchaCode'] as string) ?? ''
+      const img = (data['image'] as string) ?? ''
+      if (img.length > 0) {
+        captchaImage.value = img
+      } else {
+        uni.showToast({ title: '验证码图片数据为空', icon: 'none' })
+      }
+    } else {
+      uni.showToast({ title: (data['msg'] as string) ?? '获取验证码失败', icon: 'none' })
+    }
   }).catch((err: any) => {
-    console.error('获取验证码失败', err)
+    const msg = typeof err === 'string' ? err : (err.message ?? '获取验证码失败')
+    uni.showToast({ title: msg, icon: 'none' })
   })
 }
 
@@ -125,7 +140,7 @@ function handleLogin() {
   }
 
   loading.value = true
-  login(name, password, captchaCode).then(() => {
+  login(name, password, captchaCode, captchaId.value, captchaAnswer.value).then(() => {
     return fetchCurrentUser()
   }).then(() => {
     uni.showToast({ title: '登录成功', icon: 'success' })
