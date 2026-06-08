@@ -468,9 +468,17 @@ onMounted(async () => {
   transition: all 0.2s;
 }
 
+[data-theme="dark"] .goods-card {
+  background: #33302d;
+}
+
 .goods-card:hover {
   border-color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
+}
+
+[data-theme="dark"] .goods-card:hover {
+  background: rgba(244, 63, 94, 0.12);
 }
 
 .goods-card-name {

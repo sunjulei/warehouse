@@ -20,17 +20,17 @@
 
       <!-- 汇总卡片 -->
       <div v-if="records.length > 0" style="display: flex; gap: 16px; margin-bottom: 20px;">
-        <div class="stat-card">
+        <div class="stat-card stat-blue">
           <div class="stat-label">累计销售额</div>
           <div class="stat-value">¥{{ totalSales.toFixed(2) }}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-green">
           <div class="stat-label">累计订单数</div>
           <div class="stat-value">{{ totalOrders }}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-orange">
           <div class="stat-label">累计提成</div>
-          <div class="stat-value" style="color: var(--success-color);">¥{{ totalCommission.toFixed(2) }}</div>
+          <div class="stat-value">¥{{ totalCommission.toFixed(2) }}</div>
         </div>
       </div>
 
@@ -103,15 +103,19 @@ onMounted(() => {
   border-radius: var(--border-radius-md, 8px);
   background: var(--bg-color-page, #f5f7fa);
   text-align: center;
+  color: #fff;
 }
+.stat-blue { background: linear-gradient(135deg, #409EFF, #66b1ff); }
+.stat-green { background: linear-gradient(135deg, #67C23A, #85ce61); }
+.stat-orange { background: linear-gradient(135deg, #E6A23C, #ebb563); }
 .stat-label {
   font-size: 13px;
-  color: var(--text-secondary, #909399);
+  color: rgba(255, 255, 255, 0.85);
   margin-bottom: 8px;
 }
 .stat-value {
   font-size: var(--font-size-4xl);
   font-weight: 700;
-  color: var(--text-primary, #303133);
+  color: #fff;
 }
 </style>

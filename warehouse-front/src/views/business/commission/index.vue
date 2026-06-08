@@ -631,3 +631,15 @@ onMounted(() => {
   opacity: 0.9;
 }
 </style>
+
+<style>
+[data-theme="dark"] .calc-hero {
+  background: linear-gradient(135deg, #1a2332 0%, #1f1a2e 100%);
+}
+[data-theme="dark"] .calc-hero h2 {
+  color: #e7e5e4;
+}
+[data-theme="dark"] .calc-hero p {
+  color: #a8a29e;
+}
+</style>
