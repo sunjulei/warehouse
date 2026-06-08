@@ -154,7 +154,17 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
 
         // 构建订单列表
         List<Map<String, Object>> orderList = new ArrayList<>();
-        for (Map.Entry<String, List<Sales>> entry : orderMap.entrySet()) {
+        // 按订单时间倒序排列
+        List<Map.Entry<String, List<Sales>>> sortedEntries = new ArrayList<>(orderMap.entrySet());
+        sortedEntries.sort((a, b) -> {
+            Date timeA = a.getValue().get(0).getSalestime();
+            Date timeB = b.getValue().get(0).getSalestime();
+            if (timeA == null && timeB == null) return 0;
+            if (timeA == null) return 1;
+            if (timeB == null) return -1;
+            return timeB.compareTo(timeA);
+        });
+        for (Map.Entry<String, List<Sales>> entry : sortedEntries) {
             List<Sales> items = entry.getValue();
             if (items.isEmpty()) continue;
 

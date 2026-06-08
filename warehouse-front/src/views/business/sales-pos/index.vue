@@ -123,7 +123,7 @@
     </el-row>
 
     <!-- 确认结算弹窗 -->
-    <el-dialog v-model="confirmDialogVisible" title="确认结算" width="600px">
+    <el-dialog v-model="confirmDialogVisible" title="确认结算" width="800px">
       <div class="confirm-header">
         <span>客户: <strong>{{ customers.find(c => c.id === selectedCustomer)?.customername }}</strong></span>
       </div>

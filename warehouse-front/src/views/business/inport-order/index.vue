@@ -43,9 +43,24 @@
     <!-- 订单详情弹窗 -->
     <el-dialog v-model="detailDialogVisible" title="订单详情" width="800px">
       <div class="order-detail-header" v-if="currentOrder">
-        <span>订单号: <strong>{{ currentOrder.orderNo }}</strong></span>
-        <span>供应商: <strong>{{ currentOrder.providerName }}</strong></span>
-        <span>时间: <strong>{{ currentOrder.inporttime }}</strong></span>
+        <div class="header-order-no">
+          <span class="label">订单号</span>
+          <span class="value order-no-value">{{ currentOrder.orderNo }}</span>
+        </div>
+        <div class="header-grid">
+          <div class="header-item">
+            <span class="label">供应商</span>
+            <span class="value">{{ currentOrder.providerName }}</span>
+          </div>
+          <div class="header-item">
+            <span class="label">时间</span>
+            <span class="value">{{ currentOrder.inporttime }}</span>
+          </div>
+        </div>
+        <div class="header-item full-width" v-if="currentOrder.remark">
+          <span class="label">备注</span>
+          <span class="value">{{ currentOrder.remark }}</span>
+        </div>
       </div>
 
       <el-table :data="mergedOrderDetails" border style="width: 100%">
@@ -524,18 +539,56 @@ onMounted(async () => {
 
 <style scoped>
 .order-detail-header {
-  display: flex;
-  gap: 24px;
   margin-bottom: 16px;
-  padding: 12px;
+  padding: 16px;
   background-color: #f5f7fa;
   border-radius: 8px;
   font-size: 14px;
   color: #606266;
 }
 
-.order-detail-header strong {
+.order-detail-header .header-order-no {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.order-detail-header .order-no-value {
+  font-size: 16px;
+  font-weight: 600;
   color: #303133;
+  font-family: monospace;
+}
+
+.order-detail-header .header-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+}
+
+.order-detail-header .header-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.order-detail-header .header-item.full-width {
+  margin-top: 8px;
+  align-items: flex-start;
+}
+
+.order-detail-header .label {
+  flex-shrink: 0;
+  color: #909399;
+  font-size: 13px;
+}
+
+.order-detail-header .value {
+  color: #303133;
+  word-break: break-all;
 }
 
 .order-detail-footer {
