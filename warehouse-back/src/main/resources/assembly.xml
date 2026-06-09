@@ -1,0 +1,64 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+    <id>${profiles.active}</id>
+    <!-- 打包成目录结构（非压缩包） -->
+    <formats>
+        <format>dir</format>
+        <format>zip</format>
+    </formats>
+    <!-- 不生成一级根目录 -->
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <dependencySets>
+        <dependencySet>
+            <!-- 不包含项目自身的jar（由fileSets单独处理） -->
+            <useProjectArtifact>false</useProjectArtifact>
+            <outputDirectory>${package-name}-${profiles.active}/lib</outputDirectory>
+            <unpack>false</unpack>
+        </dependencySet>
+    </dependencySets>
+
+    <fileSets>
+        <!-- 配置文件打包进config目录 -->
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources</directory>
+            <outputDirectory>${package-name}-${profiles.active}/config/</outputDirectory>
+            <includes>
+                <include>*.xml</include>
+                <include>*.properties</include>
+                <include>*.yml</include>
+                <include>*.yaml</include>
+                <include>mapper/**</include>
+            </includes>
+            <excludes>
+                <exclude>assembly.xml</exclude>
+            </excludes>
+            <!-- 启用资源过滤，替换pom中的变量 -->
+            <filtered>true</filtered>
+        </fileSet>
+
+        <!-- 启动脚本打包到分发根目录 -->
+        <fileSet>
+            <directory>${project.basedir}/src/main/scripts</directory>
+            <outputDirectory>${package-name}-${profiles.active}/</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <!-- 文件权限为755 -->
+            <fileMode>755</fileMode>
+            <!-- 目录权限为755 -->
+            <directoryMode>755</directoryMode>
+            <!-- 启用资源过滤，替换pom中的变量 -->
+            <filtered>true</filtered>
+        </fileSet>
+
+        <!-- 项目编译出来的jar打包到分发目录 -->
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory>${package-name}-${profiles.active}/</outputDirectory>
+            <includes>
+                <include>${project.build.finalName}.jar</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>
