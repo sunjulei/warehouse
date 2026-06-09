@@ -25,6 +25,11 @@
 		<fastjson.version>1.2.83</fastjson.version>
 		<!-- 默认激活 dev 环境 -->
 		<spring.profiles.active>dev</spring.profiles.active>
+		<!-- 打包默认跳过测试 -->
+		<skipTests>true</skipTests>
+		<!-- Assembly 打包脚本配置 -->
+		<scripts_bootMain>com.sunlee.WarehouseApplication</scripts_bootMain>
+		<scripts_packageName>${project.artifactId}</scripts_packageName>
 	</properties>
 
 	<dependencies>
@@ -151,10 +156,19 @@
 	</dependencies>
 
 	<build>
+		<finalName>${project.artifactId}</finalName>
 		<!-- 资源过滤，使 application.yml 中的 @spring.profiles.active@ 占位符能被 Maven 替换 -->
 		<resources>
 			<resource>
 				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<includes>
+					<include>application*</include>
+					<include>banner*</include>
+				</includes>
 				<filtering>true</filtering>
 			</resource>
 		</resources>
@@ -166,13 +180,54 @@
 					<parameters>true</parameters>
 				</configuration>
 			</plugin>
+			<!-- Maven JAR插件 - 配置可执行JAR打包（薄JAR，依赖外置） -->
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.4.2</version>
+				<configuration>
+					<!-- 不打入jar包的配置文件（这些文件将放在config目录） -->
+					<excludes>
+						<exclude>*.properties</exclude>
+						<exclude>*.yml</exclude>
+						<exclude>*.yaml</exclude>
+						<exclude>*.xml</exclude>
+					</excludes>
+					<archive>
+						<manifest>
+							<!-- 可执行主类 -->
+							<mainClass>${scripts_bootMain}</mainClass>
+							<!-- 添加classpath到MANIFEST.MF -->
+							<addClasspath>true</addClasspath>
+							<!-- classpath前缀，指向lib目录 -->
+							<classpathPrefix>lib/</classpathPrefix>
+							<!-- 不使用带时间戳的版本号 -->
+							<useUniqueVersions>false</useUniqueVersions>
+						</manifest>
+						<manifestEntries>
+							<!-- 添加config目录到classpath -->
+							<Class-Path>config/</Class-Path>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<!-- Maven Assembly插件 - 打包分发包（包含lib、config、启动脚本） -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.7.1</version>
+				<configuration>
+					<!-- 打包描述文件路径 -->
+					<descriptors>
+						<descriptor>src/main/resources/assembly.xml</descriptor>
+					</descriptors>
+				</configuration>
 				<executions>
 					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
 						<goals>
-							<goal>repackage</goal>
+							<goal>single</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -187,6 +242,11 @@
 			<id>dev</id>
 			<properties>
 				<spring.profiles.active>dev</spring.profiles.active>
+				<!-- 环境标识，需要与配置文件的名称相对应 -->
+				<profiles.active>dev</profiles.active>
+				<!-- Assembly打包参数 -->
+				<package-name>${scripts_packageName}</package-name>
+				<boot-main>${scripts_bootMain}</boot-main>
 			</properties>
 			<activation>
 				<activeByDefault>true</activeByDefault>
@@ -198,6 +258,9 @@
 			<id>test</id>
 			<properties>
 				<spring.profiles.active>test</spring.profiles.active>
+				<profiles.active>test</profiles.active>
+				<package-name>${scripts_packageName}</package-name>
+				<boot-main>${scripts_bootMain}</boot-main>
 			</properties>
 		</profile>
 
@@ -206,6 +269,9 @@
 			<id>pro</id>
 			<properties>
 				<spring.profiles.active>pro</spring.profiles.active>
+				<profiles.active>pro</profiles.active>
+				<package-name>${scripts_packageName}</package-name>
+				<boot-main>${scripts_bootMain}</boot-main>
 			</properties>
 		</profile>
 	</profiles>
