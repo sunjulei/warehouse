@@ -1,29 +1,26 @@
-# 开发环境配置
+# 生产环境配置
 spring:
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/warehouse?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=false
+      url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/warehouse?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=true
       username: ${MYSQL_USERNAME}
       password: ${MYSQL_PASSWORD}
-      max-active: 20
+      max-active: 50
       max-wait: 5000
-      initial-size: 1
-      filters: stat,log4j,wall
+      initial-size: 5
+      filters: stat,wall
       validation-query: SELECT 'X'
       enable: true
-      # Druid 监控页面（开发环境开启）
+      # 生产环境关闭 Druid 监控页面
       stat-view-servlet:
-        enabled: true
-        login-username: root
-        login-password: 123456
-        url-pattern: /druid/*
+        enabled: false
 
-# 开发环境打印 SQL 日志
+# 生产环境关闭 SQL 日志
 mybatis-plus:
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
 
-# 开发端口
+# 生产端口
 server:
   port: 8899

@@ -11,7 +11,7 @@
 	<groupId>com.sunlee</groupId>
 	<artifactId>warehouse</artifactId>
 	<version>1.3.0</version>
-	<name>warehouse</name>
+	<name>warehouse </name>
 	<description>仓库管理系统</description>
 
 	<properties>
