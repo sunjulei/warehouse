@@ -1,4 +1,7 @@
 # 公共配置
+server:
+  servlet:
+    context-path: /warehouse
 spring:
   profiles:
     active: @spring.profiles.active@   # 由 Maven Profile 控制：dev / pro
@@ -37,3 +40,5 @@ sa-token:
   is-log: false
   is-read-cookie: true
   is-read-header: true
+  cookie:
+    path: /

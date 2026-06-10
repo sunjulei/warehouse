@@ -116,7 +116,7 @@ const refreshCaptcha = async () => {
     })
     captchaUrl.value = URL.createObjectURL(res.data as Blob)
   } catch {
-    captchaUrl.value = '/api/login/getCode?t=' + Date.now()
+    captchaUrl.value = '/warehouse/login/getCode?t=' + Date.now()
   }
 }
 

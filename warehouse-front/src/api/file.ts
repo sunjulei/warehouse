@@ -7,5 +7,5 @@ export function uploadFile(file: File) {
 }
 
 export function getImageUrl(path: string): string {
-  return '/api/file/showImageByPath?path=' + encodeURIComponent(path)
+  return '/warehouse/file/showImageByPath?path=' + encodeURIComponent(path)
 }

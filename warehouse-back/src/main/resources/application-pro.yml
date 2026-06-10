@@ -1,10 +1,9 @@
-# 生产环境配置（Docker 部署用）
+# 生产环境配置
 spring:
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      # Docker 内网地址，使用 mysql 容器名
-      url: jdbc:mysql://mysql:3306/warehouse?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
+      url: jdbc:mysql://127.0.0.1:3306/warehouse?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true
       username: root
       password: 123456
       max-active: 50

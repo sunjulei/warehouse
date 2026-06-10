@@ -5,7 +5,7 @@ export function login(data: { loginname: string; pwd: string; code: string }) {
 }
 
 export function getCodeUrl(): string {
-  return '/api/login/getCode?t=' + Date.now()
+  return '/warehouse/login/getCode?t=' + Date.now()
 }
 
 export function currentUser() {

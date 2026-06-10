@@ -12,10 +12,27 @@ export default defineConfig({
   server: {
     port: 8888,
     proxy: {
-      '/api': {
+      '/warehouse': {
         target: 'http://localhost:8899',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'static',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        chunkFileNames: 'static/js/[name]-[hash].js',
+        entryFileNames: 'static/js/[name]-[hash].js',
+        assetFileNames: 'static/[ext]/[name]-[hash].[ext]',
+        manualChunks: {
+          vue: ['vue', 'vue-router', 'pinia'],
+          elementPlus: ['element-plus']
+        }
       }
     }
   }

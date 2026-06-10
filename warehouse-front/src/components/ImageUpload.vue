@@ -30,7 +30,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
-const uploadUrl = '/api/file/uploadFile'
+const uploadUrl = '/warehouse/file/uploadFile'
 
 const imageUrl = computed(() => {
   if (!props.modelValue) return ''
