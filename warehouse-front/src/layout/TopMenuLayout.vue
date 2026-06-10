@@ -12,7 +12,7 @@
               <path d="M8 5L16 9" stroke="currentColor" stroke-width="1" opacity="0.5"/>
             </svg>
           </div>
-          <span class="logo-text">仓储脉搏</span>
+          <span class="logo-text">仓图</span>
         </div>
 
         <el-scrollbar class="top-menu-scrollbar">

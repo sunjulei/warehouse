@@ -5,7 +5,7 @@
       <div class="greeting-bar">
         <div class="greeting-text">
           <span class="greeting-hello">{{ greeting }}，{{ authStore.user?.name || '管理员' }}</span>
-          <span class="greeting-sub">仓储脉搏 · 实时数据概览</span>
+          <span class="greeting-sub">仓图 · 实时数据概览</span>
         </div>
       </div>
       <div class="stats-row">

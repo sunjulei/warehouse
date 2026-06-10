@@ -359,7 +359,7 @@ const buildChartOption = (title: string, names: string[], amounts: number[], col
     },
     animationDelay: (idx: number) => idx * 50
   }],
-  animationEasing: 'cubicOut',
+  animationEasing: 'cubicOut' as const,
   animationDuration: 800
 })
 

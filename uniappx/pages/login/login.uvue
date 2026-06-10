@@ -5,7 +5,7 @@
       <view class="logo-icon">
         <text class="icon-text">📦</text>
       </view>
-      <text class="app-name">仓储脉搏</text>
+      <text class="app-name">仓图</text>
       <text class="app-desc">智能仓库管理系统</text>
     </view>
 
@@ -65,7 +65,7 @@
       </view>
     </view>
 
-    <text class="footer">Warehouse Pulse v1.0</text>
+    <text class="footer">WareMap v1.0</text>
   </view>
 </template>
 

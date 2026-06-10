@@ -3,14 +3,15 @@ import { ElMessage } from 'element-plus'
 import router from '@/router'
 
 const service = axios.create({
-  baseURL: '/warehouse',
+  baseURL: import.meta.env.VITE_APP_BASE_URL || '/warehouse',
   timeout: 15000,
   withCredentials: true
 })
 
 // POST请求自动将JSON转为form表单格式（后端用VO接收表单参数）
 service.interceptors.request.use((config) => {
-  const isJsonRequest = config.headers?.['Content-Type']?.includes('application/json')
+  const contentType = config.headers?.['Content-Type']
+  const isJsonRequest = typeof contentType === 'string' && contentType.includes('application/json')
   if (config.method === 'post' && config.data
     && !isJsonRequest
     && !Array.isArray(config.data)

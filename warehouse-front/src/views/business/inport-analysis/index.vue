@@ -292,7 +292,7 @@ const buildChartOption = (title: string, labels: string[], values: number[], col
       emphasis: { focus: 'series' }
     }
   ],
-  animationEasing: 'cubicOut',
+  animationEasing: 'cubicOut' as const,
   animationDuration: 800
 })
 

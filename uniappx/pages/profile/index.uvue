@@ -90,7 +90,7 @@ function navigateTo(url : string) : void {
 function showAbout() : void {
   uni.showModal({
     title: '关于',
-    content: '仓储脉搏 v1.0.0\n仓库管理系统',
+    content: '仓图 v1.0.0\n仓库管理系统',
     showCancel: false,
     confirmText: '知道了'
   })

@@ -12,7 +12,7 @@
         </svg>
       </div>
       <transition name="fade">
-        <span v-if="!isCollapse" class="logo-text">仓储脉搏</span>
+        <span v-if="!isCollapse" class="logo-text">仓图</span>
       </transition>
     </div>
     <el-scrollbar class="sidebar-scrollbar">

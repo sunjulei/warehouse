@@ -22,8 +22,8 @@
             <path d="M12 12L4 7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h2 class="login-title">仓储脉搏</h2>
-        <p class="login-subtitle">Warehouse Pulse</p>
+        <h2 class="login-title">仓图</h2>
+        <p class="login-subtitle">WareMap</p>
       </div>
       <el-form ref="formRef" :model="form" :rules="rules" @keyup.enter="handleLogin" class="login-form">
         <el-form-item prop="loginname" class="animate-item-1">
@@ -77,7 +77,7 @@
         </el-form-item>
       </el-form>
       <div class="login-footer">
-        <span>仓储脉搏管理系统 &copy; {{ new Date().getFullYear() }}</span>
+        <span>WareMap 仓库管理系统 &copy; {{ new Date().getFullYear() }}</span>
       </div>
     </el-card>
   </div>
