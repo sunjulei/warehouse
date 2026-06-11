@@ -63,7 +63,7 @@ public class CommissionController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("保存提成规则失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("保存失败: " + e.getMessage());
         }
     }
 
@@ -82,7 +82,7 @@ public class CommissionController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("删除提成规则失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 
@@ -115,7 +115,7 @@ public class CommissionController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("保存阶梯提成失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("保存失败: " + e.getMessage());
         }
     }
 
@@ -230,7 +230,7 @@ public class CommissionController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("确认提成失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("确认失败: " + e.getMessage());
         }
     }
 

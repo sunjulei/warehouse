@@ -3,9 +3,6 @@ package com.sunlee.sys.vo;
 import com.sunlee.sys.entity.User;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.springframework.format.annotation.DateTimeFormat;
-
-import java.util.Date;
 
 /**
  * @Author: sunlee

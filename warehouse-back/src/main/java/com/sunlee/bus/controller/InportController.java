@@ -72,6 +72,19 @@ public class InportController {
     @RequestMapping("addInport")
     public ResultObj addInport(InportVo inportVo) {
         try {
+            // 手动数据校验
+            if (inportVo.getGoodsid() == null) {
+                return ResultObj.error("商品ID不能为空");
+            }
+            if (inportVo.getProviderid() == null) {
+                return ResultObj.error("供应商ID不能为空");
+            }
+            if (inportVo.getNumber() == null || inportVo.getNumber() <= 0) {
+                return ResultObj.error("进货数量必须大于0");
+            }
+            if (inportVo.getInportprice() == null || inportVo.getInportprice() <= 0) {
+                return ResultObj.error("进货价格必须大于0");
+            }
             User user = (User) WebUtils.getSession().getAttribute("user");
             inportVo.setOperateperson(user.getName());
             inportVo.setInporttime(new Date());
@@ -79,7 +92,7 @@ public class InportController {
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
             log.error("添加进货失败: {}", e.getMessage(), e);
-            return ResultObj.ADD_ERROR;
+            return ResultObj.error("添加失败: " + e.getMessage());
         }
     }
 
@@ -123,7 +136,7 @@ public class InportController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("修改进货记录失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("修改失败: " + e.getMessage());
         }
     }
 
@@ -135,7 +148,7 @@ public class InportController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("删除进货记录失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 

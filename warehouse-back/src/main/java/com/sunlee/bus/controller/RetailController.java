@@ -70,7 +70,7 @@ public class RetailController {
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
             log.error("添加零售失败: {}", e.getMessage(), e);
-            return ResultObj.ADD_ERROR;
+            return ResultObj.error("添加失败: " + e.getMessage());
         }
     }
 
@@ -114,7 +114,7 @@ public class RetailController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("修改零售记录失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("修改失败: " + e.getMessage());
         }
     }
 
@@ -126,7 +126,7 @@ public class RetailController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("删除零售记录失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 

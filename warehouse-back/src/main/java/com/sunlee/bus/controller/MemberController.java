@@ -94,7 +94,7 @@ public class MemberController {
             return new ResultObj(200, "会员添加成功，卡号: " + memberVo.getMemberNo());
         } catch (Exception e) {
             log.error("添加会员失败: {}", e.getMessage(), e);
-            return ResultObj.ADD_ERROR;
+            return ResultObj.error("添加失败: " + e.getMessage());
         }
     }
 
@@ -109,7 +109,7 @@ public class MemberController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("修改会员失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("修改失败: " + e.getMessage());
         }
     }
 
@@ -167,7 +167,7 @@ public class MemberController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("删除会员失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 
@@ -195,7 +195,7 @@ public class MemberController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("保存等级规则失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("保存失败: " + e.getMessage());
         }
     }
 }

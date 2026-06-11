@@ -12,11 +12,11 @@ spring:
       filters: stat,log4j,wall
       validation-query: SELECT 'X'
       enable: true
-      # Druid 监控页面（开发环境开启）
+      # Druid 监控页面（开发环境开启，生产环境务必关闭 enabled: false）
       stat-view-servlet:
         enabled: true
-        login-username: root
-        login-password: 123456
+        login-username: ${DRUID_USER:root}
+        login-password: ${DRUID_PWD:123456}
         url-pattern: /druid/*
 
 # 开发环境打印 SQL 日志

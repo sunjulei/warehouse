@@ -132,6 +132,8 @@ public class LoginController {
             response.setHeader("satoken", StpUtil.getTokenValue());
             // 将用户信息存入 SA-Token 会话
             StpUtil.getSession().set("user", user);
+            // 将用户权限列表存入 SA-Token 会话（供接口权限校验使用）
+            cacheUserPermissions(user);
             // 记录登陆日志
             Loginfo entity = new Loginfo();
             entity.setLoginname(user.getName() + "-" + user.getLoginname());
@@ -177,7 +179,6 @@ public class LoginController {
             String base64 = java.util.Base64.getEncoder().encodeToString(baos.toByteArray());
             map.put("code", 200);
             map.put("captchaId", captchaId);
-            map.put("captchaCode", lineCaptcha.getCode());
             map.put("image", "data:image/png;base64," + base64);
         } catch (Exception e) {
             log.error("获取验证码失败: {}", e.getMessage(), e);
@@ -288,6 +289,45 @@ public class LoginController {
     public ResultObj logout() {
         StpUtil.logout();
         return new ResultObj(Constast.OK, "退出成功");
+    }
+
+    /**
+     * 将用户权限码列表缓存到 SA-Token session
+     * @param user 当前登录用户
+     */
+    private void cacheUserPermissions(User user) {
+        List<String> permissions = new ArrayList<>();
+        if (user.getType().equals(Constast.USER_TYPE_SUPER)) {
+            permissions.add("*:*");
+        } else {
+            Integer userId = user.getId();
+            // 1. 查询用户拥有的角色ID
+            List<Integer> roleIds = roleService.queryUserRoleIdsByUid(userId);
+            if (roleIds != null && !roleIds.isEmpty()) {
+                // 2. 根据角色ID查询权限ID
+                Set<Integer> permIds = new HashSet<>();
+                for (Integer rid : roleIds) {
+                    List<Integer> pids = roleService.queryRolePermissionIdsByRid(rid);
+                    if (pids != null) {
+                        permIds.addAll(pids);
+                    }
+                }
+                // 3. 根据权限ID查询权限码
+                if (!permIds.isEmpty()) {
+                    QueryWrapper<Permission> queryWrapper = new QueryWrapper<>();
+                    queryWrapper.in("id", permIds);
+                    queryWrapper.eq("type", Constast.TYPE_PERMISSION);
+                    queryWrapper.eq("available", Constast.AVAILABLE_TRUE);
+                    List<Permission> permList = permissionService.list(queryWrapper);
+                    for (Permission p : permList) {
+                        if (p.getPercode() != null && !p.getPercode().isEmpty()) {
+                            permissions.add(p.getPercode());
+                        }
+                    }
+                }
+            }
+        }
+        StpUtil.getSession().set("permissions", permissions);
     }
 
 }

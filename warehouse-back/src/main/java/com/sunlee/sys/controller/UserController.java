@@ -73,14 +73,18 @@ public class UserController {
             if (deptId!=null){
                 //先从缓存中去取，如果缓存中没有就去数据库中取
                 Dept one = deptService.getById(deptId);
-                //设置user的部门名称
-                user.setDeptname(one.getName());
+                if (one != null) {
+                    //设置user的部门名称
+                    user.setDeptname(one.getName());
+                }
             }
             Integer mgr = user.getMgr();
             if (mgr!=null&&mgr!=0){
                 User one = userService.getById(mgr);
-                //设置user的领导名称
-                user.setLeadername(one.getName());
+                if (one != null) {
+                    //设置user的领导名称
+                    user.setLeadername(one.getName());
+                }
             }
         }
         return new DataGridView(page.getTotal(),list);
@@ -144,20 +148,44 @@ public class UserController {
     @RequestMapping("addUser")
     public ResultObj addUser(UserVo userVo){
         try {
+            // 手动数据校验
+            if (userVo.getName() == null || userVo.getName().trim().isEmpty()) {
+                return ResultObj.error("姓名不能为空");
+            }
+            if (userVo.getName().length() > 50) {
+                return ResultObj.error("姓名长度不能超过50个字符");
+            }
+            if (userVo.getLoginname() == null || userVo.getLoginname().trim().isEmpty()) {
+                return ResultObj.error("登录名不能为空");
+            }
+            if (userVo.getLoginname().length() > 50) {
+                return ResultObj.error("登录名长度不能超过50个字符");
+            }
+            if (userVo.getDeptid() == null) {
+                return ResultObj.error("部门不能为空");
+            }
+            // 校验用户名是否已存在
+            QueryWrapper<User> checkWrapper = new QueryWrapper<>();
+            checkWrapper.eq("loginname", userVo.getLoginname());
+            long count = userService.count(checkWrapper);
+            if (count > 0) {
+                return ResultObj.error("登录名已存在，请更换");
+            }
             //设置类型
             userVo.setType(Constast.USER_TYPE_NORMAL);
             //设置盐
             String salt = IdUtil.simpleUUID().toUpperCase();
             userVo.setSalt(salt);
-            //设置默认密码
-            userVo.setPwd(md5Hash(Constast.USER_DEFAULT_PWD, salt, 2));
+            // 生成随机初始密码（8位字母数字组合）
+            String initialPwd = generateRandomPassword(8);
+            userVo.setPwd(md5Hash(initialPwd, salt, Constast.HASHITERATIONS));
             //设置用户默认头像
             userVo.setImgpath(Constast.DEFAULT_IMG_USER);
             userService.save(userVo);
-            return ResultObj.ADD_SUCCESS;
+            return new ResultObj(Constast.OK, "添加成功，初始密码为: " + initialPwd);
         } catch (Exception e) {
-            log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.ADD_ERROR;
+            log.error("添加用户失败: {}", e.getMessage(), e);
+            return ResultObj.error("添加失败: " + e.getMessage());
         }
     }
 
@@ -168,7 +196,8 @@ public class UserController {
      */
     @RequestMapping("loadUserById")
     public DataGridView loadUserById(Integer id){
-        return new DataGridView(userService.getById(id));
+        User user = userService.getById(id);
+        return new DataGridView(user);
     }
 
     /**
@@ -179,11 +208,14 @@ public class UserController {
     @RequestMapping("updateUser")
     public ResultObj updateUser(UserVo userVo){
         try {
+            // 安全：禁止通过 updateUser 接口修改密码和盐值
+            userVo.setPwd(null);
+            userVo.setSalt(null);
             userService.updateById(userVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("修改失败: " + e.getMessage());
         }
     }
 
@@ -199,7 +231,7 @@ public class UserController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 
@@ -259,7 +291,7 @@ public class UserController {
             return ResultObj.DISPATCH_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.DISPATCH_ERROR;
+            return ResultObj.error("分配失败: " + e.getMessage());
         }
     }
 
@@ -277,6 +309,9 @@ public class UserController {
         //2.将oldPassword加盐并散列两次在和数据库中的密码进行对比
         Integer userId = user.getId();
         User user1 = userService.getById(userId);
+        if (user1 == null) {
+            return ResultObj.UPDATE_ERROR;
+        }
         //2.1获得该用户的盐
         String salt = user1.getSalt();
         //2.2通过用户输入的原密码，从数据库中查出的盐，散列次数生成新的旧密码
@@ -307,6 +342,21 @@ public class UserController {
         return user;
     }
 
+
+    /**
+     * 生成随机密码
+     * @param length 密码长度
+     * @return 随机密码字符串
+     */
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder sb = new StringBuilder();
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
 
     /**
      * MD5加盐散列（兼容Shiro Md5Hash格式）
@@ -347,8 +397,11 @@ public class UserController {
                     String newName = AppFileUtils.renameFile(userVo.getImgpath());
                     userVo.setImgpath(newName);
                     //删除原先的图片
-                    String oldPath = userService.getById(userVo.getId()).getImgpath();
-                    AppFileUtils.removeFileByPath(oldPath);
+                    User oldUser = userService.getById(userVo.getId());
+                    if (oldUser != null) {
+                        String oldPath = oldUser.getImgpath();
+                        AppFileUtils.removeFileByPath(oldPath);
+                    }
                     //获取存储在session中的user并重新设置user中的图片地址
                     User user = (User) WebUtils.getSession().getAttribute("user");
                     user.setImgpath(newName);
@@ -360,7 +413,7 @@ public class UserController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("修改失败: " + e.getMessage());
         }
     }
 

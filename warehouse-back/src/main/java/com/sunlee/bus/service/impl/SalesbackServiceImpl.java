@@ -41,14 +41,28 @@ public class SalesbackServiceImpl extends ServiceImpl<SalesbackMapper, Salesback
      */
     @Override
     public void addSalesback(Integer id, Integer number, String remark) {
+        // 校验退货数量
+        if (number == null || number <= 0) {
+            throw new RuntimeException("退货数量必须大于0");
+        }
         //1.通过销售单ID查询出销售单信息
         Sales sales = salesMapper.selectById(id);
+        if (sales == null) {
+            throw new RuntimeException("销售记录不存在: " + id);
+        }
+        // 校验退货数量不能超过销售数量
+        if (number > sales.getNumber()) {
+            throw new RuntimeException("退货数量不能超过销售数量，当前销售数量: " + sales.getNumber());
+        }
         //2.根据商品ID查询商品信息
         Goods goods = goodsMapper.selectById(sales.getGoodsid());
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + sales.getGoodsid());
+        }
         //3.修改商品的数量     商品的数量-退货的数量
         goods.setNumber(goods.getNumber()+number);
 
-        //修改进货的数量
+        //修改销售的数量
         sales.setNumber(sales.getNumber()-number);
         salesMapper.updateById(sales);
 

@@ -68,6 +68,9 @@ public class NoticeController {
     @RequestMapping("loadNoticeById")
     public DataGridView loadNoticeById(Integer id){
         Notice notice = noticeService.getById(id);
+        if (notice == null) {
+            return new DataGridView(null);
+        }
         return new DataGridView(notice);
     }
 
@@ -82,11 +85,15 @@ public class NoticeController {
             noticeVo.setCreatetime(new Date());
             User user = (User) WebUtils.getSession().getAttribute("user");
             noticeVo.setOpername(user.getName());
+            // XSS 防护：对公告内容进行 HTML 转义
+            if (noticeVo.getContent() != null) {
+                noticeVo.setContent(escapeHtml(noticeVo.getContent()));
+            }
             noticeService.save(noticeVo);
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.ADD_ERROR;
+            return ResultObj.error("添加失败: " + e.getMessage());
         }
     }
 
@@ -98,11 +105,15 @@ public class NoticeController {
     @RequestMapping("updateNotice")
     public ResultObj updateNotice(NoticeVo noticeVo){
         try {
+            // XSS 防护：对公告内容进行 HTML 转义
+            if (noticeVo.getContent() != null) {
+                noticeVo.setContent(escapeHtml(noticeVo.getContent()));
+            }
             noticeService.updateById(noticeVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("修改失败: " + e.getMessage());
         }
     }
 
@@ -118,7 +129,7 @@ public class NoticeController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 
@@ -138,10 +149,43 @@ public class NoticeController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 
+    /**
+     * HTML 实体转义，防止 XSS 攻击
+     * 将 < > " ' & 等字符转为对应的 HTML 实体
+     */
+    private String escapeHtml(String input) {
+        if (input == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            switch (c) {
+                case '<':
+                    sb.append("&lt;");
+                    break;
+                case '>':
+                    sb.append("&gt;");
+                    break;
+                case '"':
+                    sb.append("&quot;");
+                    break;
+                case '&':
+                    sb.append("&amp;");
+                    break;
+                case '\'':
+                    sb.append("&#x27;");
+                    break;
+                default:
+                    sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
 
 }
 
