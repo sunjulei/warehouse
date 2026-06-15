@@ -966,6 +966,40 @@ INSERT INTO `sys_user_role` VALUES (1,1),(20,11),(21,12),(22,13),(23,14);
 UNLOCK TABLES;
 
 --
+-- Table structure for table `bus_serial_number`
+--
+
+DROP TABLE IF EXISTS `bus_serial_number`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bus_serial_number` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `serial_number` varchar(50) NOT NULL COMMENT '序列号',
+  `goodsid` int NOT NULL COMMENT '商品ID',
+  `inportid` int DEFAULT NULL COMMENT '入库单ID',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '状态：0=在库, 1=已售, 2=已退',
+  `instock_time` datetime DEFAULT NULL COMMENT '入库时间',
+  `outstock_time` datetime DEFAULT NULL COMMENT '出库时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `isdelete` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0=正常, 1=已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_serial_number` (`serial_number`),
+  KEY `idx_goodsid` (`goodsid`),
+  KEY `idx_inportid` (`inportid`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='序列号表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `bus_serial_number`
+--
+
+LOCK TABLES `bus_serial_number` WRITE;
+/*!40000 ALTER TABLE `bus_serial_number` DISABLE KEYS */;
+/*!40000 ALTER TABLE `bus_serial_number` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Dumping events for database 'warehouse'
 --
 
