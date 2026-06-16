@@ -4,11 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.SerialNumber;
+import com.sunlee.bus.entity.SerialNumberLog;
 import com.sunlee.bus.mapper.GoodsMapper;
+import com.sunlee.bus.mapper.SerialNumberLogMapper;
 import com.sunlee.bus.mapper.SerialNumberMapper;
 import com.sunlee.bus.service.ISerialNumberService;
 import com.sunlee.bus.vo.SerialNumberVo;
+import com.sunlee.sys.common.Constast;
 import com.sunlee.sys.common.DataGridView;
+import com.sunlee.sys.common.ResultObj;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +33,26 @@ public class SerialNumberServiceImpl extends ServiceImpl<SerialNumberMapper, Ser
 
     @Autowired
     private GoodsMapper goodsMapper;
+
+    @Autowired
+    private SerialNumberLogMapper serialNumberLogMapper;
+
+    /**
+     * 记录序列号操作日志
+     */
+    private void saveLog(String serialNumber, Integer goodsId, String action,
+                         Integer fromStatus, Integer toStatus, String orderNo, String remark) {
+        SerialNumberLog log = new SerialNumberLog();
+        log.setSerialNumber(serialNumber);
+        log.setGoodsid(goodsId);
+        log.setAction(action);
+        log.setFromStatus(fromStatus);
+        log.setToStatus(toStatus);
+        log.setOrderNo(orderNo);
+        log.setOperateTime(new Date());
+        log.setRemark(remark);
+        serialNumberLogMapper.insert(log);
+    }
 
     @Override
     public DataGridView querySerialNumbers(SerialNumberVo vo) {
@@ -87,5 +111,108 @@ public class SerialNumberServiceImpl extends ServiceImpl<SerialNumberMapper, Ser
         QueryWrapper<SerialNumber> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("serial_number", serialNumber);
         return baseMapper.selectCount(queryWrapper) > 0;
+    }
+
+    @Override
+    public void batchInport(Integer goodsId, List<String> serialNumbers, Integer inportId) {
+        if (serialNumbers == null || serialNumbers.isEmpty()) {
+            return;
+        }
+        Goods goods = goodsMapper.selectById(goodsId);
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + goodsId);
+        }
+        List<SerialNumber> list = new ArrayList<>();
+        for (String sn : serialNumbers) {
+            if (existsBySerialNumber(sn)) {
+                throw new RuntimeException("序列号已存在: " + sn);
+            }
+            SerialNumber serialNumber = new SerialNumber();
+            serialNumber.setSerialNumber(sn);
+            serialNumber.setGoodsid(goodsId);
+            serialNumber.setInportid(inportId);
+            serialNumber.setStatus(0); // 在库
+            serialNumber.setInstockTime(new Date());
+            list.add(serialNumber);
+
+            // 记录入库日志
+            saveLog(sn, goodsId, "inport", null, 0, null, "进货入库");
+        }
+        saveBatch(list);
+    }
+
+    @Override
+    public void batchSale(Integer goodsId, List<String> serialNumbers, Integer salesId) {
+        if (serialNumbers == null || serialNumbers.isEmpty()) {
+            return;
+        }
+        for (String sn : serialNumbers) {
+            QueryWrapper<SerialNumber> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("serial_number", sn);
+            queryWrapper.eq("goodsid", goodsId);
+            queryWrapper.eq("status", 0); // 只有在库的才能销售
+            SerialNumber serialNumber = getOne(queryWrapper);
+            if (serialNumber == null) {
+                throw new RuntimeException("序列号不可用: " + sn);
+            }
+            serialNumber.setStatus(1); // 已售
+            serialNumber.setOutstockTime(new Date());
+            updateById(serialNumber);
+
+            // 记录销售日志
+            saveLog(sn, goodsId, "sale", 0, 1, null, "销售出库");
+        }
+    }
+
+    @Override
+    public void batchReturn(List<String> serialNumbers, boolean directResaleable) {
+        if (serialNumbers == null || serialNumbers.isEmpty()) {
+            return;
+        }
+        for (String sn : serialNumbers) {
+            QueryWrapper<SerialNumber> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("serial_number", sn);
+            queryWrapper.eq("status", 1); // 只有已售的才能退货
+            SerialNumber serialNumber = getOne(queryWrapper);
+            if (serialNumber == null) {
+                throw new RuntimeException("序列号不属于已售状态: " + sn);
+            }
+            int newStatus = directResaleable ? 0 : 2;
+            serialNumber.setStatus(newStatus); // 直接可售或待检
+            serialNumber.setOutstockTime(null);
+            updateById(serialNumber);
+
+            // 记录退货日志
+            saveLog(sn, serialNumber.getGoodsid(), "return", 1, newStatus, null,
+                    directResaleable ? "退货直接回库" : "退货待检");
+        }
+    }
+
+    @Override
+    public List<SerialNumber> getAvailableByGoodsId(Integer goodsId) {
+        QueryWrapper<SerialNumber> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("goodsid", goodsId);
+        queryWrapper.eq("status", 0); // 在库可用
+        queryWrapper.orderByDesc("instock_time");
+        return list(queryWrapper);
+    }
+
+    @Override
+    public boolean checkAvailable(String serialNumber, Integer goodsId) {
+        QueryWrapper<SerialNumber> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("serial_number", serialNumber);
+        queryWrapper.eq("goodsid", goodsId);
+        queryWrapper.eq("status", 0);
+        return count(queryWrapper) > 0;
+    }
+
+    @Override
+    public ResultObj updateSerialNumber(SerialNumber serialNumber) {
+        try {
+            updateById(serialNumber);
+            return ResultObj.UPDATE_SUCCESS;
+        } catch (Exception e) {
+            return ResultObj.error("更新失败: " + e.getMessage());
+        }
     }
 }

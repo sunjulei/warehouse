@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 序列号控制器
@@ -106,6 +107,41 @@ public class SerialNumberController {
         } catch (Exception e) {
             log.error("修改序列号失败: {}", e.getMessage(), e);
             return ResultObj.error("修改失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取商品可用序列号
+     */
+    @RequestMapping("getAvailableSerialNumbers")
+    public DataGridView getAvailableSerialNumbers(Integer goodsId) {
+        List<SerialNumber> list = serialNumberService.getAvailableByGoodsId(goodsId);
+        return new DataGridView((long) list.size(), list);
+    }
+
+    /**
+     * 批量入库序列号
+     */
+    @RequestMapping("batchInport")
+    public ResultObj batchInport(@RequestBody Map<String, Object> params) {
+        try {
+            Integer goodsId = (Integer) params.get("goodsId");
+            @SuppressWarnings("unchecked")
+            List<String> serialNumbers = (List<String>) params.get("serialNumbers");
+            Integer inportId = params.get("inportId") != null ? (Integer) params.get("inportId") : 0;
+
+            if (goodsId == null) {
+                return ResultObj.error("商品ID不能为空");
+            }
+            if (serialNumbers == null || serialNumbers.isEmpty()) {
+                return ResultObj.error("序列号列表不能为空");
+            }
+
+            serialNumberService.batchInport(goodsId, serialNumbers, inportId);
+            return new ResultObj(Constast.OK, "序列号入库成功，共" + serialNumbers.size() + "条");
+        } catch (Exception e) {
+            log.error("序列号入库失败: {}", e.getMessage(), e);
+            return new ResultObj(Constast.ERROR, "入库失败: " + e.getMessage());
         }
     }
 }
