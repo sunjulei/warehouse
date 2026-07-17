@@ -57,5 +57,5 @@ export function updateUserInfo(data: any) {
 }
 
 export function changePassword(oldPassword: string, newPwdOne: string, newPwdTwo: string) {
-  return request.post('/user/changePassword', null, { params: { oldPassword, newPwdOne, newPwdTwo } })
+  return request.post('/user/changePassword', { oldPassword, newPwdOne, newPwdTwo })
 }

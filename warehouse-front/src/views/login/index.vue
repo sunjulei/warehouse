@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import request from '@/utils/request'
@@ -95,6 +95,7 @@ const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const captchaUrl = ref('')
+const captchaBlobUrl = ref<string | null>(null)
 
 const form = ref({
   loginname: '',
@@ -109,16 +110,31 @@ const rules = {
 }
 
 const refreshCaptcha = async () => {
+  // 释放旧的 blob URL，防止内存泄漏
+  if (captchaBlobUrl.value) {
+    URL.revokeObjectURL(captchaBlobUrl.value)
+    captchaBlobUrl.value = null
+  }
   try {
     const res = await request.get('/login/getCode', {
       responseType: 'blob',
       timeout: 10000
     })
-    captchaUrl.value = URL.createObjectURL(res.data as Blob)
+    const blob = res.data as Blob
+    const url = URL.createObjectURL(blob)
+    captchaBlobUrl.value = url
+    captchaUrl.value = url
   } catch {
     captchaUrl.value = '/warehouse/login/getCode?t=' + Date.now()
   }
 }
+
+onUnmounted(() => {
+  // 组件卸载时释放 blob URL
+  if (captchaBlobUrl.value) {
+    URL.revokeObjectURL(captchaBlobUrl.value)
+  }
+})
 
 const handleLogin = async () => {
   if (!formRef.value) return

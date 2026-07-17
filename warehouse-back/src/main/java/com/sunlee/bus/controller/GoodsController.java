@@ -113,6 +113,13 @@ public class GoodsController {
     @RequestMapping("addGoods")
     public ResultObj addGoods(GoodsVo goodsVo){
         try {
+            // 手动数据校验
+            if (goodsVo.getGoodsname() == null || goodsVo.getGoodsname().trim().isEmpty()) {
+                return ResultObj.error("商品名称不能为空");
+            }
+            if (goodsVo.getNumber() != null && goodsVo.getNumber() < 0) {
+                return ResultObj.error("商品数量不能为负数");
+            }
             if (goodsVo.getGoodsimg()!=null && goodsVo.getGoodsimg().endsWith("_temp")){
                 String newName = AppFileUtils.renameFile(goodsVo.getGoodsimg());
                 goodsVo.setGoodsimg(newName);
@@ -128,7 +135,7 @@ public class GoodsController {
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
             log.error("添加商品失败: {}", e.getMessage(), e);
-            return ResultObj.ADD_ERROR;
+            return ResultObj.error("添加失败: " + e.getMessage());
         }
     }
 
@@ -144,11 +151,16 @@ public class GoodsController {
                     && goodsVo.getGoodsimg().endsWith("_temp")){
                 String newName = AppFileUtils.renameFile(goodsVo.getGoodsimg());
                 goodsVo.setGoodsimg(newName);
-                String oldPath = goodsService.getById(goodsVo.getId()).getGoodsimg();
-                AppFileUtils.removeFileByPath(oldPath);
+                Goods oldGoodsForImg = goodsService.getById(goodsVo.getId());
+                if (oldGoodsForImg != null) {
+                    String oldPath = oldGoodsForImg.getGoodsimg();
+                    AppFileUtils.removeFileByPath(oldPath);
+                }
             }
             Goods oldGoods = goodsService.getById(goodsVo.getId());
-            goodsVo.setNumber(oldGoods.getNumber());
+            if (oldGoods != null) {
+                goodsVo.setNumber(oldGoods.getNumber());
+            }
             // 更新拼音和简写
             if (StringUtils.isNotBlank(goodsVo.getGoodsname())) {
                 goodsVo.setPinyin(PinyinUtils.getPingYin(goodsVo.getGoodsname()));
@@ -158,7 +170,7 @@ public class GoodsController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("修改商品失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("修改失败: " + e.getMessage());
         }
     }
 
@@ -176,7 +188,7 @@ public class GoodsController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("商品上下架失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("操作失败: " + e.getMessage());
         }
     }
 
@@ -192,7 +204,7 @@ public class GoodsController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("删除商品失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 

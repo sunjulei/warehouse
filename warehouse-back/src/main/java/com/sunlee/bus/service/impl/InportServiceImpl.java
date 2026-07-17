@@ -62,10 +62,14 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
     public boolean save(Inport entity) {
         //根据商品ID查询商品
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + entity.getGoodsid());
+        }
+        // 先保存进货信息，再更新库存（确保事务一致性）
+        boolean result = super.save(entity);
         goods.setNumber(goods.getNumber()+entity.getNumber());
         goodsMapper.updateById(goods);
-        //保存进货信息
-        return super.save(entity);
+        return result;
     }
 
     /**
@@ -108,8 +112,18 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
     public boolean updateById(Inport entity) {
         //根据进货ID查询进货信息
         Inport inport = baseMapper.selectById(entity.getId());
+        if (inport == null) {
+            throw new RuntimeException("进货记录不存在: " + entity.getId());
+        }
         //根据商品ID查询商品信息
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + entity.getGoodsid());
+        }
+        // 校验修改后的数量不能为负数
+        if (entity.getNumber() != null && entity.getNumber() < 0) {
+            throw new RuntimeException("进货数量不能为负数");
+        }
         //库存算法  当前库存-进货单修改之前的数量+修改之后的数量
         goods.setNumber(goods.getNumber()-inport.getNumber()+entity.getNumber());
         goodsMapper.updateById(goods);
@@ -430,11 +444,8 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
 
     @Override
     public String getNextOrderSeq(String dateStr) {
-        // 查询当天已有的订单数量
-        QueryWrapper<Inport> queryWrapper = new QueryWrapper<>();
-        queryWrapper.likeRight("orderno", "IP" + dateStr);
-        long count = baseMapper.selectCount(queryWrapper);
-        // 返回4位序号，从0001开始
-        return String.format("%04d", count + 1);
+        // 使用 UUID 后缀替代计数器，避免高并发下重复
+        String uuid = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        return uuid;
     }
 }

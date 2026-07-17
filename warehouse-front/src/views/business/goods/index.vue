@@ -47,6 +47,13 @@
             </template>
           </template>
         </el-table-column>
+        <el-table-column label="序列号" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.isSerialManaged === 1 ? 'primary' : 'info'" size="small">
+              {{ row.isSerialManaged === 1 ? '开启' : '关闭' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="row.available === 1 ? 'success' : 'danger'" size="small">
@@ -155,6 +162,18 @@
                   <el-icon><Plus /></el-icon> 添加属性
                 </el-button>
               </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <el-form-item label="序列号管理">
+              <el-switch v-model="formData.isSerialManaged" :active-value="1" :inactive-value="0" active-text="开启" inactive-text="关闭" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8" v-if="formData.isSerialManaged === 1">
+            <el-form-item label="退货直接回库">
+              <el-switch v-model="formData.returnResaleable" :active-value="1" :inactive-value="0" active-text="是" inactive-text="否" />
             </el-form-item>
           </el-col>
         </el-row>

@@ -39,15 +39,20 @@ service.interceptors.response.use(
     // ResultObj: {code: 200|-1, msg: "..."}
     if (res.code === -1) {
       ElMessage.error(res.msg || '操作失败')
-      return Promise.reject(new Error(res.msg))
+      return Promise.reject(new Error(res.msg || '操作失败'))
     }
     return res
   },
   (error) => {
     if (error.response?.status === 401) {
+      // 跳转到登录页（登录页会自动清除过期的登录状态）
       router.push('/login')
+      ElMessage.error('登录已过期，请重新登录')
+    } else if (error.response?.status === 403) {
+      ElMessage.error('无权限访问此接口')
+    } else {
+      ElMessage.error(error.message || '网络错误')
     }
-    ElMessage.error(error.message || '网络错误')
     return Promise.reject(error)
   }
 )

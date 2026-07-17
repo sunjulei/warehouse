@@ -40,7 +40,7 @@ public class RetailbackController {
             return new ResultObj(-1, e.getMessage());
         } catch (Exception e) {
             log.error("零售退货失败: {}", e.getMessage(), e);
-            return ResultObj.BACKINPORT_ERROR;
+            return ResultObj.error("退货失败: " + e.getMessage());
         }
     }
 
@@ -72,7 +72,7 @@ public class RetailbackController {
             return ResultObj.CANCEL_SUCCESS;
         } catch (Exception e) {
             log.error("取消零售退货失败: {}", e.getMessage(), e);
-            return ResultObj.CANCEL_ERROR;
+            return ResultObj.error("取消失败: " + e.getMessage());
         }
     }
 }

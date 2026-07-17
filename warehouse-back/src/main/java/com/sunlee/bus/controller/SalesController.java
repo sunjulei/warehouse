@@ -78,7 +78,7 @@ public class SalesController {
             return ResultObj.ADD_SUCCESS;
         } catch (Exception e) {
             log.error("添加销售失败: {}", e.getMessage(), e);
-            return ResultObj.ADD_ERROR;
+            return ResultObj.error("添加失败: " + e.getMessage());
         }
     }
 
@@ -88,8 +88,8 @@ public class SalesController {
         try {
             User user = (User) WebUtils.getSession().getAttribute("user");
             Date now = new Date();
-            // 生成订单号：时间戳 + 随机数
-            String orderNo = "SO" + System.currentTimeMillis() + String.format("%04d", (int)(Math.random() * 10000));
+            // 生成订单号：UUID 前缀（高并发安全）
+            String orderNo = "SO" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
             int totalNumber = 0;
             for (Sales sales : list) {
                 sales.setOrderno(orderNo);
@@ -122,7 +122,7 @@ public class SalesController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("修改销售记录失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("修改失败: " + e.getMessage());
         }
     }
 
@@ -134,7 +134,7 @@ public class SalesController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("删除销售记录失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 

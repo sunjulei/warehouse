@@ -71,7 +71,7 @@ public class LoginfoController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 
@@ -92,7 +92,7 @@ public class LoginfoController {
             return ResultObj.DELETE_SUCCESS;
         } catch (Exception e) {
             log.error("操作失败: {}", e.getMessage(), e);
-            return ResultObj.DELETE_ERROR;
+            return ResultObj.error("删除失败: " + e.getMessage());
         }
     }
 

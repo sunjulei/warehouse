@@ -124,7 +124,7 @@ public class StocktakeController {
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
             log.error("保存盘点明细失败: {}", e.getMessage(), e);
-            return ResultObj.UPDATE_ERROR;
+            return ResultObj.error("保存失败: " + e.getMessage());
         }
     }
 

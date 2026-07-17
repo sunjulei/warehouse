@@ -42,7 +42,7 @@ public class OutportController {
             return ResultObj.BACKINPORT_SUCCESS;
         } catch (Exception e) {
             log.error("进货退货失败: {}", e.getMessage(), e);
-            return ResultObj.BACKINPORT_ERROR;
+            return ResultObj.error("退货失败: " + e.getMessage());
         }
     }
 
@@ -54,7 +54,7 @@ public class OutportController {
             return ResultObj.CANCEL_SUCCESS;
         } catch (Exception e) {
             log.error("取消退货失败: {}", e.getMessage(), e);
-            return ResultObj.CANCEL_ERROR;
+            return ResultObj.error("取消失败: " + e.getMessage());
         }
     }
 

@@ -41,15 +41,32 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
     @Override
     public boolean save(Retail entity) {
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + entity.getGoodsid());
+        }
+        if (goods.getNumber() < entity.getNumber()) {
+            throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
+        }
+        // 先保存零售记录，再更新库存（确保事务一致性）
+        boolean result = super.save(entity);
         goods.setNumber(goods.getNumber() - entity.getNumber());
         goodsMapper.updateById(goods);
-        return super.save(entity);
+        return result;
     }
 
     @Override
     public boolean updateById(Retail entity) {
         Retail retail = baseMapper.selectById(entity.getId());
+        if (retail == null) {
+            throw new RuntimeException("零售记录不存在: " + entity.getId());
+        }
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + entity.getGoodsid());
+        }
+        if (entity.getNumber() != null && entity.getNumber() < 0) {
+            throw new RuntimeException("零售数量不能为负数");
+        }
         goods.setNumber(goods.getNumber() + retail.getNumber() - entity.getNumber());
         goodsMapper.updateById(goods);
         return super.updateById(entity);

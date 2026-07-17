@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
@@ -47,8 +49,14 @@ public class AppFileUtils {
      * @return 新名字由32位随机数加图片后缀组成
      */
     public static String createNewFileName(String oldName) {
-        //获取文件名后缀
-        String stuff = oldName.substring(oldName.lastIndexOf("."), oldName.length());
+        //获取文件名后缀，无后缀时使用 .tmp 作为默认后缀防止 NPE
+        int lastDot = oldName.lastIndexOf(".");
+        String stuff;
+        if (lastDot == -1 || lastDot == oldName.length() - 1) {
+            stuff = ".tmp";
+        } else {
+            stuff = oldName.substring(lastDot);
+        }
         //将UUID与文件名后缀进行拼接，生成新的文件名  生成的UUID为32位
         return IdUtil.simpleUUID().toUpperCase() + stuff;
     }
@@ -60,30 +68,48 @@ public class AppFileUtils {
      * @return
      */
     public static ResponseEntity<Object> createResponseEntity(String path) {
-        //1,构造文件对象
-        File file = new File(UPLOAD_PATH, path);
-        if (file.exists()) {
-            //将下载的文件，封装byte[]
-            byte[] bytes = null;
-            try {
-                bytes = FileUtil.readBytes(file);
-            } catch (Exception e) {
-                log.error("操作失败: {}", e.getMessage(), e);
+        // 1.规范化路径并校验，防止路径遍历攻击
+        File baseDir = new File(UPLOAD_PATH);
+        File file;
+        try {
+            Path basePath = baseDir.toPath().normalize().toAbsolutePath();
+            Path requestedPath = new File(baseDir, path).toPath().normalize().toAbsolutePath();
+            // 校验请求路径是否在允许的目录内
+            if (!requestedPath.startsWith(basePath)) {
+                log.warn("检测到路径遍历攻击尝试: path={}, basePath={}", path, basePath);
+                return ResponseEntity.badRequest().build();
             }
-            //创建封装响应头信息的对象
-            HttpHeaders header = new HttpHeaders();
-            //根据文件扩展名设置正确的Content-Type
-            String contentType = getContentType(path);
-            header.setContentType(MediaType.parseMediaType(contentType));
-            //创建ResponseEntity对象
-            ResponseEntity<Object> entity = new ResponseEntity<Object>(bytes, header, HttpStatus.OK);
-            return entity;
+            file = requestedPath.toFile();
+        } catch (Exception e) {
+            log.error("路径解析失败: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
         }
-        return null;
+
+        // 2.校验文件是否存在且为普通文件
+        if (!file.exists() || !file.isFile()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // 3.将下载的文件，封装byte[]
+        byte[] bytes = null;
+        try {
+            bytes = FileUtil.readBytes(file);
+        } catch (Exception e) {
+            log.error("文件读取失败: {}", e.getMessage(), e);
+        }
+        // 创建封装响应头信息的对象
+        HttpHeaders header = new HttpHeaders();
+        // 根据文件扩展名设置正确的Content-Type
+        String contentType = getContentType(path);
+        header.setContentType(MediaType.parseMediaType(contentType));
+        // 创建ResponseEntity对象
+        ResponseEntity<Object> entity = new ResponseEntity<Object>(bytes, header, HttpStatus.OK);
+        return entity;
     }
 
     /**
      * 根据文件扩展名获取Content-Type
+     * 未知类型返回 application/octet-stream，避免可执行文件被伪装成图片
      */
     private static String getContentType(String path) {
         String lower = path.toLowerCase();
@@ -91,7 +117,8 @@ public class AppFileUtils {
         if (lower.endsWith(".gif")) return "image/gif";
         if (lower.endsWith(".bmp")) return "image/bmp";
         if (lower.endsWith(".webp")) return "image/webp";
-        return "image/jpeg";
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        return "application/octet-stream";
     }
 
     /**

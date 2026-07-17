@@ -132,6 +132,9 @@
       </el-col>
     </el-row>
 
+    <!-- 序列号录入弹窗 -->
+    <SerialNumberInput ref="serialInputRef" @confirm="handleSerialConfirm" />
+
     <!-- 确认进货弹窗 -->
     <el-dialog v-model="confirmDialogVisible" title="确认进货" width="600px">
       <div class="confirm-header">
@@ -181,6 +184,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { batchAddInport } from '@/api/inport'
 import { loadAllProviderForSelect } from '@/api/provider'
 import { loadGoodsByProviderId } from '@/api/goods'
+import { batchInportSerialNumbers } from '@/api/serialNumber'
+import SerialNumberInput from '@/components/SerialNumberInput.vue'
 
 interface GoodsItem {
   id: number
@@ -206,6 +211,11 @@ const cartItems = ref<CartItem[]>([])
 const paytype = ref('现金')
 const remark = ref('')
 const submitting = ref(false)
+
+// 序列号相关
+const serialInputRef = ref()
+const serialNumbersMap = ref<Map<number, string[]>>(new Map())
+const currentSerialGoodsId = ref<number | null>(null)
 
 // 分页相关
 const goodsLoading = ref(false)
@@ -340,8 +350,54 @@ function handleConfirm() {
   confirmDialogVisible.value = true
 }
 
+// 序列号确认回调
+function handleSerialConfirm(serialNumbers: string[]) {
+  if (currentSerialGoodsId.value !== null) {
+    serialNumbersMap.value.set(currentSerialGoodsId.value, serialNumbers)
+  }
+}
+
+// 检查是否需要录入序列号
+function checkSerialNumbers(): boolean {
+  // 检查购物车中有序列号管理的商品
+  const serialGoods = cartItems.value.filter(item => {
+    const goods = allGoodsList.value.find(g => g.id === item.goodsid)
+    return goods && (goods as any).isSerialManaged === 1
+  })
+
+  // 检查是否所有序列号管理商品都已录入序列号
+  for (const item of serialGoods) {
+    const serials = serialNumbersMap.value.get(item.goodsid)
+    if (!serials || serials.length !== item.number) {
+      return false
+    }
+  }
+  return true
+}
+
+// 打开序列号录入
+function openSerialInput(goodsId: number, count: number) {
+  currentSerialGoodsId.value = goodsId
+  serialInputRef.value?.open(goodsId, count)
+}
+
 // 提交结算
 async function handleSubmit() {
+  // 检查序列号管理商品是否已录入序列号
+  const serialGoods = cartItems.value.filter(item => {
+    const goods = allGoodsList.value.find(g => g.id === item.goodsid)
+    return goods && (goods as any).isSerialManaged === 1
+  })
+
+  for (const item of serialGoods) {
+    const serials = serialNumbersMap.value.get(item.goodsid)
+    if (!serials || serials.length !== item.number) {
+      ElMessage.warning(`商品"${item.goodsname}"需要录入${item.number}个序列号`)
+      openSerialInput(item.goodsid, item.number)
+      return
+    }
+  }
+
   try {
     submitting.value = true
     const data = cartItems.value.map(item => ({
@@ -355,11 +411,27 @@ async function handleSubmit() {
 
     const res: any = await batchAddInport(data)
     if (res.code === 200) {
+      // 处理序列号入库
+      for (const item of serialGoods) {
+        const serials = serialNumbersMap.value.get(item.goodsid)
+        if (serials && serials.length > 0) {
+          try {
+            await batchInportSerialNumbers({
+              goodsId: item.goodsid,
+              serialNumbers: serials,
+              inportId: res.data?.id || 0
+            })
+          } catch (e) {
+            console.error('序列号入库失败:', e)
+          }
+        }
+      }
+
       ElMessage.success('进货成功')
       confirmDialogVisible.value = false
       cartItems.value = []
+      serialNumbersMap.value.clear()
       remark.value = ''
-      // 重新加载商品库存
       loadGoods()
     }
   } catch (error) {

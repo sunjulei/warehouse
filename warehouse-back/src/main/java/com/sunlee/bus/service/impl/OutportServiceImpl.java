@@ -41,10 +41,24 @@ public class OutportServiceImpl extends ServiceImpl<OutportMapper, Outport> impl
      */
     @Override
     public void addOutport(Integer id, Integer number, String remark) {
+        // 校验退货数量
+        if (number == null || number <= 0) {
+            throw new RuntimeException("退货数量必须大于0");
+        }
         //1.通过进货单ID查询出进货单信息
         Inport inport = inportMapper.selectById(id);
+        if (inport == null) {
+            throw new RuntimeException("进货记录不存在: " + id);
+        }
+        // 校验退货数量不能超过进货数量
+        if (number > inport.getNumber()) {
+            throw new RuntimeException("退货数量不能超过进货数量，当前进货数量: " + inport.getNumber());
+        }
         //2.根据商品ID查询商品信息
         Goods goods = goodsMapper.selectById(inport.getGoodsid());
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + inport.getGoodsid());
+        }
         //3.修改商品的数量     商品的数量-退货的数量
         goods.setNumber(goods.getNumber()-number);
 

@@ -13,8 +13,10 @@ public class Constast {
     public static final Integer ERROR=-1;
 
     /**
-     * 用户默认密码
+     * 用户默认密码（已废弃，请使用随机生成密码）
+     * 保留此常量仅用于兼容旧代码，不再建议使用硬编码密码
      */
+    @Deprecated
     public static final String USER_DEFAULT_PWD="123456";
 
     /**

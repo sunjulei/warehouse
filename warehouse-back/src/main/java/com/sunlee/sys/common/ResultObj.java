@@ -43,6 +43,23 @@ public class ResultObj {
 
     public static final ResultObj DELETE_ERROR_NEWS = new ResultObj(Constast.ERROR,"删除用户失败，该用户是其他用户的直属领导，请先修改该用户的下属的直属领导，再进行删除操作");
     public static final ResultObj DELETE_QUERY = new ResultObj();
-    
+
+    /**
+     * 创建自定义错误结果
+     * @param msg 错误消息
+     * @return ResultObj
+     */
+    public static ResultObj error(String msg) {
+        return new ResultObj(Constast.ERROR, msg);
+    }
+
+    /**
+     * 创建自定义成功结果
+     * @param msg 成功消息
+     * @return ResultObj
+     */
+    public static ResultObj ok(String msg) {
+        return new ResultObj(Constast.OK, msg);
+    }
 
 }

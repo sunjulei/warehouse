@@ -234,6 +234,12 @@ const router = createRouter({
           meta: { title: '店员提成' }
         },
         {
+          path: 'business/serial-number',
+          name: 'SerialNumberManager',
+          component: () => import('@/views/business/serial-number/index.vue'),
+          meta: { title: '序列号管理' }
+        },
+        {
           path: 'business/my-commission',
           name: 'MyCommission',
           component: () => import('@/views/business/my-commission/index.vue'),

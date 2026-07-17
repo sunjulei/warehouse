@@ -73,6 +73,12 @@ public class Goods implements Serializable {
     /** 商品名称拼音首字母简写 */
     private String abbreviation;
 
+    /** 是否管理序列号 0=否 1=是 */
+    private Integer isSerialManaged;
+
+    /** 退货后是否直接回库 0=待检 1=直接可售 */
+    private Integer returnResaleable;
+
     /** 销售量（非数据库字段） */
     @TableField(exist = false)
     private Integer salesCount;

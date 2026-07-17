@@ -63,10 +63,18 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
     @Override
     public boolean save(Sales entity) {
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
-        goods.setNumber(goods.getNumber()-entity.getNumber());
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + entity.getGoodsid());
+        }
+        if (goods.getNumber() < entity.getNumber()) {
+            throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
+        }
+        // 先保存销售记录，再更新库存（确保事务一致性）
+        boolean result = super.save(entity);
+        goods.setNumber(goods.getNumber() - entity.getNumber());
         //更新商品的库存信息
         goodsMapper.updateById(goods);
-        return super.save(entity);
+        return result;
     }
 
     /**
@@ -109,7 +117,17 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
     public boolean updateById(Sales entity) {
         //根据销售单ID查询销售单信息
         Sales sales = baseMapper.selectById(entity.getId());
+        if (sales == null) {
+            throw new RuntimeException("销售记录不存在: " + entity.getId());
+        }
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + entity.getGoodsid());
+        }
+        // 校验修改后的数量不能为负数
+        if (entity.getNumber() != null && entity.getNumber() < 0) {
+            throw new RuntimeException("销售数量不能为负数");
+        }
         //仓库商品数量=原库存-销售单修改之前的数量+修改之后的数量
         goods.setNumber(goods.getNumber()+sales.getNumber()-entity.getNumber());
         //更新商品

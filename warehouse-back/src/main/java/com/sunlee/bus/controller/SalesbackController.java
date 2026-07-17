@@ -42,7 +42,7 @@ public class SalesbackController {
             return ResultObj.BACKINPORT_SUCCESS;
         } catch (Exception e) {
             log.error("销售退货失败: {}", e.getMessage(), e);
-            return ResultObj.BACKINPORT_ERROR;
+            return ResultObj.error("退货失败: " + e.getMessage());
         }
     }
 
@@ -79,7 +79,7 @@ public class SalesbackController {
             return ResultObj.CANCEL_SUCCESS;
         } catch (Exception e) {
             log.error("取消销售退货失败: {}", e.getMessage(), e);
-            return ResultObj.CANCEL_ERROR;
+            return ResultObj.error("取消失败: " + e.getMessage());
         }
     }
 }

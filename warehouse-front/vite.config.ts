@@ -14,8 +14,7 @@ export default defineConfig({
     proxy: {
       '/warehouse': {
         target: 'http://localhost:8899',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        changeOrigin: true
       }
     }
   },

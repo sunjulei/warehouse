@@ -61,7 +61,7 @@
         </div>
       </div>
       <el-divider />
-      <div class="notice-view-content" v-html="viewNotice.content"></div>
+      <div class="notice-view-content">{{ viewNotice.content }}</div>
     </el-dialog>
   </div>
 </template>
@@ -148,14 +148,7 @@ const handleBatchDelete = async () => {
   line-height: 1.8;
   color: var(--text-regular);
   font-size: var(--font-size-base);
-}
-
-.notice-view-content :deep(img) {
-  max-width: 100%;
-  border-radius: var(--border-radius-md);
-}
-
-.notice-view-content :deep(p) {
-  margin: var(--spacing-sm) 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>
