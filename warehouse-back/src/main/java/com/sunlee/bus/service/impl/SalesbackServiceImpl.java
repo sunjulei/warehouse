@@ -59,15 +59,12 @@ public class SalesbackServiceImpl extends ServiceImpl<SalesbackMapper, Salesback
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + sales.getGoodsid());
         }
-        //3.修改商品的数量     商品的数量-退货的数量
-        goods.setNumber(goods.getNumber()+number);
+        //3.原子增加商品库存（销售退货 = 商品入库）
+        goodsMapper.increaseStock(sales.getGoodsid(), number);
 
         //修改销售的数量
         sales.setNumber(sales.getNumber()-number);
         salesMapper.updateById(sales);
-
-        //4.进行修改
-        goodsMapper.updateById(goods);
 
         //5.添加退货单信息
         Salesback salesback = new Salesback();
@@ -95,10 +92,14 @@ public class SalesbackServiceImpl extends ServiceImpl<SalesbackMapper, Salesback
     public void cancelSalesback(Integer id) {
         // 1. 查询退货单
         Salesback salesback = getBaseMapper().selectById(id);
-        // 2. 回滚商品库存：销售退货取消 = 商品数量要减回去
+        if (salesback == null) {
+            throw new RuntimeException("退货记录不存在: " + id);
+        }
+        // 2. 回滚商品库存：销售退货取消 = 商品数量要减回去（库存不足时拦截，防止负库存）
         Goods goods = goodsMapper.selectById(salesback.getGoodsid());
-        goods.setNumber(goods.getNumber() - salesback.getNumber());
-        goodsMapper.updateById(goods);
+        if (goods != null && goodsMapper.decreaseStock(salesback.getGoodsid(), salesback.getNumber()) == 0) {
+            throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber() + "，无法取消退货");
+        }
         // 3. 回滚销售单数量
         Sales sales = salesMapper.selectById(salesback.getSalesid());
         if (sales != null) {

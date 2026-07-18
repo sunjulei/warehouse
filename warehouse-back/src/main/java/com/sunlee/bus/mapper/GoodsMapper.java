@@ -57,4 +57,20 @@ public interface GoodsMapper extends BaseMapper<Goods> {
      * 加载所有库存预警商品
      */
     List<Goods> loadAllWarning();
+
+    /**
+     * 原子扣减库存（库存不足时返回0，不会扣成负数）
+     * @param goodsid 商品id
+     * @param number 扣减数量
+     * @return 受影响行数，0表示库存不足
+     */
+    int decreaseStock(@Param("goodsid") Integer goodsid, @Param("number") Integer number);
+
+    /**
+     * 原子增加库存
+     * @param goodsid 商品id
+     * @param number 增加数量
+     * @return 受影响行数
+     */
+    int increaseStock(@Param("goodsid") Integer goodsid, @Param("number") Integer number);
 }

@@ -101,4 +101,71 @@
         </choose>
     </select>
 
+    <!-- 销售订单分组分页查询（按订单号分组，联查客户名称） -->
+    <select id="selectOrdersPage" resultType="java.util.Map">
+        SELECT s.orderno AS orderNo,
+               MAX(s.customerid) AS customerId,
+               IFNULL(MAX(c.customername), '') AS customerName,
+               MAX(s.salestime) AS salestime,
+               MAX(s.operateperson) AS operateperson,
+               MAX(s.remark) AS remark,
+               SUM(CASE WHEN IFNULL(s.order_status, 0) = 0 THEN s.number ELSE 0 END) AS totalNumber,
+               SUM(CASE WHEN IFNULL(s.order_status, 0) = 0 THEN s.saleprice * s.number ELSE 0 END) AS totalAmount,
+               COUNT(*) AS itemCount,
+               MIN(CASE WHEN IFNULL(s.order_status, 0) = 1 THEN 1 ELSE 0 END) AS orderStatus
+        FROM bus_sales s
+        LEFT JOIN bus_customer c ON c.id = s.customerid
+        <where>
+            s.isdelete = 0 AND s.orderno IS NOT NULL
+            <if test="vo.customerid != null and vo.customerid != 0">
+                AND s.customerid = #{vo.customerid}
+            </if>
+            <if test="vo.startTime != null">
+                AND s.salestime &gt;= #{vo.startTime}
+            </if>
+            <if test="vo.endTime != null">
+                AND s.salestime &lt;= #{vo.endTime}
+            </if>
+        </where>
+        GROUP BY s.orderno
+        ORDER BY MAX(s.salestime) DESC
+    </select>
+
+    <!-- 销售退加货记录分页查询（联查客户与商品） -->
+    <select id="selectReturnAddRecordsPage" resultType="java.util.Map">
+        SELECT l.id AS id,
+               l.order_no AS orderNo,
+               l.type AS type,
+               IFNULL(c.customername, '') AS customerName,
+               IFNULL(g.goodsname, '') AS goodsName,
+               IFNULL(g.size, '') AS goodsSize,
+               l.number AS number,
+               l.price AS price,
+               l.price * l.number AS totalAmount,
+               l.operate_person AS operatePerson,
+               IFNULL(DATE_FORMAT(l.operate_time, '%Y-%m-%d %H:%i:%s'), '') AS operateTime,
+               l.remark AS remark
+        FROM bus_sales_log l
+        LEFT JOIN bus_customer c ON c.id = l.customer_id
+        LEFT JOIN bus_goods g ON g.id = l.goods_id
+        <where>
+            <if test="vo.customerid != null and vo.customerid != 0">
+                AND l.customer_id = #{vo.customerid}
+            </if>
+            <if test="vo.orderNo != null and vo.orderNo != ''">
+                AND l.order_no = #{vo.orderNo}
+            </if>
+            <if test="vo.recordType != null and vo.recordType != ''">
+                AND l.type = #{vo.recordType}
+            </if>
+            <if test="vo.startTime != null">
+                AND l.operate_time &gt;= #{vo.startTime}
+            </if>
+            <if test="vo.endTime != null">
+                AND l.operate_time &lt;= #{vo.endTime}
+            </if>
+        </where>
+        ORDER BY l.operate_time DESC
+    </select>
+
 </mapper>

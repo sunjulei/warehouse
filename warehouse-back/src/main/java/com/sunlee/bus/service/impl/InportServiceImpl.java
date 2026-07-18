@@ -8,12 +8,10 @@ import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Inport;
 import com.sunlee.bus.entity.InportLog;
 import com.sunlee.bus.entity.Outport;
-import com.sunlee.bus.entity.Provider;
 import com.sunlee.bus.mapper.GoodsMapper;
 import com.sunlee.bus.mapper.InportLogMapper;
 import com.sunlee.bus.mapper.InportMapper;
 import com.sunlee.bus.mapper.OutportMapper;
-import com.sunlee.bus.mapper.ProviderMapper;
 import com.sunlee.bus.service.IInportService;
 import com.sunlee.bus.vo.InportVo;
 import com.sunlee.sys.common.DataGridView;
@@ -21,10 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,9 +43,6 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
     private OutportMapper outportMapper;
 
     @Autowired
-    private ProviderMapper providerMapper;
-
-    @Autowired
     private InportLogMapper inportLogMapper;
 
     /**
@@ -65,11 +57,9 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + entity.getGoodsid());
         }
-        // 先保存进货信息，再更新库存（确保事务一致性）
-        boolean result = super.save(entity);
-        goods.setNumber(goods.getNumber()+entity.getNumber());
-        goodsMapper.updateById(goods);
-        return result;
+        // 原子增加库存
+        goodsMapper.increaseStock(entity.getGoodsid(), entity.getNumber());
+        return super.save(entity);
     }
 
     /**
@@ -80,10 +70,11 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
     public void batchSave(List<Inport> list) {
         for (Inport entity : list) {
             Goods goods = goodsMapper.selectById(entity.getGoodsid());
-            if (goods != null) {
-                goods.setNumber(goods.getNumber() + entity.getNumber());
-                goodsMapper.updateById(goods);
+            if (goods == null) {
+                throw new RuntimeException("商品不存在: " + entity.getGoodsid());
             }
+            // 原子增加库存
+            goodsMapper.increaseStock(entity.getGoodsid(), entity.getNumber());
         }
         saveBatch(list);
 
@@ -120,13 +111,22 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + entity.getGoodsid());
         }
+        if (entity.getNumber() == null) {
+            throw new RuntimeException("进货数量不能为空");
+        }
         // 校验修改后的数量不能为负数
-        if (entity.getNumber() != null && entity.getNumber() < 0) {
+        if (entity.getNumber() < 0) {
             throw new RuntimeException("进货数量不能为负数");
         }
-        //库存算法  当前库存-进货单修改之前的数量+修改之后的数量
-        goods.setNumber(goods.getNumber()-inport.getNumber()+entity.getNumber());
-        goodsMapper.updateById(goods);
+        //按差量调整库存：新数量比原数量多则增加，少则原子扣减（库存不足时拦截，防止扣成负数）
+        int delta = entity.getNumber() - inport.getNumber();
+        if (delta > 0) {
+            goodsMapper.increaseStock(entity.getGoodsid(), delta);
+        } else if (delta < 0) {
+            if (goodsMapper.decreaseStock(entity.getGoodsid(), -delta) == 0) {
+                throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber() + "，无法减少进货数量");
+            }
+        }
         //更新进货单
         return super.updateById(entity);
     }
@@ -134,97 +134,32 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
     @Override
     public void deleteInport(Integer id) {
         Inport inport = baseMapper.selectById(id);
+        if (inport == null) {
+            throw new RuntimeException("进货记录不存在: " + id);
+        }
         // 级联软删除该进货单关联的所有退货记录
         Outport outportUpdate = new Outport();
         outportUpdate.setIsdelete(1);
         QueryWrapper<Outport> outportWrapper = new QueryWrapper<>();
         outportWrapper.eq("inportid", id);
         outportMapper.update(outportUpdate, outportWrapper);
-        // 回滚商品库存
+        // 回滚商品库存（库存不足时拦截，防止扣成负数）
         Goods goods = goodsMapper.selectById(inport.getGoodsid());
-        goods.setNumber(goods.getNumber() - inport.getNumber());
-        goodsMapper.updateById(goods);
+        if (goods != null && goodsMapper.decreaseStock(inport.getGoodsid(), inport.getNumber()) == 0) {
+            throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber() + "，无法删除该进货单");
+        }
         // 软删除进货单
         baseMapper.deleteById(id);
     }
 
     @Override
     public DataGridView queryOrders(InportVo inportVo) {
-        // 查询所有进货记录
-        QueryWrapper<Inport> queryWrapper = new QueryWrapper<>();
-        queryWrapper.isNotNull("orderno");
-        queryWrapper.eq(inportVo.getProviderid() != null && inportVo.getProviderid() != 0, "providerid", inportVo.getProviderid());
-        queryWrapper.ge(inportVo.getStartTime() != null, "inporttime", inportVo.getStartTime());
-        queryWrapper.le(inportVo.getEndTime() != null, "inporttime", inportVo.getEndTime());
-        queryWrapper.orderByDesc("inporttime");
-
-        List<Inport> allInports = baseMapper.selectList(queryWrapper);
-
-        // 按订单号分组
-        Map<String, List<Inport>> orderMap = new HashMap<>();
-        for (Inport inport : allInports) {
-            orderMap.computeIfAbsent(inport.getOrderno(), k -> new ArrayList<>()).add(inport);
-        }
-
-        // 构建订单列表
-        List<Map<String, Object>> orderList = new ArrayList<>();
-        for (Map.Entry<String, List<Inport>> entry : orderMap.entrySet()) {
-            List<Inport> items = entry.getValue();
-            if (items.isEmpty()) continue;
-
-            Inport first = items.get(0);
-            Map<String, Object> order = new HashMap<>();
-            order.put("orderNo", entry.getKey());
-            order.put("providerId", first.getProviderid());
-
-            Provider provider = providerMapper.selectById(first.getProviderid());
-            order.put("providerName", provider != null ? provider.getProvidername() : "");
-
-            order.put("inporttime", first.getInporttime());
-            order.put("operateperson", first.getOperateperson());
-            order.put("remark", first.getRemark());
-
-            // 计算总数量和总金额
-            int totalNumber = 0;
-            double totalAmount = 0;
-            for (Inport item : items) {
-                if (item.getOrderStatus() == null || item.getOrderStatus() == 0) {
-                    totalNumber += item.getNumber();
-                    totalAmount += item.getInportprice() * item.getNumber();
-                }
-            }
-            order.put("totalNumber", totalNumber);
-            order.put("totalAmount", totalAmount);
-            order.put("itemCount", items.size());
-
-            // 订单状态：0=正常, 1=已退完
-            boolean isReturnedAll = items.stream().allMatch(s -> s.getOrderStatus() != null && s.getOrderStatus() == 1);
-            order.put("orderStatus", isReturnedAll ? 1 : 0);
-
-            orderList.add(order);
-        }
-
-        // 按时间倒序排序
-        orderList.sort((a, b) -> {
-            Date timeA = (Date) a.get("inporttime");
-            Date timeB = (Date) b.get("inporttime");
-            if (timeA == null && timeB == null) return 0;
-            if (timeA == null) return 1;
-            if (timeB == null) return -1;
-            return timeB.compareTo(timeA);
-        });
-
-        // 分页处理
-        int page = inportVo.getPage() != null ? inportVo.getPage() : 1;
-        int limit = inportVo.getLimit() != null ? inportVo.getLimit() : 10;
-        int fromIndex = (page - 1) * limit;
-        int toIndex = Math.min(fromIndex + limit, orderList.size());
-
-        List<Map<String, Object>> pageData = fromIndex < orderList.size()
-                ? orderList.subList(fromIndex, toIndex)
-                : new ArrayList<>();
-
-        return new DataGridView((long) orderList.size(), pageData);
+        // 按订单号分组，SQL 联表 + 数据库分页（避免全表加载与 N+1 查询）
+        Page<Map<String, Object>> page = new Page<>(
+                inportVo.getPage() != null ? inportVo.getPage() : 1,
+                inportVo.getLimit() != null ? inportVo.getLimit() : 10);
+        IPage<Map<String, Object>> result = baseMapper.selectOrdersPage(page, inportVo);
+        return new DataGridView(result.getTotal(), result.getRecords());
     }
 
     @Override
@@ -252,11 +187,10 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
             throw new RuntimeException("退货数量不能超过进货数量");
         }
 
-        // 回滚商品库存
+        // 回滚商品库存：进货退货需扣减库存（库存不足时拦截，防止扣成负数）
         Goods goods = goodsMapper.selectById(inport.getGoodsid());
-        if (goods != null) {
-            goods.setNumber(goods.getNumber() - returnQty);
-            goodsMapper.updateById(goods);
+        if (goods != null && goodsMapper.decreaseStock(inport.getGoodsid(), returnQty) == 0) {
+            throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber() + "，无法退货");
         }
 
         // 记录退货日志
@@ -294,11 +228,10 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
         List<Inport> list = baseMapper.selectList(queryWrapper);
 
         for (Inport inport : list) {
-            // 回滚商品库存
+            // 回滚商品库存：进货退货需扣减库存（库存不足时拦截，防止扣成负数）
             Goods goods = goodsMapper.selectById(inport.getGoodsid());
-            if (goods != null) {
-                goods.setNumber(goods.getNumber() - inport.getNumber());
-                goodsMapper.updateById(goods);
+            if (goods != null && goodsMapper.decreaseStock(inport.getGoodsid(), inport.getNumber()) == 0) {
+                throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber() + "，无法退货");
             }
 
             // 记录退货日志
@@ -353,13 +286,12 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
             inport.setOrderno(orderNo);
             inport.setProviderid(providerId);
 
-            // 增加库存
+            // 原子增加库存
             Goods goods = goodsMapper.selectById(inport.getGoodsid());
             if (goods == null) {
                 throw new RuntimeException("商品不存在: " + inport.getGoodsid());
             }
-            goods.setNumber(goods.getNumber() + inport.getNumber());
-            goodsMapper.updateById(goods);
+            goodsMapper.increaseStock(inport.getGoodsid(), inport.getNumber());
         }
 
         saveBatch(list);
@@ -382,25 +314,15 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
 
     @Override
     public DataGridView queryReturnAddRecords(InportVo inportVo) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        // SQL 联表 + 数据库分页（避免全表加载与 N+1 查询）
+        Page<Map<String, Object>> page = new Page<>(
+                inportVo.getPage() != null ? inportVo.getPage() : 1,
+                inportVo.getLimit() != null ? inportVo.getLimit() : 10);
+        IPage<Map<String, Object>> result = baseMapper.selectReturnAddRecordsPage(page, inportVo);
 
-        QueryWrapper<InportLog> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq(inportVo.getProviderid() != null && inportVo.getProviderid() != 0, "provider_id", inportVo.getProviderid());
-        queryWrapper.eq(inportVo.getOrderNo() != null && !inportVo.getOrderNo().isEmpty(), "order_no", inportVo.getOrderNo());
-        queryWrapper.eq(inportVo.getRecordType() != null && !inportVo.getRecordType().isEmpty(), "type", inportVo.getRecordType());
-        queryWrapper.ge(inportVo.getStartTime() != null, "operate_time", inportVo.getStartTime());
-        queryWrapper.le(inportVo.getEndTime() != null, "operate_time", inportVo.getEndTime());
-        queryWrapper.orderByDesc("operate_time");
-
-        List<InportLog> logList = inportLogMapper.selectList(queryWrapper);
-
-        List<Map<String, Object>> recordList = new ArrayList<>();
-        for (InportLog log : logList) {
-            Map<String, Object> record = new HashMap<>();
-            record.put("id", log.getId());
-            record.put("orderNo", log.getOrderNo());
-
-            String type = log.getType();
+        // 设置类型中文标签
+        for (Map<String, Object> record : result.getRecords()) {
+            String type = (String) record.get("type");
             if ("inport".equals(type)) {
                 record.put("type", "进货");
                 record.put("typeTag", "primary");
@@ -411,35 +333,9 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
                 record.put("type", "退货");
                 record.put("typeTag", "danger");
             }
-
-            Provider provider = providerMapper.selectById(log.getProviderId());
-            record.put("providerName", provider != null ? provider.getProvidername() : "");
-
-            Goods goods = goodsMapper.selectById(log.getGoodsId());
-            record.put("goodsName", goods != null ? goods.getGoodsname() : "");
-            record.put("goodsSize", goods != null ? goods.getSize() : "");
-
-            record.put("number", log.getNumber());
-            record.put("price", log.getPrice());
-            record.put("totalAmount", log.getPrice().doubleValue() * log.getNumber());
-            record.put("operatePerson", log.getOperatePerson());
-            record.put("operateTime", log.getOperateTime() != null ? sdf.format(log.getOperateTime()) : "");
-            record.put("remark", log.getRemark());
-
-            recordList.add(record);
         }
 
-        // 分页处理
-        int page = inportVo.getPage() != null ? inportVo.getPage() : 1;
-        int limit = inportVo.getLimit() != null ? inportVo.getLimit() : 10;
-        int fromIndex = (page - 1) * limit;
-        int toIndex = Math.min(fromIndex + limit, recordList.size());
-
-        List<Map<String, Object>> pageData = fromIndex < recordList.size()
-                ? recordList.subList(fromIndex, toIndex)
-                : new ArrayList<>();
-
-        return new DataGridView((long) recordList.size(), pageData);
+        return new DataGridView(result.getTotal(), result.getRecords());
     }
 
     @Override

@@ -2,6 +2,9 @@ package com.sunlee.bus.mapper;
 
 import com.sunlee.bus.entity.Inport;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sunlee.bus.vo.InportVo;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Map;
@@ -21,5 +24,15 @@ public interface InportMapper extends BaseMapper<Inport> {
     List<Map<String, Object>> queryInportGoodsAnalysis(@Param("type") String type, @Param("startDate") String startDate, @Param("endDate") String endDate);
 
     List<Map<String, Object>> queryInportCostAnalysis(@Param("type") String type, @Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    /**
+     * 进货订单分组分页查询（按订单号分组，联查供应商，数据库分页）
+     */
+    IPage<Map<String, Object>> selectOrdersPage(Page<Map<String, Object>> page, @Param("vo") InportVo vo);
+
+    /**
+     * 进货退加货记录分页查询（联查供应商与商品，数据库分页）
+     */
+    IPage<Map<String, Object>> selectReturnAddRecordsPage(Page<Map<String, Object>> page, @Param("vo") InportVo vo);
 
 }

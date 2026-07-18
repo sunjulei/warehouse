@@ -37,5 +37,14 @@
         select * from bus_goods where dangernum > number
     </select>
 
+    <!--原子扣减库存，带库存充足条件，不足时不更新（返回0），避免并发超卖和负库存-->
+    <update id="decreaseStock">
+        update bus_goods set number = number - #{number} where id = #{goodsid} and number >= #{number}
+    </update>
+
+    <!--原子增加库存-->
+    <update id="increaseStock">
+        update bus_goods set number = number + #{number} where id = #{goodsid}
+    </update>
 
 </mapper>

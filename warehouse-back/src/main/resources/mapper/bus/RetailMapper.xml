@@ -1,4 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sunlee.bus.mapper.RetailMapper">
+
+    <!-- 零售订单分组分页查询（按订单号分组） -->
+    <select id="selectOrdersPage" resultType="java.util.Map">
+        SELECT r.orderno AS orderNo,
+               MAX(r.retailtime) AS retailtime,
+               MAX(r.operateperson) AS operateperson,
+               MAX(r.paytype) AS paytype,
+               MAX(r.remark) AS remark,
+               SUM(CASE WHEN IFNULL(r.order_status, 0) = 0 THEN r.number ELSE 0 END) AS totalNumber,
+               SUM(CASE WHEN IFNULL(r.order_status, 0) = 0 THEN r.retailprice * r.number ELSE 0 END) AS totalAmount,
+               COUNT(*) AS itemCount,
+               MIN(CASE WHEN IFNULL(r.order_status, 0) = 1 THEN 1 ELSE 0 END) AS orderStatus
+        FROM bus_retail r
+        <where>
+            r.isdelete = 0 AND r.orderno IS NOT NULL
+            <if test="vo.paytype != null and vo.paytype != ''">
+                AND r.paytype = #{vo.paytype}
+            </if>
+            <if test="vo.startTime != null">
+                AND r.retailtime &gt;= #{vo.startTime}
+            </if>
+            <if test="vo.endTime != null">
+                AND r.retailtime &lt;= #{vo.endTime}
+            </if>
+        </where>
+        GROUP BY r.orderno
+        ORDER BY MAX(r.retailtime) DESC
+    </select>
+
+    <!-- 零售退加货记录分页查询（联查商品） -->
+    <select id="selectReturnAddRecordsPage" resultType="java.util.Map">
+        SELECT l.id AS id,
+               l.order_no AS orderNo,
+               l.type AS type,
+               IFNULL(g.goodsname, '') AS goodsName,
+               IFNULL(g.size, '') AS goodsSize,
+               l.number AS number,
+               l.price AS price,
+               l.price * l.number AS totalAmount,
+               l.paytype AS paytype,
+               l.operate_person AS operatePerson,
+               IFNULL(DATE_FORMAT(l.operate_time, '%Y-%m-%d %H:%i:%s'), '') AS operateTime,
+               l.remark AS remark
+        FROM bus_retail_log l
+        LEFT JOIN bus_goods g ON g.id = l.goods_id
+        <where>
+            <if test="vo.orderNo != null and vo.orderNo != ''">
+                AND l.order_no = #{vo.orderNo}
+            </if>
+            <if test="vo.recordType != null and vo.recordType != ''">
+                AND l.type = #{vo.recordType}
+            </if>
+            <if test="vo.startTime != null">
+                AND l.operate_time &gt;= #{vo.startTime}
+            </if>
+            <if test="vo.endTime != null">
+                AND l.operate_time &lt;= #{vo.endTime}
+            </if>
+        </where>
+        ORDER BY l.operate_time DESC
+    </select>
+
 </mapper>
