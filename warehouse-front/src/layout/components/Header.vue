@@ -11,6 +11,44 @@
       </el-breadcrumb>
     </div>
     <div class="header-right">
+      <el-popover placement="bottom-end" :width="360" trigger="click" @show="fetchWarningGoods">
+        <template #reference>
+          <div class="warning-bell">
+            <el-badge :value="warningGoods.length" :hidden="warningGoods.length === 0" :max="99">
+              <el-icon :size="18" :class="{ 'bell-active': warningGoods.length > 0 }"><Bell /></el-icon>
+            </el-badge>
+          </div>
+        </template>
+        <div class="warning-pop">
+          <div class="warning-pop-header">
+            <span class="warning-pop-title">库存预警</span>
+            <el-tag v-if="warningGoods.length > 0" type="danger" size="small" effect="dark" round>
+              {{ warningGoods.length }} 项
+            </el-tag>
+            <el-button link size="small" :icon="Refresh" :loading="warningLoading" @click="fetchWarningGoods" />
+          </div>
+          <div v-if="warningGoods.length === 0" class="warning-empty">
+            <el-icon :size="24"><CircleCheck /></el-icon>
+            <span>所有商品库存正常</span>
+          </div>
+          <div v-else class="warning-list">
+            <div
+              v-for="item in warningGoods"
+              :key="item.id"
+              class="warning-item"
+              @click="goGoods"
+            >
+              <span class="warning-name">{{ item.goodsname }}</span>
+              <span class="warning-stock">
+                库存 <b class="danger-num">{{ item.number }}</b> / 预警值 {{ item.dangernum }}
+              </span>
+            </div>
+          </div>
+          <div v-if="warningGoods.length > 0" class="warning-pop-footer">
+            <el-button link type="primary" size="small" @click="goGoods">去商品管理处理</el-button>
+          </div>
+        </div>
+      </el-popover>
       <ThemeSettings />
       <div class="header-time">
         <el-icon class="time-icon"><Clock /></el-icon>
@@ -48,8 +86,10 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Refresh } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { getImageUrl } from '@/api/file'
+import { loadAllWarningGoods } from '@/api/goods'
 import ThemeSettings from './ThemeSettings.vue'
 
 defineProps<{ isCollapse: boolean }>()
@@ -67,6 +107,27 @@ const userAvatar = computed(() => {
 const currentTime = ref('')
 let timer: ReturnType<typeof setInterval> | null = null
 
+// 库存预警铃铛
+const warningGoods = ref<any[]>([])
+const warningLoading = ref(false)
+let warningTimer: ReturnType<typeof setInterval> | null = null
+
+const fetchWarningGoods = async () => {
+  warningLoading.value = true
+  try {
+    const res: any = await loadAllWarningGoods()
+    warningGoods.value = res.data || []
+  } catch {
+    // 静默失败，避免影响顶栏其他功能
+  } finally {
+    warningLoading.value = false
+  }
+}
+
+const goGoods = () => {
+  router.push('/business/goods')
+}
+
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 const updateTime = () => {
   const now = new Date()
@@ -83,10 +144,14 @@ const updateTime = () => {
 onMounted(() => {
   updateTime()
   timer = setInterval(updateTime, 1000)
+  fetchWarningGoods()
+  // 每 60 秒轮询一次预警数据，保证角标及时更新
+  warningTimer = setInterval(fetchWarningGoods, 60_000)
 })
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
+  if (warningTimer) clearInterval(warningTimer)
 })
 
 const handleCommand = async (command: string) => {
@@ -141,6 +206,101 @@ const handleCommand = async (command: string) => {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+}
+
+/* ─── 库存预警铃铛 ─────────────────────── */
+.warning-bell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.warning-bell:hover {
+  color: var(--primary-color);
+  background: var(--primary-subtle);
+}
+
+.warning-bell .bell-active {
+  color: var(--danger-color);
+}
+
+.warning-pop-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-lighter);
+}
+
+.warning-pop-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+.warning-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xl) 0;
+  color: var(--success-color);
+  font-size: var(--font-size-sm);
+}
+
+.warning-list {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.warning-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: 8px 6px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.warning-item:hover {
+  background: var(--primary-subtle);
+}
+
+.warning-name {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.warning-stock {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.warning-stock .danger-num {
+  color: var(--danger-color);
+  font-weight: 600;
+}
+
+.warning-pop-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-lighter);
 }
 
 .header-time {
