@@ -58,12 +58,15 @@
               {{ statusText(currentStocktake?.status) }}
             </el-tag>
           </div>
-          <div v-if="currentStocktake?.status === 0">
-            <el-button @click="handleCopySystemNum">
-              <el-icon><CopyDocument /></el-icon> 一键复制系统库存
-            </el-button>
-            <el-button type="success" @click="handleSaveItems">保存</el-button>
-            <el-button type="primary" @click="handleSubmit">提交盘点</el-button>
+          <div>
+            <el-button :icon="Printer" @click="printVisible = true">打印</el-button>
+            <template v-if="currentStocktake?.status === 0">
+              <el-button @click="handleCopySystemNum">
+                <el-icon><CopyDocument /></el-icon> 一键复制系统库存
+              </el-button>
+              <el-button type="success" @click="handleSaveItems">保存</el-button>
+              <el-button type="primary" @click="handleSubmit">提交盘点</el-button>
+            </template>
           </div>
         </div>
       </template>
@@ -114,6 +117,19 @@
       </el-table>
     </el-card>
 
+    <!-- 打印模板 -->
+    <PrintDocument
+      v-model:visible="printVisible"
+      title="盘点单"
+      :order-no="currentStocktake?.stocktakeNo"
+      :meta="printMeta"
+      :columns="printColumns"
+      :rows="stocktakeItems"
+      :summary="printSummary"
+      :remark="currentStocktake?.remark"
+      :signatures="['盘点人', '复核人', '日期']"
+    />
+
     <!-- 新建盘点单弹窗 -->
     <el-dialog v-model="createDialogVisible" title="新建盘点单" width="400px">
       <el-form label-width="80px">
@@ -130,11 +146,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Plus, CopyDocument } from '@element-plus/icons-vue'
+import { ArrowLeft, Plus, CopyDocument, Printer } from '@element-plus/icons-vue'
 import SearchForm from '@/components/SearchForm.vue'
 import CrudTable from '@/components/CrudTable.vue'
+import PrintDocument, { type PrintColumn, type PrintMetaItem } from '@/components/PrintDocument.vue'
 import {
   loadAllStocktake,
   createStocktake,
@@ -152,6 +169,42 @@ const stocktakeItems = ref<any[]>([])
 const createDialogVisible = ref(false)
 const createForm = reactive({ remark: '' })
 const creating = ref(false)
+
+// 打印相关
+const printVisible = ref(false)
+
+const printMeta = computed<PrintMetaItem[]>(() => [
+  { label: '盘点人', value: currentStocktake.value?.operator },
+  { label: '状态', value: currentStocktake.value ? statusText(currentStocktake.value.status) : '-' },
+  { label: '创建时间', value: currentStocktake.value?.createTime },
+  { label: '完成时间', value: currentStocktake.value?.finishTime || '-' }
+])
+
+const printColumns: PrintColumn[] = [
+  { key: 'goodsname', label: '商品名称' },
+  { key: 'providername', label: '供应商', width: '110px' },
+  { key: 'systemNum', label: '系统库存', align: 'center', width: '80px' },
+  { key: 'actualNum', label: '实际盘点', align: 'center', width: '80px', format: (row) => row.actualNum ?? '-' },
+  {
+    key: 'diffNum', label: '差异', align: 'center', width: '80px',
+    format: (row) => row.actualNum != null ? (row.diffNum > 0 ? `+${row.diffNum}` : `${row.diffNum}`) : '-'
+  },
+  { key: 'remark', label: '备注', format: (row) => row.remark || '-' }
+]
+
+const printSummary = computed<PrintMetaItem[]>(() => {
+  let surplus = 0
+  let shortage = 0
+  for (const item of stocktakeItems.value) {
+    if (item.diffNum > 0) surplus += item.diffNum
+    if (item.diffNum < 0) shortage += -item.diffNum
+  }
+  return [
+    { label: '商品种类', value: stocktakeItems.value.length },
+    { label: '盘盈数量', value: surplus },
+    { label: '盘亏数量', value: shortage }
+  ]
+})
 
 function statusText(status: number) {
   return { 0: '进行中', 1: '已完成', 2: '已取消' }[status] ?? '未知'
