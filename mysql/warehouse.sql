@@ -189,6 +189,8 @@ CREATE TABLE `bus_goods` (
   `attribute` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
   `pinyin` varchar(500) DEFAULT NULL COMMENT '商品名称拼音',
   `abbreviation` varchar(100) DEFAULT NULL COMMENT '商品名称拼音首字母简写',
+  `is_serial_managed` tinyint NOT NULL DEFAULT 0 COMMENT '是否管理序列号 0=否 1=是',
+  `return_resaleable` tinyint NOT NULL DEFAULT 1 COMMENT '退货后是否直接回库 0=待检 1=直接可售',
   PRIMARY KEY (`id`) USING BTREE,
   KEY `FK_sq0btr2v2lq8gt8b4gb8tlk0i` (`providerid`) USING BTREE,
   CONSTRAINT `bus_goods_ibfk_1` FOREIGN KEY (`providerid`) REFERENCES `bus_provider` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
@@ -998,6 +1000,30 @@ LOCK TABLES `bus_serial_number` WRITE;
 /*!40000 ALTER TABLE `bus_serial_number` DISABLE KEYS */;
 /*!40000 ALTER TABLE `bus_serial_number` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `bus_serial_number_log`
+--
+
+DROP TABLE IF EXISTS `bus_serial_number_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bus_serial_number_log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `serial_number` varchar(50) NOT NULL COMMENT '序列号',
+  `goodsid` int NOT NULL COMMENT '商品ID',
+  `action` varchar(20) NOT NULL COMMENT '操作类型',
+  `from_status` tinyint DEFAULT NULL COMMENT '变更前状态',
+  `to_status` tinyint NOT NULL COMMENT '变更后状态',
+  `order_no` varchar(50) DEFAULT NULL COMMENT '关联订单号',
+  `operate_person` varchar(50) NOT NULL COMMENT '操作人',
+  `operate_time` datetime DEFAULT NULL COMMENT '操作时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`id`),
+  KEY `idx_serial_number` (`serial_number`),
+  KEY `idx_goodsid` (`goodsid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='序列号操作日志表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping events for database 'warehouse'

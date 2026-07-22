@@ -1,6 +1,8 @@
 package com.sunlee.bus.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Retail;
@@ -14,10 +16,7 @@ import com.sunlee.bus.service.IRetailService;
 import com.sunlee.bus.vo.RetailVo;
 import com.sunlee.sys.common.DataGridView;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,14 +43,11 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + entity.getGoodsid());
         }
-        if (goods.getNumber() < entity.getNumber()) {
+        // 原子扣减库存，库存不足时扣减失败并回滚事务
+        if (goodsMapper.decreaseStock(entity.getGoodsid(), entity.getNumber()) == 0) {
             throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
         }
-        // 先保存零售记录，再更新库存（确保事务一致性）
-        boolean result = super.save(entity);
-        goods.setNumber(goods.getNumber() - entity.getNumber());
-        goodsMapper.updateById(goods);
-        return result;
+        return super.save(entity);
     }
 
     @Override
@@ -64,17 +60,30 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + entity.getGoodsid());
         }
-        if (entity.getNumber() != null && entity.getNumber() < 0) {
+        if (entity.getNumber() == null) {
+            throw new RuntimeException("零售数量不能为空");
+        }
+        if (entity.getNumber() < 0) {
             throw new RuntimeException("零售数量不能为负数");
         }
-        goods.setNumber(goods.getNumber() + retail.getNumber() - entity.getNumber());
-        goodsMapper.updateById(goods);
+        //按差量调整库存：新数量比原数量多则原子扣减，少则回补
+        int delta = entity.getNumber() - retail.getNumber();
+        if (delta > 0) {
+            if (goodsMapper.decreaseStock(entity.getGoodsid(), delta) == 0) {
+                throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
+            }
+        } else if (delta < 0) {
+            goodsMapper.increaseStock(entity.getGoodsid(), -delta);
+        }
         return super.updateById(entity);
     }
 
     @Override
     public void deleteRetail(Integer id) {
         Retail retail = baseMapper.selectById(id);
+        if (retail == null) {
+            throw new RuntimeException("零售记录不存在: " + id);
+        }
         // 级联软删除该零售单关联的所有退货记录
         Retailback retailbackUpdate = new Retailback();
         retailbackUpdate.setIsdelete(1);
@@ -82,9 +91,7 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         wrapper.eq("retailid", id);
         retailbackMapper.update(retailbackUpdate, wrapper);
         // 回滚商品库存
-        Goods goods = goodsMapper.selectById(retail.getGoodsid());
-        goods.setNumber(goods.getNumber() + retail.getNumber());
-        goodsMapper.updateById(goods);
+        goodsMapper.increaseStock(retail.getGoodsid(), retail.getNumber());
         // 软删除零售单
         baseMapper.deleteById(id);
     }
@@ -93,9 +100,12 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
     public void batchSave(List<Retail> list) {
         for (Retail entity : list) {
             Goods goods = goodsMapper.selectById(entity.getGoodsid());
-            if (goods != null) {
-                goods.setNumber(goods.getNumber() - entity.getNumber());
-                goodsMapper.updateById(goods);
+            if (goods == null) {
+                throw new RuntimeException("商品不存在: " + entity.getGoodsid());
+            }
+            // 原子扣减库存，任一商品库存不足则整批回滚
+            if (goodsMapper.decreaseStock(entity.getGoodsid(), entity.getNumber()) == 0) {
+                throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
             }
         }
         saveBatch(list);
@@ -118,67 +128,12 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
 
     @Override
     public DataGridView queryOrders(RetailVo retailVo) {
-        // 查询所有零售记录
-        QueryWrapper<Retail> queryWrapper = new QueryWrapper<>();
-        queryWrapper.isNotNull("orderno");
-        queryWrapper.eq(retailVo.getPaytype() != null && !retailVo.getPaytype().isEmpty(), "paytype", retailVo.getPaytype());
-        queryWrapper.ge(retailVo.getStartTime() != null, "retailtime", retailVo.getStartTime());
-        queryWrapper.le(retailVo.getEndTime() != null, "retailtime", retailVo.getEndTime());
-        queryWrapper.orderByDesc("retailtime");
-
-        List<Retail> allRetail = baseMapper.selectList(queryWrapper);
-
-        // 按订单号分组
-        Map<String, List<Retail>> orderMap = new HashMap<>();
-        for (Retail retail : allRetail) {
-            orderMap.computeIfAbsent(retail.getOrderno(), k -> new ArrayList<>()).add(retail);
-        }
-
-        // 构建订单列表
-        List<Map<String, Object>> orderList = new ArrayList<>();
-        for (Map.Entry<String, List<Retail>> entry : orderMap.entrySet()) {
-            List<Retail> items = entry.getValue();
-            if (items.isEmpty()) continue;
-
-            Retail first = items.get(0);
-            Map<String, Object> order = new HashMap<>();
-            order.put("orderNo", entry.getKey());
-            order.put("retailtime", first.getRetailtime());
-            order.put("operateperson", first.getOperateperson());
-            order.put("paytype", first.getPaytype());
-            order.put("remark", first.getRemark());
-
-            // 计算总数量和总金额（只计算未退完的）
-            int totalNumber = 0;
-            double totalAmount = 0;
-            for (Retail item : items) {
-                if (item.getOrderStatus() == null || item.getOrderStatus() == 0) {
-                    totalNumber += item.getNumber();
-                    totalAmount += item.getRetailprice() * item.getNumber();
-                }
-            }
-            order.put("totalNumber", totalNumber);
-            order.put("totalAmount", totalAmount);
-            order.put("itemCount", items.size());
-
-            // 订单状态：0=正常, 1=已退完
-            boolean isReturnedAll = items.stream().allMatch(r -> r.getOrderStatus() != null && r.getOrderStatus() == 1);
-            order.put("orderStatus", isReturnedAll ? 1 : 0);
-
-            orderList.add(order);
-        }
-
-        // 分页处理
-        int page = retailVo.getPage() != null ? retailVo.getPage() : 1;
-        int limit = retailVo.getLimit() != null ? retailVo.getLimit() : 10;
-        int fromIndex = (page - 1) * limit;
-        int toIndex = Math.min(fromIndex + limit, orderList.size());
-
-        List<Map<String, Object>> pageData = fromIndex < orderList.size()
-                ? orderList.subList(fromIndex, toIndex)
-                : new ArrayList<>();
-
-        return new DataGridView((long) orderList.size(), pageData);
+        // 按订单号分组，SQL + 数据库分页（避免全表加载与内存分页，保证按时间倒序稳定输出）
+        Page<Map<String, Object>> page = new Page<>(
+                retailVo.getPage() != null ? retailVo.getPage() : 1,
+                retailVo.getLimit() != null ? retailVo.getLimit() : 10);
+        IPage<Map<String, Object>> result = baseMapper.selectOrdersPage(page, retailVo);
+        return new DataGridView(result.getTotal(), result.getRecords());
     }
 
     @Override
@@ -205,11 +160,7 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         }
 
         // 回滚商品库存
-        Goods goods = goodsMapper.selectById(retail.getGoodsid());
-        if (goods != null) {
-            goods.setNumber(goods.getNumber() + returnQty);
-            goodsMapper.updateById(goods);
-        }
+        goodsMapper.increaseStock(retail.getGoodsid(), returnQty);
 
         // 记录退货日志
         RetailLog log = new RetailLog();
@@ -244,11 +195,8 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         List<Retail> list = baseMapper.selectList(queryWrapper);
 
         for (Retail retail : list) {
-            Goods goods = goodsMapper.selectById(retail.getGoodsid());
-            if (goods != null) {
-                goods.setNumber(goods.getNumber() + retail.getNumber());
-                goodsMapper.updateById(goods);
-            }
+            // 回滚商品库存
+            goodsMapper.increaseStock(retail.getGoodsid(), retail.getNumber());
 
             RetailLog log = new RetailLog();
             log.setOrderNo(retail.getOrderno());
@@ -295,15 +243,14 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         for (Retail retail : list) {
             retail.setOrderno(orderNo);
 
+            // 原子扣减库存，库存不足则整批回滚
             Goods goods = goodsMapper.selectById(retail.getGoodsid());
             if (goods == null) {
                 throw new RuntimeException("商品不存在: " + retail.getGoodsid());
             }
-            if (goods.getNumber() < retail.getNumber()) {
+            if (goodsMapper.decreaseStock(retail.getGoodsid(), retail.getNumber()) == 0) {
                 throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
             }
-            goods.setNumber(goods.getNumber() - retail.getNumber());
-            goodsMapper.updateById(goods);
         }
 
         saveBatch(list);
@@ -326,24 +273,15 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
 
     @Override
     public DataGridView queryReturnAddRecords(RetailVo retailVo) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        // SQL 联表 + 数据库分页（避免全表加载与 N+1 查询）
+        Page<Map<String, Object>> page = new Page<>(
+                retailVo.getPage() != null ? retailVo.getPage() : 1,
+                retailVo.getLimit() != null ? retailVo.getLimit() : 10);
+        IPage<Map<String, Object>> result = baseMapper.selectReturnAddRecordsPage(page, retailVo);
 
-        QueryWrapper<RetailLog> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq(retailVo.getOrderNo() != null && !retailVo.getOrderNo().isEmpty(), "order_no", retailVo.getOrderNo());
-        queryWrapper.eq(retailVo.getRecordType() != null && !retailVo.getRecordType().isEmpty(), "type", retailVo.getRecordType());
-        queryWrapper.ge(retailVo.getStartTime() != null, "operate_time", retailVo.getStartTime());
-        queryWrapper.le(retailVo.getEndTime() != null, "operate_time", retailVo.getEndTime());
-        queryWrapper.orderByDesc("operate_time");
-
-        List<RetailLog> logList = retailLogMapper.selectList(queryWrapper);
-
-        List<Map<String, Object>> recordList = new ArrayList<>();
-        for (RetailLog log : logList) {
-            Map<String, Object> record = new HashMap<>();
-            record.put("id", log.getId());
-            record.put("orderNo", log.getOrderNo());
-
-            String type = log.getType();
+        // 设置类型中文标签
+        for (Map<String, Object> record : result.getRecords()) {
+            String type = (String) record.get("type");
             if ("retail".equals(type)) {
                 record.put("type", "零售");
                 record.put("typeTag", "primary");
@@ -354,32 +292,8 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
                 record.put("type", "退货");
                 record.put("typeTag", "danger");
             }
-
-            Goods goods = goodsMapper.selectById(log.getGoodsId());
-            record.put("goodsName", goods != null ? goods.getGoodsname() : "");
-            record.put("goodsSize", goods != null ? goods.getSize() : "");
-
-            record.put("number", log.getNumber());
-            record.put("price", log.getPrice());
-            record.put("totalAmount", log.getPrice() * log.getNumber());
-            record.put("paytype", log.getPaytype());
-            record.put("operatePerson", log.getOperatePerson());
-            record.put("operateTime", log.getOperateTime() != null ? sdf.format(log.getOperateTime()) : "");
-            record.put("remark", log.getRemark());
-
-            recordList.add(record);
         }
 
-        // 分页处理
-        int page = retailVo.getPage() != null ? retailVo.getPage() : 1;
-        int limit = retailVo.getLimit() != null ? retailVo.getLimit() : 10;
-        int fromIndex = (page - 1) * limit;
-        int toIndex = Math.min(fromIndex + limit, recordList.size());
-
-        List<Map<String, Object>> pageData = fromIndex < recordList.size()
-                ? recordList.subList(fromIndex, toIndex)
-                : new ArrayList<>();
-
-        return new DataGridView((long) recordList.size(), pageData);
+        return new DataGridView(result.getTotal(), result.getRecords());
     }
 }

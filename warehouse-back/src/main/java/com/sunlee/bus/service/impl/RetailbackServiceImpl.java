@@ -39,9 +39,11 @@ public class RetailbackServiceImpl extends ServiceImpl<RetailbackMapper, Retailb
         }
         // 3. 根据商品ID查询商品信息
         Goods goods = goodsMapper.selectById(retail.getGoodsid());
-        // 4. 增加商品库存
-        goods.setNumber(goods.getNumber() + number);
-        goodsMapper.updateById(goods);
+        if (goods == null) {
+            throw new RuntimeException("商品不存在: " + retail.getGoodsid());
+        }
+        // 4. 原子增加商品库存（零售退货 = 商品入库）
+        goodsMapper.increaseStock(retail.getGoodsid(), number);
         // 5. 减少零售单数量
         retail.setNumber(retail.getNumber() - number);
         retailMapper.updateById(retail);
@@ -63,10 +65,14 @@ public class RetailbackServiceImpl extends ServiceImpl<RetailbackMapper, Retailb
     public void cancelRetailback(Integer id) {
         // 1. 查询退货单
         Retailback retailback = getBaseMapper().selectById(id);
-        // 2. 回滚商品库存
+        if (retailback == null) {
+            throw new RuntimeException("退货记录不存在: " + id);
+        }
+        // 2. 回滚商品库存（库存不足时拦截，防止负库存）
         Goods goods = goodsMapper.selectById(retailback.getGoodsid());
-        goods.setNumber(goods.getNumber() - retailback.getNumber());
-        goodsMapper.updateById(goods);
+        if (goods != null && goodsMapper.decreaseStock(retailback.getGoodsid(), retailback.getNumber()) == 0) {
+            throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber() + "，无法取消退货");
+        }
         // 3. 回滚零售单数量
         Retail retail = retailMapper.selectById(retailback.getRetailid());
         if (retail != null) {

@@ -4,12 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.sunlee.bus.entity.Customer;
 import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Sales;
 import com.sunlee.bus.entity.Salesback;
 import com.sunlee.bus.entity.SalesLog;
-import com.sunlee.bus.mapper.CustomerMapper;
 import com.sunlee.bus.mapper.GoodsMapper;
 import com.sunlee.bus.mapper.SalesLogMapper;
 import com.sunlee.bus.mapper.SalesMapper;
@@ -18,13 +16,10 @@ import com.sunlee.bus.service.ISalesService;
 import com.sunlee.bus.vo.SalesVo;
 import com.sunlee.sys.common.DataGridView;
 
-import java.text.SimpleDateFormat;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -47,9 +42,6 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
     private GoodsMapper goodsMapper;
 
     @Autowired
-    private CustomerMapper customerMapper;
-
-    @Autowired
     private SalesbackMapper salesbackMapper;
 
     @Autowired
@@ -66,15 +58,11 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + entity.getGoodsid());
         }
-        if (goods.getNumber() < entity.getNumber()) {
+        // 原子扣减库存，库存不足时扣减失败并回滚事务
+        if (goodsMapper.decreaseStock(entity.getGoodsid(), entity.getNumber()) == 0) {
             throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
         }
-        // 先保存销售记录，再更新库存（确保事务一致性）
-        boolean result = super.save(entity);
-        goods.setNumber(goods.getNumber() - entity.getNumber());
-        //更新商品的库存信息
-        goodsMapper.updateById(goods);
-        return result;
+        return super.save(entity);
     }
 
     /**
@@ -85,9 +73,12 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
     public void batchSave(List<Sales> list) {
         for (Sales entity : list) {
             Goods goods = goodsMapper.selectById(entity.getGoodsid());
-            if (goods != null) {
-                goods.setNumber(goods.getNumber() - entity.getNumber());
-                goodsMapper.updateById(goods);
+            if (goods == null) {
+                throw new RuntimeException("商品不存在: " + entity.getGoodsid());
+            }
+            // 原子扣减库存，任一商品库存不足则整批回滚
+            if (goodsMapper.decreaseStock(entity.getGoodsid(), entity.getNumber()) == 0) {
+                throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
             }
         }
         saveBatch(list);
@@ -124,20 +115,31 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + entity.getGoodsid());
         }
+        if (entity.getNumber() == null) {
+            throw new RuntimeException("销售数量不能为空");
+        }
         // 校验修改后的数量不能为负数
-        if (entity.getNumber() != null && entity.getNumber() < 0) {
+        if (entity.getNumber() < 0) {
             throw new RuntimeException("销售数量不能为负数");
         }
-        //仓库商品数量=原库存-销售单修改之前的数量+修改之后的数量
-        goods.setNumber(goods.getNumber()+sales.getNumber()-entity.getNumber());
-        //更新商品
-        goodsMapper.updateById(goods);
+        //按差量调整库存：新数量比原数量多则原子扣减，少则回补
+        int delta = entity.getNumber() - sales.getNumber();
+        if (delta > 0) {
+            if (goodsMapper.decreaseStock(entity.getGoodsid(), delta) == 0) {
+                throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
+            }
+        } else if (delta < 0) {
+            goodsMapper.increaseStock(entity.getGoodsid(), -delta);
+        }
         return super.updateById(entity);
     }
 
     @Override
     public void deleteSales(Integer id) {
         Sales sales = baseMapper.selectById(id);
+        if (sales == null) {
+            throw new RuntimeException("销售记录不存在: " + id);
+        }
         // 级联软删除该销售单关联的所有退货记录
         Salesback salesbackUpdate = new Salesback();
         salesbackUpdate.setIsdelete(1);
@@ -145,92 +147,19 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
         salesbackWrapper.eq("salesid", id);
         salesbackMapper.update(salesbackUpdate, salesbackWrapper);
         // 回滚商品库存
-        Goods goods = goodsMapper.selectById(sales.getGoodsid());
-        goods.setNumber(goods.getNumber() + sales.getNumber());
-        goodsMapper.updateById(goods);
+        goodsMapper.increaseStock(sales.getGoodsid(), sales.getNumber());
         // 软删除销售单
         baseMapper.deleteById(id);
     }
 
     @Override
     public DataGridView queryOrders(SalesVo salesVo) {
-        // 查询所有销售记录（包括已退完的）
-        QueryWrapper<Sales> queryWrapper = new QueryWrapper<>();
-        queryWrapper.isNotNull("orderno");
-        queryWrapper.eq(salesVo.getCustomerid() != null && salesVo.getCustomerid() != 0, "customerid", salesVo.getCustomerid());
-        queryWrapper.ge(salesVo.getStartTime() != null, "salestime", salesVo.getStartTime());
-        queryWrapper.le(salesVo.getEndTime() != null, "salestime", salesVo.getEndTime());
-        queryWrapper.orderByDesc("salestime");
-
-        List<Sales> allSales = baseMapper.selectList(queryWrapper);
-
-        // 按订单号分组
-        Map<String, List<Sales>> orderMap = new HashMap<>();
-        for (Sales sales : allSales) {
-            orderMap.computeIfAbsent(sales.getOrderno(), k -> new ArrayList<>()).add(sales);
-        }
-
-        // 构建订单列表
-        List<Map<String, Object>> orderList = new ArrayList<>();
-        // 按订单时间倒序排列
-        List<Map.Entry<String, List<Sales>>> sortedEntries = new ArrayList<>(orderMap.entrySet());
-        sortedEntries.sort((a, b) -> {
-            Date timeA = a.getValue().get(0).getSalestime();
-            Date timeB = b.getValue().get(0).getSalestime();
-            if (timeA == null && timeB == null) return 0;
-            if (timeA == null) return 1;
-            if (timeB == null) return -1;
-            return timeB.compareTo(timeA);
-        });
-        for (Map.Entry<String, List<Sales>> entry : sortedEntries) {
-            List<Sales> items = entry.getValue();
-            if (items.isEmpty()) continue;
-
-            Sales first = items.get(0);
-            Map<String, Object> order = new HashMap<>();
-            order.put("orderNo", entry.getKey());
-            order.put("customerId", first.getCustomerid());
-
-            Customer customer = customerMapper.selectById(first.getCustomerid());
-            order.put("customerName", customer != null ? customer.getCustomername() : "");
-
-            order.put("salestime", first.getSalestime());
-            order.put("operateperson", first.getOperateperson());
-            order.put("remark", first.getRemark());
-
-            // 计算总数量和总金额（只计算未退完的）
-            int totalNumber = 0;
-            double totalAmount = 0;
-            int validItemCount = 0;
-            for (Sales item : items) {
-                if (item.getOrderStatus() == null || item.getOrderStatus() == 0) {
-                    totalNumber += item.getNumber();
-                    totalAmount += item.getSaleprice().doubleValue() * item.getNumber();
-                    validItemCount++;
-                }
-            }
-            order.put("totalNumber", totalNumber);
-            order.put("totalAmount", totalAmount);
-            order.put("itemCount", items.size());
-
-            // 订单状态：0=正常, 1=已退完
-            boolean isReturnedAll = items.stream().allMatch(s -> s.getOrderStatus() != null && s.getOrderStatus() == 1);
-            order.put("orderStatus", isReturnedAll ? 1 : 0);
-
-            orderList.add(order);
-        }
-
-        // 分页处理
-        int page = salesVo.getPage() != null ? salesVo.getPage() : 1;
-        int limit = salesVo.getLimit() != null ? salesVo.getLimit() : 10;
-        int fromIndex = (page - 1) * limit;
-        int toIndex = Math.min(fromIndex + limit, orderList.size());
-
-        List<Map<String, Object>> pageData = fromIndex < orderList.size()
-                ? orderList.subList(fromIndex, toIndex)
-                : new ArrayList<>();
-
-        return new DataGridView((long) orderList.size(), pageData);
+        // 按订单号分组，SQL 联表 + 数据库分页（避免全表加载与 N+1 查询）
+        Page<Map<String, Object>> page = new Page<>(
+                salesVo.getPage() != null ? salesVo.getPage() : 1,
+                salesVo.getLimit() != null ? salesVo.getLimit() : 10);
+        IPage<Map<String, Object>> result = baseMapper.selectOrdersPage(page, salesVo);
+        return new DataGridView(result.getTotal(), result.getRecords());
     }
 
     @Override
@@ -259,11 +188,7 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
         }
 
         // 回滚商品库存
-        Goods goods = goodsMapper.selectById(sales.getGoodsid());
-        if (goods != null) {
-            goods.setNumber(goods.getNumber() + returnQty);
-            goodsMapper.updateById(goods);
-        }
+        goodsMapper.increaseStock(sales.getGoodsid(), returnQty);
 
         // 记录退货日志
         SalesLog log = new SalesLog();
@@ -302,11 +227,7 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
 
         for (Sales sales : list) {
             // 回滚商品库存
-            Goods goods = goodsMapper.selectById(sales.getGoodsid());
-            if (goods != null) {
-                goods.setNumber(goods.getNumber() + sales.getNumber());
-                goodsMapper.updateById(goods);
-            }
+            goodsMapper.increaseStock(sales.getGoodsid(), sales.getNumber());
 
             // 记录退货日志
             SalesLog log = new SalesLog();
@@ -363,16 +284,14 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
             sales.setOrderno(orderNo);
             sales.setCustomerid(customerId);
 
-            // 扣减库存
+            // 原子扣减库存，库存不足则整批回滚
             Goods goods = goodsMapper.selectById(sales.getGoodsid());
             if (goods == null) {
                 throw new RuntimeException("商品不存在: " + sales.getGoodsid());
             }
-            if (goods.getNumber() < sales.getNumber()) {
+            if (goodsMapper.decreaseStock(sales.getGoodsid(), sales.getNumber()) == 0) {
                 throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber());
             }
-            goods.setNumber(goods.getNumber() - sales.getNumber());
-            goodsMapper.updateById(goods);
         }
 
         // 批量保存
@@ -396,28 +315,15 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
 
     @Override
     public DataGridView queryReturnAddRecords(SalesVo salesVo) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        // SQL 联表 + 数据库分页（避免全表加载与 N+1 查询）
+        Page<Map<String, Object>> page = new Page<>(
+                salesVo.getPage() != null ? salesVo.getPage() : 1,
+                salesVo.getLimit() != null ? salesVo.getLimit() : 10);
+        IPage<Map<String, Object>> result = baseMapper.selectReturnAddRecordsPage(page, salesVo);
 
-        // 从日志表查询
-        QueryWrapper<SalesLog> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq(salesVo.getCustomerid() != null && salesVo.getCustomerid() != 0, "customer_id", salesVo.getCustomerid());
-        queryWrapper.eq(salesVo.getOrderNo() != null && !salesVo.getOrderNo().isEmpty(), "order_no", salesVo.getOrderNo());
-        queryWrapper.eq(salesVo.getRecordType() != null && !salesVo.getRecordType().isEmpty(), "type", salesVo.getRecordType());
-        queryWrapper.ge(salesVo.getStartTime() != null, "operate_time", salesVo.getStartTime());
-        queryWrapper.le(salesVo.getEndTime() != null, "operate_time", salesVo.getEndTime());
-        queryWrapper.orderByDesc("operate_time");
-
-        List<SalesLog> logList = salesLogMapper.selectList(queryWrapper);
-
-        // 构建返回数据
-        List<Map<String, Object>> recordList = new ArrayList<>();
-        for (SalesLog log : logList) {
-            Map<String, Object> record = new HashMap<>();
-            record.put("id", log.getId());
-            record.put("orderNo", log.getOrderNo());
-
-            // 设置类型和标签
-            String type = log.getType();
+        // 设置类型中文标签
+        for (Map<String, Object> record : result.getRecords()) {
+            String type = (String) record.get("type");
             if ("sale".equals(type)) {
                 record.put("type", "销售");
                 record.put("typeTag", "primary");
@@ -428,35 +334,9 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
                 record.put("type", "退货");
                 record.put("typeTag", "danger");
             }
-
-            Customer customer = customerMapper.selectById(log.getCustomerId());
-            record.put("customerName", customer != null ? customer.getCustomername() : "");
-
-            Goods goods = goodsMapper.selectById(log.getGoodsId());
-            record.put("goodsName", goods != null ? goods.getGoodsname() : "");
-            record.put("goodsSize", goods != null ? goods.getSize() : "");
-
-            record.put("number", log.getNumber());
-            record.put("price", log.getPrice());
-            record.put("totalAmount", log.getPrice().doubleValue() * log.getNumber());
-            record.put("operatePerson", log.getOperatePerson());
-            record.put("operateTime", log.getOperateTime() != null ? sdf.format(log.getOperateTime()) : "");
-            record.put("remark", log.getRemark());
-
-            recordList.add(record);
         }
 
-        // 分页处理
-        int page = salesVo.getPage() != null ? salesVo.getPage() : 1;
-        int limit = salesVo.getLimit() != null ? salesVo.getLimit() : 10;
-        int fromIndex = (page - 1) * limit;
-        int toIndex = Math.min(fromIndex + limit, recordList.size());
-
-        List<Map<String, Object>> pageData = fromIndex < recordList.size()
-                ? recordList.subList(fromIndex, toIndex)
-                : new ArrayList<>();
-
-        return new DataGridView((long) recordList.size(), pageData);
+        return new DataGridView(result.getTotal(), result.getRecords());
     }
 
     @Override

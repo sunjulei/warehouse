@@ -59,15 +59,14 @@ public class OutportServiceImpl extends ServiceImpl<OutportMapper, Outport> impl
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + inport.getGoodsid());
         }
-        //3.修改商品的数量     商品的数量-退货的数量
-        goods.setNumber(goods.getNumber()-number);
+        //3.原子扣减商品库存（库存不足时拦截，防止先售后退供导致负库存）
+        if (goodsMapper.decreaseStock(inport.getGoodsid(), number) == 0) {
+            throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber() + "，无法退货出库");
+        }
 
         //修改进货的数量
         inport.setNumber(inport.getNumber()-number);
         inportMapper.updateById(inport);
-
-        //4.进行修改
-        goodsMapper.updateById(goods);
 
         //5.添加退货单信息
         Outport outport = new Outport();
@@ -90,10 +89,11 @@ public class OutportServiceImpl extends ServiceImpl<OutportMapper, Outport> impl
     public void cancelOutport(Integer id) {
         // 1. 查询退货单
         Outport outport = getBaseMapper().selectById(id);
+        if (outport == null) {
+            throw new RuntimeException("退货记录不存在: " + id);
+        }
         // 2. 回滚商品库存：退货取消 = 商品数量要加回来
-        Goods goods = goodsMapper.selectById(outport.getGoodsid());
-        goods.setNumber(goods.getNumber() + outport.getNumber());
-        goodsMapper.updateById(goods);
+        goodsMapper.increaseStock(outport.getGoodsid(), outport.getNumber());
         // 3. 回滚进货单数量
         // 通过inportid精确回滚进货单
         Inport inport = inportMapper.selectById(outport.getInportid());
