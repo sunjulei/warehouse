@@ -11,6 +11,8 @@
                MAX(r.remark) AS remark,
                SUM(CASE WHEN IFNULL(r.order_status, 0) = 0 THEN r.number ELSE 0 END) AS totalNumber,
                SUM(CASE WHEN IFNULL(r.order_status, 0) = 0 THEN r.retailprice * r.number ELSE 0 END) AS totalAmount,
+               (SELECT IFNULL(SUM(al.number), 0) FROM bus_retail_log al WHERE al.order_no = r.orderno AND al.type = 'add') AS addedNumber,
+               (SELECT IFNULL(SUM(rl.number), 0) FROM bus_retail_log rl WHERE rl.order_no = r.orderno AND rl.type = 'return') AS returnedNumber,
                COUNT(*) AS itemCount,
                MIN(CASE WHEN IFNULL(r.order_status, 0) = 1 THEN 1 ELSE 0 END) AS orderStatus
         FROM bus_retail r

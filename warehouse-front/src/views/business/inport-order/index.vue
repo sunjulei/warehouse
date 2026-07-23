@@ -29,12 +29,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="remark" label="备注" show-overflow-tooltip />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="330" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleViewDetail(row)">详情</el-button>
-            <el-button type="success" link @click="handleAddGoods(row)" :disabled="row.orderStatus === 1">加货</el-button>
+            <el-button type="success" link @click="handleAddGoods(row)" :disabled="row.orderStatus === 1">加货({{ row.addedNumber || 0 }})</el-button>
             <el-button type="warning" link @click="handleViewRecords(row)">记录</el-button>
-            <el-button type="danger" link @click="handleOpenReturn(row)" :disabled="row.orderStatus === 1">退货</el-button>
+            <el-button type="danger" link @click="handleOpenReturn(row)" :disabled="row.orderStatus === 1">退货({{ row.returnedNumber || 0 }}/{{ (row.totalNumber || 0) + (row.returnedNumber || 0) }})</el-button>
           </template>
         </el-table-column>
       </CrudTable>
@@ -432,6 +432,8 @@ const handleOpenReturn = async (row: any) => {
   try {
     const res: any = await loadOrderDetail(row.orderNo)
     const details = res.data || []
+    // 同步到 orderDetails，提交退货时需要按记录ID查找各条剩余数量
+    orderDetails.value = details
     const map = new Map()
     for (const item of details) {
       if (item.number <= 0 || item.orderStatus === 1) continue
