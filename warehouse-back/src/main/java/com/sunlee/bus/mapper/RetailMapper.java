@@ -20,4 +20,12 @@ public interface RetailMapper extends BaseMapper<Retail> {
      * 零售退加货记录分页查询（联查商品，数据库分页）
      */
     IPage<Map<String, Object>> selectReturnAddRecordsPage(Page<Map<String, Object>> page, @Param("vo") RetailVo vo);
+
+    /**
+     * 原子扣减零售单剩余可退数量（退货用）
+     * @param id 零售单ID
+     * @param number 扣减数量
+     * @return 受影响行数，0表示剩余不足或已退完（并发安全）
+     */
+    int decreaseRemaining(@Param("id") Integer id, @Param("number") Integer number);
 }

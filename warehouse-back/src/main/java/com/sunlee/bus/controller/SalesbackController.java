@@ -10,9 +10,7 @@ import com.sunlee.bus.service.ICustomerService;
 import com.sunlee.bus.service.IGoodsService;
 import com.sunlee.bus.service.ISalesbackService;
 import com.sunlee.bus.vo.SalesbackVo;
-import com.sunlee.sys.annotation.OperationLog;
 import com.sunlee.sys.common.DataGridView;
-import com.sunlee.sys.common.ResultObj;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,18 +32,11 @@ public class SalesbackController {
     @Autowired
     private IGoodsService goodsService;
 
-    @OperationLog(type = "添加", module = "销售退回", description = "'销售退货, 销售单ID: ' + #args[0] + ', 数量: ' + #args[1]")
-    @RequestMapping("addSalesback")
-    public ResultObj addSalesback(Integer id, Integer number, String remark) {
-        try {
-            salesbackService.addSalesback(id, number, remark);
-            return ResultObj.BACKINPORT_SUCCESS;
-        } catch (Exception e) {
-            log.error("销售退货失败: {}", e.getMessage(), e);
-            return ResultObj.error("退货失败: " + e.getMessage());
-        }
-    }
-
+    /**
+     * 历史销售退货记录查询（只读）。
+     * 退货写操作已统一到 /sales/returnSingleGoods 与 /sales/returnOrder，
+     * 退货流水见 bus_sales_log（退加货记录页）。
+     */
     @RequestMapping("loadAllSalesback")
     public DataGridView loadAllSalesback(SalesbackVo salesbackVo) {
         IPage<Salesback> page = new Page<>(salesbackVo.getPage(), salesbackVo.getLimit());
@@ -69,17 +60,5 @@ public class SalesbackController {
             }
         }
         return new DataGridView(page.getTotal(), records);
-    }
-
-    @OperationLog(type = "删除", module = "销售退回", description = "'取消销售退货ID: ' + #args[0]")
-    @RequestMapping("cancelSalesback")
-    public ResultObj cancelSalesback(Integer id) {
-        try {
-            salesbackService.cancelSalesback(id);
-            return ResultObj.CANCEL_SUCCESS;
-        } catch (Exception e) {
-            log.error("取消销售退货失败: {}", e.getMessage(), e);
-            return ResultObj.error("取消失败: " + e.getMessage());
-        }
     }
 }

@@ -33,13 +33,22 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
             throw new RuntimeException("充值金额必须大于0");
         }
 
-        member.setBalance(member.getBalance().add(amount));
-        member.setTotalRecharge(member.getTotalRecharge().add(amount));
-        // 自动升级等级
-        updateMemberLevel(member);
-        updateById(member);
+        // 原子更新余额与累计充值，防止并发充值丢失更新
+        if (baseMapper.addRecharge(memberId, amount) == 0) {
+            throw new RuntimeException("充值失败，请重试");
+        }
 
-        saveRecord(memberId, "充值", amount, member.getBalance(), operator, remark);
+        // 重新读取更新后的数据（用于等级计算与流水余额），等级只升不降，且只回写等级字段，避免覆盖并发更新
+        Member updated = getById(memberId);
+        Integer newLevel = computeLevel(updated.getTotalRecharge());
+        if (newLevel > updated.getLevel()) {
+            Member levelUpdate = new Member();
+            levelUpdate.setId(memberId);
+            levelUpdate.setLevel(newLevel);
+            updateById(levelUpdate);
+        }
+
+        saveRecord(memberId, "充值", amount, updated.getBalance(), operator, remark);
     }
 
     @Override
@@ -51,17 +60,14 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("消费金额必须大于0");
         }
-        if (member.getBalance().compareTo(amount) < 0) {
+
+        // 原子扣减余额（余额不足时不更新），同时累加消费额与积分（1元=1积分）
+        if (baseMapper.deductBalance(memberId, amount, amount.intValue()) == 0) {
             throw new RuntimeException("余额不足，当前余额: " + member.getBalance());
         }
 
-        member.setBalance(member.getBalance().subtract(amount));
-        member.setTotalConsume(member.getTotalConsume().add(amount));
-        // 消费积分: 1元=1积分
-        member.setPoints(member.getPoints() + amount.intValue());
-        updateById(member);
-
-        saveRecord(memberId, "消费", amount, member.getBalance(), operator, remark);
+        Member updated = getById(memberId);
+        saveRecord(memberId, "消费", amount, updated.getBalance(), operator, remark);
     }
 
     @Override
@@ -70,11 +76,17 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
         if (member == null) {
             throw new RuntimeException("会员不存在");
         }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("退款金额必须大于0");
+        }
 
-        member.setBalance(member.getBalance().add(amount));
-        updateById(member);
+        // 原子增加余额，防止并发退款丢失更新
+        if (baseMapper.addBalance(memberId, amount) == 0) {
+            throw new RuntimeException("退款失败，请重试");
+        }
 
-        saveRecord(memberId, "退款", amount, member.getBalance(), operator, remark);
+        Member updated = getById(memberId);
+        saveRecord(memberId, "退款", amount, updated.getBalance(), operator, remark);
     }
 
     private void saveRecord(Integer memberId, String type, BigDecimal amount, BigDecimal balanceAfter, String operator, String remark) {
@@ -89,15 +101,18 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member> impleme
         memberRecordService.save(record);
     }
 
-    private void updateMemberLevel(Member member) {
-        BigDecimal total = member.getTotalRecharge();
+    /**
+     * 根据累计充值计算会员等级: 1普通 2银卡 3金卡 4钻石
+     */
+    private Integer computeLevel(BigDecimal total) {
         if (total.compareTo(new BigDecimal("5000")) >= 0) {
-            member.setLevel(4); // 钻石
+            return 4; // 钻石
         } else if (total.compareTo(new BigDecimal("2000")) >= 0) {
-            member.setLevel(3); // 金卡
+            return 3; // 金卡
         } else if (total.compareTo(new BigDecimal("500")) >= 0) {
-            member.setLevel(2); // 银卡
+            return 2; // 银卡
         }
+        return 1; // 普通
     }
 
     /**

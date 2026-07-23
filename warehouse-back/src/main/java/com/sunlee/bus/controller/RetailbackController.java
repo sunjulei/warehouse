@@ -8,9 +8,7 @@ import com.sunlee.bus.entity.Retailback;
 import com.sunlee.bus.service.IGoodsService;
 import com.sunlee.bus.service.IRetailbackService;
 import com.sunlee.bus.vo.RetailbackVo;
-import com.sunlee.sys.annotation.OperationLog;
 import com.sunlee.sys.common.DataGridView;
-import com.sunlee.sys.common.ResultObj;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,21 +27,11 @@ public class RetailbackController {
     @Autowired
     private IGoodsService goodsService;
 
-    @OperationLog(type = "添加", module = "零售退回", description = "'零售退货, 零售单ID: ' + #args[0] + ', 数量: ' + #args[1]")
-    @RequestMapping("addRetailback")
-    public ResultObj addRetailback(Integer id, Integer number, String remark) {
-        try {
-            retailbackService.addRetailback(id, number, remark);
-            return ResultObj.BACKINPORT_SUCCESS;
-        } catch (RuntimeException e) {
-            log.warn("零售退货失败: {}", e.getMessage());
-            return new ResultObj(-1, e.getMessage());
-        } catch (Exception e) {
-            log.error("零售退货失败: {}", e.getMessage(), e);
-            return ResultObj.error("退货失败: " + e.getMessage());
-        }
-    }
-
+    /**
+     * 历史零售退货记录查询（只读）。
+     * 退货写操作已统一到 /retail/returnSingleGoods 与 /retail/returnOrder，
+     * 退货流水见 bus_retail_log（零售退回记录页）。
+     */
     @RequestMapping("loadAllRetailback")
     public DataGridView loadAllRetailback(RetailbackVo retailbackVo) {
         IPage<Retailback> page = new Page<>(retailbackVo.getPage(), retailbackVo.getLimit());
@@ -62,17 +50,5 @@ public class RetailbackController {
             }
         }
         return new DataGridView(page.getTotal(), records);
-    }
-
-    @OperationLog(type = "删除", module = "零售退回", description = "'取消零售退货ID: ' + #args[0]")
-    @RequestMapping("cancelRetailback")
-    public ResultObj cancelRetailback(Integer id) {
-        try {
-            retailbackService.cancelRetailback(id);
-            return ResultObj.CANCEL_SUCCESS;
-        } catch (Exception e) {
-            log.error("取消零售退货失败: {}", e.getMessage(), e);
-            return ResultObj.error("取消失败: " + e.getMessage());
-        }
     }
 }

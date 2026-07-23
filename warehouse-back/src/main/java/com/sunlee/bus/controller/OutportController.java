@@ -10,9 +10,7 @@ import com.sunlee.bus.service.IGoodsService;
 import com.sunlee.bus.service.IOutportService;
 import com.sunlee.bus.service.IProviderService;
 import com.sunlee.bus.vo.OutportVo;
-import com.sunlee.sys.annotation.OperationLog;
 import com.sunlee.sys.common.DataGridView;
-import com.sunlee.sys.common.ResultObj;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,30 +32,11 @@ public class OutportController {
     @Autowired
     private IGoodsService goodsService;
 
-    @OperationLog(type = "添加", module = "退回供应商", description = "'进货退货, 进货单ID: ' + #args[0] + ', 数量: ' + #args[1]")
-    @RequestMapping("addOutport")
-    public ResultObj addOutport(Integer id, Integer number, String remark) {
-        try {
-            outportService.addOutport(id, number, remark);
-            return ResultObj.BACKINPORT_SUCCESS;
-        } catch (Exception e) {
-            log.error("进货退货失败: {}", e.getMessage(), e);
-            return ResultObj.error("退货失败: " + e.getMessage());
-        }
-    }
-
-    @OperationLog(type = "删除", module = "退回供应商", description = "'取消退货ID: ' + #args[0]")
-    @RequestMapping("cancelOutport")
-    public ResultObj cancelOutport(Integer id) {
-        try {
-            outportService.cancelOutport(id);
-            return ResultObj.CANCEL_SUCCESS;
-        } catch (Exception e) {
-            log.error("取消退货失败: {}", e.getMessage(), e);
-            return ResultObj.error("取消失败: " + e.getMessage());
-        }
-    }
-
+    /**
+     * 历史进货退货记录查询（只读）。
+     * 退货写操作已统一到 /inport/returnSingleGoods 与 /inport/returnOrder，
+     * 退货流水见 bus_inport_log（退加货记录页）。
+     */
     @RequestMapping("loadAllOutport")
     public DataGridView loadAllOutport(OutportVo outportVo) {
         IPage<Outport> page = new Page<>(outportVo.getPage(), outportVo.getLimit());

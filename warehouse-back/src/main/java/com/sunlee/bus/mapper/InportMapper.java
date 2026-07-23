@@ -35,4 +35,12 @@ public interface InportMapper extends BaseMapper<Inport> {
      */
     IPage<Map<String, Object>> selectReturnAddRecordsPage(Page<Map<String, Object>> page, @Param("vo") InportVo vo);
 
+    /**
+     * 原子扣减进货单剩余可退数量（退货用）
+     * @param id 进货单ID
+     * @param number 扣减数量
+     * @return 受影响行数，0表示剩余不足或已退完（并发安全）
+     */
+    int decreaseRemaining(@Param("id") Integer id, @Param("number") Integer number);
+
 }

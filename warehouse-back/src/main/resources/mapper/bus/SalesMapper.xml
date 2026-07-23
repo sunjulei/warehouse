@@ -7,35 +7,35 @@
             <when test="type == 'today' or type == 'yesterday'">
                 SELECT HOUR(salestime) AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY HOUR(salestime)
                 ORDER BY label
             </when>
             <when test="type == 'week'">
                 SELECT DAYOFWEEK(salestime) - 1 AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY DAYOFWEEK(salestime) - 1
                 ORDER BY label
             </when>
             <when test="type == 'month'">
                 SELECT DAY(salestime) AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY DAY(salestime)
                 ORDER BY label
             </when>
             <when test="type == 'custom'">
                 SELECT DATE_FORMAT(salestime, '%Y%m%d') AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY DATE(salestime)
                 ORDER BY label
             </when>
             <when test="type == 'quarter' or type == 'year'">
                 SELECT MONTH(salestime) AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY MONTH(salestime)
                 ORDER BY label
             </when>
@@ -50,6 +50,7 @@
         FROM bus_sales s
         LEFT JOIN bus_goods g ON s.goodsid = g.id
         <where>
+            s.isdelete = 0
             <if test="startDate != null and startDate != ''">
                 AND DATE(s.salestime) &gt;= #{startDate}
             </if>
@@ -66,35 +67,35 @@
             <when test="type == 'today' or type == 'yesterday'">
                 SELECT HOUR(salestime) AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY HOUR(salestime)
                 ORDER BY label
             </when>
             <when test="type == 'week'">
                 SELECT DAYOFWEEK(salestime) - 1 AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY DAYOFWEEK(salestime) - 1
                 ORDER BY label
             </when>
             <when test="type == 'month'">
                 SELECT DAY(salestime) AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY DAY(salestime)
                 ORDER BY label
             </when>
             <when test="type == 'custom'">
                 SELECT DATE_FORMAT(salestime, '%Y%m%d') AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY DATE(salestime)
                 ORDER BY label
             </when>
             <when test="type == 'quarter' or type == 'year'">
                 SELECT MONTH(salestime) AS label, IFNULL(SUM(saleprice * number), 0) AS total
                 FROM bus_sales
-                WHERE DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(salestime) &gt;= #{startDate} AND DATE(salestime) &lt;= #{endDate}
                 GROUP BY MONTH(salestime)
                 ORDER BY label
             </when>
@@ -167,5 +168,11 @@
         </where>
         ORDER BY l.operate_time DESC
     </select>
+
+    <!-- 原子扣减销售单剩余可退数量：剩余不足或已退完时不更新（返回0），防止并发超退 -->
+    <update id="decreaseRemaining">
+        update bus_sales set number = number - #{number}
+        where id = #{id} and isdelete = 0 and ifnull(order_status, 0) = 0 and number &gt;= #{number}
+    </update>
 
 </mapper>

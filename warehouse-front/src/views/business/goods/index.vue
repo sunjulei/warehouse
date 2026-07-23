@@ -234,7 +234,8 @@ const searchParams = reactive({
 const rules = {
   goodsname: [{ required: true, message: '请输入商品名', trigger: 'blur' }],
   providerid: [{ required: true, message: '请选择供应商', trigger: 'change' }],
-  categoryid: [{ required: true, message: '请选择分类', trigger: 'change' }]
+  categoryid: [{ required: true, message: '请选择分类', trigger: 'change' }],
+  price: [{ required: true, message: '请输入价格', trigger: 'blur' }]
 }
 
 const handleSearch = () => tableRef.value?.reload()

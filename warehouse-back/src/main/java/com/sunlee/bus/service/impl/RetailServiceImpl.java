@@ -56,6 +56,14 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         if (retail == null) {
             throw new RuntimeException("零售记录不存在: " + entity.getId());
         }
+        // 禁止编辑时更换商品：库存按商品维度差量调整，换商品会导致新旧商品库存都错账
+        if (!retail.getGoodsid().equals(entity.getGoodsid())) {
+            throw new RuntimeException("编辑单据不允许更换商品，请删除原单后重新开单");
+        }
+        // 已退完的记录禁止编辑，避免静默复活已退完订单导致账实不符
+        if (retail.getOrderStatus() != null && retail.getOrderStatus() == 1) {
+            throw new RuntimeException("该记录已退完，禁止编辑");
+        }
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + entity.getGoodsid());
@@ -159,6 +167,11 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
             throw new RuntimeException("退货数量不能超过零售数量");
         }
 
+        // 原子扣减剩余可退数量（并发退货时防止超退导致库存与单据不一致）
+        if (baseMapper.decreaseRemaining(retailId, returnQty) == 0) {
+            throw new RuntimeException("退货失败：剩余可退数量不足或该记录已退完");
+        }
+
         // 回滚商品库存
         goodsMapper.increaseStock(retail.getGoodsid(), returnQty);
 
@@ -175,13 +188,12 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         log.setRemark(returnQty >= retail.getNumber() ? "单商品退货（全部）" : "单商品退货（部分）");
         retailLogMapper.insert(log);
 
+        // 如果退全部，则标记该记录为已退完（数量已被原子扣减为0）
         if (returnQty >= retail.getNumber()) {
-            retail.setNumber(0);
-            retail.setOrderStatus(1);
-            baseMapper.updateById(retail);
-        } else {
-            retail.setNumber(retail.getNumber() - returnQty);
-            baseMapper.updateById(retail);
+            Retail finish = new Retail();
+            finish.setId(retailId);
+            finish.setOrderStatus(1);
+            baseMapper.updateById(finish);
         }
 
         checkOrderReturnComplete(retail.getOrderno());
@@ -195,6 +207,13 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
         List<Retail> list = baseMapper.selectList(queryWrapper);
 
         for (Retail retail : list) {
+            if (retail.getNumber() == null || retail.getNumber() <= 0) {
+                continue;
+            }
+            // 原子扣减剩余数量：并发整单退货时已被其他事务退掉的记录跳过，防止重复回库
+            if (baseMapper.decreaseRemaining(retail.getId(), retail.getNumber()) == 0) {
+                continue;
+            }
             // 回滚商品库存
             goodsMapper.increaseStock(retail.getGoodsid(), retail.getNumber());
 
@@ -210,9 +229,11 @@ public class RetailServiceImpl extends ServiceImpl<RetailMapper, Retail> impleme
             log.setRemark("整单退货");
             retailLogMapper.insert(log);
 
-            retail.setNumber(0);
-            retail.setOrderStatus(1);
-            baseMapper.updateById(retail);
+            // 标记为已退完（数量已被原子扣减为0）
+            Retail finish = new Retail();
+            finish.setId(retail.getId());
+            finish.setOrderStatus(1);
+            baseMapper.updateById(finish);
         }
     }
 

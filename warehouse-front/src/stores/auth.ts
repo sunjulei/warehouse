@@ -43,11 +43,16 @@ export const useAuthStore = defineStore('auth', {
       try {
         await logoutApi()
       } finally {
-        this.user = null
-        this.menus = []
-        this.permissions = []
-        this.isLoggedIn = false
+        this.reset()
       }
+    },
+    /** 清除本地登录状态（会话过期/登出时调用），同时清空页签缓存 */
+    reset() {
+      this.user = null
+      this.menus = []
+      this.permissions = []
+      this.isLoggedIn = false
+      sessionStorage.removeItem('tabs_visited')
     }
   }
 })

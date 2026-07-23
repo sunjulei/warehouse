@@ -114,12 +114,6 @@ const router = createRouter({
           meta: { title: '商品管理' }
         },
         {
-          path: 'business/inport',
-          name: 'InportManager',
-          component: () => import('@/views/business/inport/index.vue'),
-          meta: { title: '进货管理' }
-        },
-        {
           path: 'business/inport-pos',
           name: 'InportPOS',
           component: () => import('@/views/business/inport-pos/index.vue'),
@@ -135,7 +129,7 @@ const router = createRouter({
           path: 'business/inport-record',
           name: 'InportRecord',
           component: () => import('@/views/business/inport-record/index.vue'),
-          meta: { title: '退加货记录' }
+          meta: { title: '进货退加货记录' }
         },
         {
           path: 'business/sales-pos',
@@ -153,7 +147,7 @@ const router = createRouter({
           path: 'business/sales-record',
           name: 'SalesRecord',
           component: () => import('@/views/business/sales-record/index.vue'),
-          meta: { title: '退加货记录' }
+          meta: { title: '销售退加货记录' }
         },
         {
           path: 'business/retail',
@@ -172,12 +166,6 @@ const router = createRouter({
           name: 'RetailRecord',
           component: () => import('@/views/business/retail-record/index.vue'),
           meta: { title: '零售退回记录' }
-        },
-        {
-          path: 'business/retailback',
-          name: 'RetailbackManager',
-          component: () => import('@/views/business/retailback/index.vue'),
-          meta: { title: '零售退货' }
         },
         {
           path: 'business/report',

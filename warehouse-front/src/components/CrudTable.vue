@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import type { DataGridView } from '@/types/api'
 
 const props = defineProps<{
@@ -89,9 +89,11 @@ const handleSelectionChange = (rows: any[]) => {
   emit('selection-change', rows)
 }
 
-watch(() => props.searchParams, () => {
-  reload()
-}, { deep: true, immediate: true })
+// 首载一次；之后由 SearchForm 的 search/reset 事件显式调用 reload()，
+// 不再 deep watch searchParams（否则搜索框每敲一个字就发一次请求）
+onMounted(() => {
+  loadData()
+})
 
 defineExpose({ reload, loadData, selectedRows, pagination })
 </script>

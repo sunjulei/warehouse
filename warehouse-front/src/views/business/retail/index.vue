@@ -79,7 +79,7 @@
                   <el-input-number
                     v-model="item.number"
                     :min="1"
-                    :max="getMaxStock(item.goodsid)"
+                    :max="item.maxNumber"
                     size="small"
                     style="width: 100px"
                     @change="(val: number) => onQtyChange(index, val)"
@@ -176,7 +176,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { batchAddRetail } from '@/api/retail'
 import { loadGoodsForPOS } from '@/api/goods'
 
@@ -194,6 +194,8 @@ interface CartItem {
   providername: string
   retailprice: number
   number: number
+  /** 加购时的库存快照，作为数量上限（翻页后商品列表查不到该商品时仍有效） */
+  maxNumber: number
 }
 
 const goodsList = ref<GoodsItem[]>([])
@@ -248,7 +250,9 @@ function addToCart(goods: GoodsItem) {
 
   const existing = cartItems.value.find(item => item.goodsid === goods.id)
   if (existing) {
-    if (existing.number >= goods.number) {
+    // 点击商品卡片时刷新库存快照为最新值
+    existing.maxNumber = goods.number
+    if (existing.number >= existing.maxNumber) {
       ElMessage.warning('已达到库存上限')
       return
     }
@@ -259,15 +263,10 @@ function addToCart(goods: GoodsItem) {
       goodsname: goods.goodsname,
       providername: goods.providername || '',
       retailprice: goods.price,
-      number: 1
+      number: 1,
+      maxNumber: goods.number
     })
   }
-}
-
-// 获取商品最大库存
-function getMaxStock(goodsid: number): number {
-  const goods = goodsList.value.find(g => g.id === goodsid)
-  return goods ? goods.number : 9999
 }
 
 // 数量变化回调
@@ -282,9 +281,15 @@ function removeFromCart(index: number) {
   cartItems.value.splice(index, 1)
 }
 
-// 清空购物车
-function clearCart() {
-  cartItems.value = []
+// 清空购物车（二次确认，防止误点丢失整单）
+async function clearCart() {
+  if (cartItems.value.length === 0) return
+  try {
+    await ElMessageBox.confirm('确定清空购物车吗？', '提示', { type: 'warning' })
+    cartItems.value = []
+  } catch {
+    // 用户取消，无需处理
+  }
 }
 
 // 确认结算弹窗
