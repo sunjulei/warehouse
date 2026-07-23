@@ -208,9 +208,10 @@ public class UserController {
     @RequestMapping("updateUser")
     public ResultObj updateUser(UserVo userVo){
         try {
-            // 安全：禁止通过 updateUser 接口修改密码和盐值
+            // 安全：禁止通过 updateUser 接口修改密码、盐值和用户类型（防提权为超管）
             userVo.setPwd(null);
             userVo.setSalt(null);
+            userVo.setType(null);
             userService.updateById(userVo);
             return ResultObj.UPDATE_SUCCESS;
         } catch (Exception e) {
@@ -391,23 +392,30 @@ public class UserController {
     @RequestMapping("updateUserInfo")
     public ResultObj updateUserInfo(UserVo userVo){
         try {
-            //用户头像不是默认图片
-            if (!(userVo.getImgpath()!=null&&userVo.getImgpath().equals(Constast.DEFAULT_IMG_GOODS))){
-                if (userVo.getImgpath().endsWith("_temp")){
-                    String newName = AppFileUtils.renameFile(userVo.getImgpath());
-                    userVo.setImgpath(newName);
-                    //删除原先的图片
-                    User oldUser = userService.getById(userVo.getId());
-                    if (oldUser != null) {
-                        String oldPath = oldUser.getImgpath();
-                        AppFileUtils.removeFileByPath(oldPath);
-                    }
-                    //获取存储在session中的user并重新设置user中的图片地址
-                    User user = (User) WebUtils.getSession().getAttribute("user");
-                    user.setImgpath(newName);
-                    //重新设置user
-                    WebUtils.getSession().setAttribute("user",user);
+            // 安全：个人资料接口只允许修改当前登录用户本人，且禁止修改敏感字段（防越权改密/提权）
+            User currentUser = (User) WebUtils.getSession().getAttribute("user");
+            if (currentUser == null) {
+                return ResultObj.error("未登录或会话已过期");
+            }
+            userVo.setId(currentUser.getId());
+            userVo.setPwd(null);
+            userVo.setSalt(null);
+            userVo.setType(null);
+            userVo.setLoginname(null);
+            //用户头像有更新（新上传的图片带 _temp 后缀）
+            if (userVo.getImgpath() != null && userVo.getImgpath().endsWith("_temp")) {
+                String newName = AppFileUtils.renameFile(userVo.getImgpath());
+                userVo.setImgpath(newName);
+                //删除原先的图片
+                User oldUser = userService.getById(userVo.getId());
+                if (oldUser != null) {
+                    String oldPath = oldUser.getImgpath();
+                    AppFileUtils.removeFileByPath(oldPath);
                 }
+                //获取存储在session中的user并重新设置user中的图片地址
+                currentUser.setImgpath(newName);
+                //重新设置user
+                WebUtils.getSession().setAttribute("user",currentUser);
             }
             userService.updateById(userVo);
             return ResultObj.UPDATE_SUCCESS;

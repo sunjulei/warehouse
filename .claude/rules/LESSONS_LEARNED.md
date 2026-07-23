@@ -1,5 +1,19 @@
 # 经验教训（运行验证后记录）
 
+## 2026-07-23 第一批安全漏洞修复（验证码/越权/权限粒度/Druid）
+
+### 行为变更（影响既有测试与运维习惯）
+- **验证码绕过通道已删除**：`code=x&captchaCode=x` 不再可用（该参数本身就是漏洞）。curl 自动化登录目前没有替代通道——验证码只存服务端 session 且已改为一次性使用（取出即删），密码错误也会消耗验证码，前端登录失败必须刷新验证码图片。如需自动化测试通道，应加 test-only profile 而不是在登录逻辑里留后门。
+- **Druid 控制台默认关闭**：dev/test 环境需 `DRUID_CONSOLE_ENABLED=true` + `DRUID_PWD=<强密码>` 才能开启；且 `/druid/**` 已移出免登录白名单，需先登录系统。
+- **dev profile 数据库密码无默认值**：`MYSQL_PASSWORD` 环境变量必填。
+- **未登录请求现在返回 HTTP 401 + JSON**（GlobalExceptionHandler 新增 NotLoginException 处理）；此前是 Tomcat 500 HTML 错误页，前端 request.ts 的 401 拦截实际从未触发过。
+- **权限校验改为操作级**：URL→权限码映射与 sys_permission 种子一致（user:view/create/update/delete 等），`user:view` 不再放行 `user:delete`。sys/bus 常用模块全部显式映射，未映射路径默认放行但会打 WARN 日志（新增 Controller 必须补映射）。`loadDashboardStats`/`loadRecentOperations`/公告查看/个人中心等列入"登录即可用"白名单，避免普通用户首页坏掉。
+- **序列号/操作日志接口**（serialNumber:*、operationLog:*）种子库无对应权限码，现在仅超管可用——如果普通业务员需要，要先在 sys_permission 里补权限码并授权。
+
+### 环境坑
+- devtools 热重启连远程 MySQL 时报 `Public Key Retrieval is not allowed` 导致重启失败（URL 里明明有 allowPublicKeyRetrieval=true，冷启动正常、热重启失败，疑似 caching_sha2 与 Druid 重建连接池的时序问题）。遇到后端改了代码但行为没变，先看日志是不是热重启挂了，直接全量重启。
+- IDEA 运行配置的环境变量存在 `.idea/workspace.xml` 的 `<env name=...>` 里，可用 grep 提取出来给命令行 mvn 用。
+
 ## 2026-07-18 库存原子更新 + 查询优化（#7/#8）
 
 ### 数据库环境
