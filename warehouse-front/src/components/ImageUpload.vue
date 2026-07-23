@@ -6,6 +6,7 @@
       name="mf"
       :show-file-list="false"
       :on-success="handleSuccess"
+      :on-error="handleError"
       :before-upload="beforeUpload"
       :with-credentials="true"
       accept="image/*"
@@ -23,6 +24,7 @@
 import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getImageUrl } from '@/api/file'
+import { BASE_URL } from '@/utils/request'
 
 const props = defineProps<{
   modelValue: string
@@ -30,7 +32,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
-const uploadUrl = '/warehouse/file/uploadFile'
+const uploadUrl = BASE_URL + '/file/uploadFile'
 
 const imageUrl = computed(() => {
   if (!props.modelValue) return ''
@@ -52,9 +54,15 @@ const beforeUpload = (file: File) => {
 }
 
 const handleSuccess = (res: any) => {
-  if (res.path) {
+  if (res && res.path) {
     emit('update:modelValue', res.path)
+  } else {
+    ElMessage.error('上传失败：服务器未返回图片路径')
   }
+}
+
+const handleError = () => {
+  ElMessage.error('图片上传失败，请重试')
 }
 </script>
 

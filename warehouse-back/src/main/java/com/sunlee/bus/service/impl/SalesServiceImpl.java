@@ -111,6 +111,14 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
         if (sales == null) {
             throw new RuntimeException("销售记录不存在: " + entity.getId());
         }
+        // 禁止编辑时更换商品：库存按商品维度差量调整，换商品会导致新旧商品库存都错账
+        if (!sales.getGoodsid().equals(entity.getGoodsid())) {
+            throw new RuntimeException("编辑单据不允许更换商品，请删除原单后重新开单");
+        }
+        // 已退完的记录禁止编辑，避免静默复活已退完订单导致账实不符
+        if (sales.getOrderStatus() != null && sales.getOrderStatus() == 1) {
+            throw new RuntimeException("该记录已退完，禁止编辑");
+        }
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
         if (goods == null) {
             throw new RuntimeException("商品不存在: " + entity.getGoodsid());
@@ -187,6 +195,11 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
             throw new RuntimeException("退货数量不能超过销售数量");
         }
 
+        // 原子扣减剩余可退数量（并发退货时防止超退导致库存与单据不一致）
+        if (baseMapper.decreaseRemaining(salesId, returnQty) == 0) {
+            throw new RuntimeException("退货失败：剩余可退数量不足或该记录已退完");
+        }
+
         // 回滚商品库存
         goodsMapper.increaseStock(sales.getGoodsid(), returnQty);
 
@@ -203,15 +216,12 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
         log.setRemark(returnQty >= sales.getNumber() ? "单商品退货（全部）" : "单商品退货（部分）");
         salesLogMapper.insert(log);
 
-        // 如果退全部，则标记该商品为已退完；否则更新数量
+        // 如果退全部，则标记该记录为已退完（数量已被原子扣减为0）
         if (returnQty >= sales.getNumber()) {
-            // 标记该条记录为已退完（数量设为0）
-            sales.setNumber(0);
-            sales.setOrderStatus(1);
-            baseMapper.updateById(sales);
-        } else {
-            sales.setNumber(sales.getNumber() - returnQty);
-            baseMapper.updateById(sales);
+            Sales finish = new Sales();
+            finish.setId(salesId);
+            finish.setOrderStatus(1);
+            baseMapper.updateById(finish);
         }
 
         // 检查订单是否所有商品都退完了
@@ -226,6 +236,13 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
         List<Sales> list = baseMapper.selectList(queryWrapper);
 
         for (Sales sales : list) {
+            if (sales.getNumber() == null || sales.getNumber() <= 0) {
+                continue;
+            }
+            // 原子扣减剩余数量：并发整单退货时已被其他事务退掉的记录跳过，防止重复回库
+            if (baseMapper.decreaseRemaining(sales.getId(), sales.getNumber()) == 0) {
+                continue;
+            }
             // 回滚商品库存
             goodsMapper.increaseStock(sales.getGoodsid(), sales.getNumber());
 
@@ -242,10 +259,11 @@ public class SalesServiceImpl extends ServiceImpl<SalesMapper, Sales> implements
             log.setRemark("整单退货");
             salesLogMapper.insert(log);
 
-            // 标记为已退完
-            sales.setNumber(0);
-            sales.setOrderStatus(1);
-            baseMapper.updateById(sales);
+            // 标记为已退完（数量已被原子扣减为0）
+            Sales finish = new Sales();
+            finish.setId(sales.getId());
+            finish.setOrderStatus(1);
+            baseMapper.updateById(finish);
         }
     }
 

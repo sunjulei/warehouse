@@ -147,18 +147,10 @@ public class SerialNumberServiceImpl extends ServiceImpl<SerialNumberMapper, Ser
             return;
         }
         for (String sn : serialNumbers) {
-            QueryWrapper<SerialNumber> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("serial_number", sn);
-            queryWrapper.eq("goodsid", goodsId);
-            queryWrapper.eq("status", 0); // 只有在库的才能销售
-            SerialNumber serialNumber = getOne(queryWrapper);
-            if (serialNumber == null) {
+            // 原子状态流转：仅当序列号处于在库状态时才售出，防止并发销售同一序列号
+            if (baseMapper.markSoldIfInStock(sn, goodsId) == 0) {
                 throw new RuntimeException("序列号不可用: " + sn);
             }
-            serialNumber.setStatus(1); // 已售
-            serialNumber.setOutstockTime(new Date());
-            updateById(serialNumber);
-
             // 记录销售日志
             saveLog(sn, goodsId, "sale", 0, 1, null, "销售出库");
         }
@@ -170,20 +162,18 @@ public class SerialNumberServiceImpl extends ServiceImpl<SerialNumberMapper, Ser
             return;
         }
         for (String sn : serialNumbers) {
-            QueryWrapper<SerialNumber> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("serial_number", sn);
-            queryWrapper.eq("status", 1); // 只有已售的才能退货
-            SerialNumber serialNumber = getOne(queryWrapper);
-            if (serialNumber == null) {
+            int newStatus = directResaleable ? 0 : 2;
+            // 原子状态流转：仅当序列号处于已售状态时才可退货，防止并发重复退货
+            if (baseMapper.markReturnedIfSold(sn, newStatus) == 0) {
                 throw new RuntimeException("序列号不属于已售状态: " + sn);
             }
-            int newStatus = directResaleable ? 0 : 2;
-            serialNumber.setStatus(newStatus); // 直接可售或待检
-            serialNumber.setOutstockTime(null);
-            updateById(serialNumber);
+            // 查询商品ID用于日志（同事务内读取，可见刚更新的行）
+            QueryWrapper<SerialNumber> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("serial_number", sn);
+            SerialNumber serialNumber = getOne(queryWrapper);
 
             // 记录退货日志
-            saveLog(sn, serialNumber.getGoodsid(), "return", 1, newStatus, null,
+            saveLog(sn, serialNumber != null ? serialNumber.getGoodsid() : null, "return", 1, newStatus, null,
                     directResaleable ? "退货直接回库" : "退货待检");
         }
     }

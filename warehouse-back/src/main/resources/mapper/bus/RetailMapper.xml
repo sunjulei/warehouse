@@ -63,4 +63,10 @@
         ORDER BY l.operate_time DESC
     </select>
 
+    <!-- 原子扣减零售单剩余可退数量：剩余不足或已退完时不更新（返回0），防止并发超退 -->
+    <update id="decreaseRemaining">
+        update bus_retail set number = number - #{number}
+        where id = #{id} and isdelete = 0 and ifnull(order_status, 0) = 0 and number &gt;= #{number}
+    </update>
+
 </mapper>

@@ -106,6 +106,14 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
         if (inport == null) {
             throw new RuntimeException("进货记录不存在: " + entity.getId());
         }
+        // 禁止编辑时更换商品：库存按商品维度差量调整，换商品会导致新旧商品库存都错账
+        if (!inport.getGoodsid().equals(entity.getGoodsid())) {
+            throw new RuntimeException("编辑单据不允许更换商品，请删除原单后重新开单");
+        }
+        // 已退完的记录禁止编辑，避免静默复活已退完订单导致账实不符
+        if (inport.getOrderStatus() != null && inport.getOrderStatus() == 1) {
+            throw new RuntimeException("该记录已退完，禁止编辑");
+        }
         //根据商品ID查询商品信息
         Goods goods = goodsMapper.selectById(entity.getGoodsid());
         if (goods == null) {
@@ -187,6 +195,11 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
             throw new RuntimeException("退货数量不能超过进货数量");
         }
 
+        // 原子扣减剩余可退数量（并发退货时防止超退导致库存与单据不一致）
+        if (baseMapper.decreaseRemaining(inportId, returnQty) == 0) {
+            throw new RuntimeException("退货失败：剩余可退数量不足或该记录已退完");
+        }
+
         // 回滚商品库存：进货退货需扣减库存（库存不足时拦截，防止扣成负数）
         Goods goods = goodsMapper.selectById(inport.getGoodsid());
         if (goods != null && goodsMapper.decreaseStock(inport.getGoodsid(), returnQty) == 0) {
@@ -206,14 +219,12 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
         log.setRemark(returnQty >= inport.getNumber() ? "单商品退货（全部）" : "单商品退货（部分）");
         inportLogMapper.insert(log);
 
-        // 如果退全部，则标记该商品为已退完；否则更新数量
+        // 如果退全部，则标记该记录为已退完（数量已被原子扣减为0）
         if (returnQty >= inport.getNumber()) {
-            inport.setNumber(0);
-            inport.setOrderStatus(1);
-            baseMapper.updateById(inport);
-        } else {
-            inport.setNumber(inport.getNumber() - returnQty);
-            baseMapper.updateById(inport);
+            Inport finish = new Inport();
+            finish.setId(inportId);
+            finish.setOrderStatus(1);
+            baseMapper.updateById(finish);
         }
 
         // 检查订单是否所有商品都退完了
@@ -228,6 +239,13 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
         List<Inport> list = baseMapper.selectList(queryWrapper);
 
         for (Inport inport : list) {
+            if (inport.getNumber() == null || inport.getNumber() <= 0) {
+                continue;
+            }
+            // 原子扣减剩余数量：并发整单退货时已被其他事务退掉的记录跳过，防止重复扣库存
+            if (baseMapper.decreaseRemaining(inport.getId(), inport.getNumber()) == 0) {
+                continue;
+            }
             // 回滚商品库存：进货退货需扣减库存（库存不足时拦截，防止扣成负数）
             Goods goods = goodsMapper.selectById(inport.getGoodsid());
             if (goods != null && goodsMapper.decreaseStock(inport.getGoodsid(), inport.getNumber()) == 0) {
@@ -247,10 +265,11 @@ public class InportServiceImpl extends ServiceImpl<InportMapper, Inport> impleme
             log.setRemark("整单退货");
             inportLogMapper.insert(log);
 
-            // 标记为已退完
-            inport.setNumber(0);
-            inport.setOrderStatus(1);
-            baseMapper.updateById(inport);
+            // 标记为已退完（数量已被原子扣减为0）
+            Inport finish = new Inport();
+            finish.setId(inport.getId());
+            finish.setOrderStatus(1);
+            baseMapper.updateById(finish);
         }
     }
 

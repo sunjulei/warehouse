@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sunlee.bus.mapper.MemberMapper">
+
+    <!--原子充值：余额与累计充值同时增加，防止并发充值丢失更新-->
+    <update id="addRecharge">
+        update bus_member
+        set balance = balance + #{amount},
+            total_recharge = total_recharge + #{amount}
+        where id = #{id}
+    </update>
+
+    <!--原子消费：余额不足时不更新（返回0），同时累加消费额与积分-->
+    <update id="deductBalance">
+        update bus_member
+        set balance = balance - #{amount},
+            total_consume = total_consume + #{amount},
+            points = points + #{points}
+        where id = #{id} and balance &gt;= #{amount}
+    </update>
+
+    <!--原子退款：余额增加-->
+    <update id="addBalance">
+        update bus_member
+        set balance = balance + #{amount}
+        where id = #{id}
+    </update>
+
+</mapper>

@@ -1,20 +1,11 @@
 package com.sunlee.bus.service.impl;
 
-import com.sunlee.bus.entity.Goods;
-import com.sunlee.bus.entity.Inport;
 import com.sunlee.bus.entity.Outport;
-import com.sunlee.bus.mapper.GoodsMapper;
-import com.sunlee.bus.mapper.InportMapper;
 import com.sunlee.bus.mapper.OutportMapper;
 import com.sunlee.bus.service.IOutportService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.sunlee.sys.common.WebUtils;
-import com.sunlee.sys.entity.User;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
 
 /**
  * <p>
@@ -27,81 +18,4 @@ import java.util.Date;
 @Service
 @Transactional
 public class OutportServiceImpl extends ServiceImpl<OutportMapper, Outport> implements IOutportService {
-
-    @Autowired
-    private InportMapper inportMapper;
-
-    @Autowired
-    private GoodsMapper goodsMapper;
-
-    /**
-     * @param id    进货单ID
-     * @param number    退货数量
-     * @param remark    备注
-     */
-    @Override
-    public void addOutport(Integer id, Integer number, String remark) {
-        // 校验退货数量
-        if (number == null || number <= 0) {
-            throw new RuntimeException("退货数量必须大于0");
-        }
-        //1.通过进货单ID查询出进货单信息
-        Inport inport = inportMapper.selectById(id);
-        if (inport == null) {
-            throw new RuntimeException("进货记录不存在: " + id);
-        }
-        // 校验退货数量不能超过进货数量
-        if (number > inport.getNumber()) {
-            throw new RuntimeException("退货数量不能超过进货数量，当前进货数量: " + inport.getNumber());
-        }
-        //2.根据商品ID查询商品信息
-        Goods goods = goodsMapper.selectById(inport.getGoodsid());
-        if (goods == null) {
-            throw new RuntimeException("商品不存在: " + inport.getGoodsid());
-        }
-        //3.原子扣减商品库存（库存不足时拦截，防止先售后退供导致负库存）
-        if (goodsMapper.decreaseStock(inport.getGoodsid(), number) == 0) {
-            throw new RuntimeException("商品【" + goods.getGoodsname() + "】库存不足，当前库存: " + goods.getNumber() + "，无法退货出库");
-        }
-
-        //修改进货的数量
-        inport.setNumber(inport.getNumber()-number);
-        inportMapper.updateById(inport);
-
-        //5.添加退货单信息
-        Outport outport = new Outport();
-        outport.setGoodsid(inport.getGoodsid());
-        outport.setNumber(number);
-        User user = (User) WebUtils.getSession().getAttribute("user");
-        outport.setOperateperson(user.getName());
-
-        outport.setOutportprice(inport.getInportprice());
-
-        outport.setPaytype(inport.getPaytype());
-        outport.setOutputtime(new Date());
-        outport.setRemark(remark);
-        outport.setProviderid(inport.getProviderid());
-        outport.setInportid(inport.getId());
-        getBaseMapper().insert(outport);
-    }
-
-    @Override
-    public void cancelOutport(Integer id) {
-        // 1. 查询退货单
-        Outport outport = getBaseMapper().selectById(id);
-        if (outport == null) {
-            throw new RuntimeException("退货记录不存在: " + id);
-        }
-        // 2. 回滚商品库存：退货取消 = 商品数量要加回来
-        goodsMapper.increaseStock(outport.getGoodsid(), outport.getNumber());
-        // 3. 回滚进货单数量
-        // 通过inportid精确回滚进货单
-        Inport inport = inportMapper.selectById(outport.getInportid());
-        if (inport != null) {
-            inport.setNumber(inport.getNumber() + outport.getNumber());
-            inportMapper.updateById(inport);
-        }
-        // 4. 删除退货单
-        getBaseMapper().deleteById(id);
-    }
 }

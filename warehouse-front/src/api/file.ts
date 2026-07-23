@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request, { BASE_URL } from '@/utils/request'
 
 export function uploadFile(file: File) {
   const formData = new FormData()
@@ -7,5 +7,5 @@ export function uploadFile(file: File) {
 }
 
 export function getImageUrl(path: string): string {
-  return '/warehouse/file/showImageByPath?path=' + encodeURIComponent(path)
+  return BASE_URL + '/file/showImageByPath?path=' + encodeURIComponent(path)
 }

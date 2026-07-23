@@ -80,20 +80,21 @@ public class LoginController {
     private IUserService userService;
 
     @RequestMapping("login")
-    public ResultObj login(UserVo userVo, String code, HttpSession session, String captchaId, String captchaCode, HttpServletResponse response, String platform) {
+    public ResultObj login(UserVo userVo, String code, HttpSession session, String captchaId, HttpServletResponse response, String platform) {
         boolean codeValid = false;
         if (code != null) {
-            String sessionCode;
-            if (captchaCode != null && !captchaCode.isEmpty()) {
-                // 移动端：直接使用请求中传递的验证码代码（小程序 session 不可靠）
-                sessionCode = captchaCode;
-            } else if (captchaId != null && !captchaId.isEmpty()) {
-                // 通过 captchaId 从 session 获取验证码
-                sessionCode = (String) session.getAttribute("captcha_" + captchaId);
+            // 验证码只能来自服务端 session，禁止客户端直接传递验证码值参与比对
+            String sessionKey;
+            if (captchaId != null && !captchaId.isEmpty()) {
+                // 移动端：通过 captchaId 从 session 获取验证码
+                sessionKey = "captcha_" + captchaId;
             } else {
                 // PC 端：直接从 session 获取验证码
-                sessionCode = (String) session.getAttribute("code");
+                sessionKey = "code";
             }
+            String sessionCode = (String) session.getAttribute(sessionKey);
+            // 验证码一次性使用，取出后立即失效，防止重放
+            session.removeAttribute(sessionKey);
             codeValid = sessionCode != null && sessionCode.equalsIgnoreCase(code);
         }
         if (codeValid) {
@@ -103,6 +104,10 @@ public class LoginController {
             User user = userService.getOne(queryWrapper);
             if (user == null) {
                 return ResultObj.LOGIN_ERROR_PASS;
+            }
+            // 校验账号是否被停用
+            if (!Constast.AVAILABLE_TRUE.equals(user.getAvailable())) {
+                return ResultObj.error("账号已被停用，请联系管理员");
             }
             // 验证密码（兼容Shiro Md5Hash: 第1次md5(salt+source)，后续md5(二进制结果)）
             String salt = user.getSalt();

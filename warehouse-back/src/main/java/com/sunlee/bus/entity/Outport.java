@@ -49,6 +49,7 @@ public class Outport implements Serializable {
 
     private Integer inportid;
 
+    @TableLogic
     private Integer isdelete;
 
     /**

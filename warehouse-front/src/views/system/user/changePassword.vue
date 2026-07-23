@@ -41,29 +41,44 @@
 import { ref } from 'vue'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { changePassword } from '@/api/user'
+import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
 const form = ref({ oldPassword: '', newPwdOne: '', newPwdTwo: '' })
 
 const rules = {
   oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
-  newPwdOne: [{ required: true, message: '请输入新密码', trigger: 'blur' }],
-  newPwdTwo: [{ required: true, message: '请确认新密码', trigger: 'blur' }]
+  newPwdOne: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '新密码长度不能少于6位', trigger: 'blur' }
+  ],
+  newPwdTwo: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string, callback: any) => {
+        if (value && value !== form.value.newPwdOne) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
 }
 
 const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    if (form.value.newPwdOne !== form.value.newPwdTwo) {
-      ElMessage.error('两次密码不一致')
-      return
-    }
     const res: any = await changePassword(form.value.oldPassword, form.value.newPwdOne, form.value.newPwdTwo)
     if (res.code === 200) {
       ElMessage.success('修改成功，请重新登录')
+      // 密码已变更，旧会话作废，清除本地登录状态后跳转登录页
+      await authStore.logout()
       router.push('/login')
     }
   })

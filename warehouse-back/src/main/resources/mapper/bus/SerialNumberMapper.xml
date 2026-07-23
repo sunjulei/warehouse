@@ -2,4 +2,18 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sunlee.bus.mapper.SerialNumberMapper">
 
+    <!--原子售出：仅当在库(0)时流转为已售(1)，防止并发销售同一序列号（XML 不走 @TableLogic，显式过滤 isdelete）-->
+    <update id="markSoldIfInStock">
+        update bus_serial_number
+        set status = 1, outstock_time = now()
+        where serial_number = #{serialNumber} and goodsid = #{goodsid} and status = 0 and isdelete = 0
+    </update>
+
+    <!--原子退货：仅当已售(1)时流转为目标状态（0=直接回库 / 2=待检），防止并发重复退货-->
+    <update id="markReturnedIfSold">
+        update bus_serial_number
+        set status = #{newStatus}, outstock_time = null
+        where serial_number = #{serialNumber} and status = 1 and isdelete = 0
+    </update>
+
 </mapper>

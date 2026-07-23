@@ -85,7 +85,25 @@
         <span>总数量: <strong>{{ orderDetailTotalQty }}</strong></span>
         <span>总金额: <strong style="color: #f56c6c;">¥{{ orderDetailTotalAmount.toFixed(2) }}</strong></span>
       </div>
+
+      <template #footer>
+        <el-button type="primary" :icon="Printer" @click="printVisible = true">打印</el-button>
+        <el-button @click="detailDialogVisible = false">关闭</el-button>
+      </template>
     </el-dialog>
+
+    <!-- 打印模板 -->
+    <PrintDocument
+      v-model:visible="printVisible"
+      title="销售单"
+      :order-no="currentOrder?.orderNo"
+      :meta="printMeta"
+      :columns="printColumns"
+      :rows="mergedOrderDetails"
+      :summary="printSummary"
+      :remark="currentOrder?.remark"
+      :signatures="['制单人', '客户签收', '日期']"
+    />
 
     <!-- 退货弹窗 -->
     <el-dialog v-model="returnDialogVisible" title="退货" width="900px" @close="resetReturnForm">
@@ -253,9 +271,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import { Plus, Delete, Printer } from '@element-plus/icons-vue'
 import SearchForm from '@/components/SearchForm.vue'
 import CrudTable from '@/components/CrudTable.vue'
+import PrintDocument, { type PrintColumn, type PrintMetaItem } from '@/components/PrintDocument.vue'
 import { loadAllOrders, loadOrderDetail, returnSingleGoods, returnOrder, addToOrder, loadReturnAddRecords } from '@/api/sales'
 import { loadAllCustomerForSelect } from '@/api/customer'
 import { loadAllGoodsForSelect } from '@/api/goods'
@@ -323,6 +342,30 @@ const orderDetailTotalQty = computed(() => {
 const orderDetailTotalAmount = computed(() => {
   return mergedOrderDetails.value.reduce((sum, item) => sum + item.saleprice * item.number, 0)
 })
+
+// 打印相关
+const printVisible = ref(false)
+
+const printMeta = computed<PrintMetaItem[]>(() => [
+  { label: '客户', value: currentOrder.value?.customerName },
+  { label: '销售时间', value: currentOrder.value?.salestime },
+  { label: '操作员', value: currentOrder.value?.operateperson },
+  { label: '状态', value: currentOrder.value?.orderStatus === 1 ? '已退完' : '正常' }
+])
+
+const printColumns: PrintColumn[] = [
+  { key: 'goodsname', label: '商品名称' },
+  { key: 'size', label: '规格', width: '90px' },
+  { key: 'number', label: '数量', align: 'center', width: '70px' },
+  { key: 'saleprice', label: '单价', align: 'right', width: '90px', format: (row) => `¥${row.saleprice?.toFixed(2)}` },
+  { key: 'subtotal', label: '小计', align: 'right', width: '100px', format: (row) => `¥${(row.saleprice * row.number).toFixed(2)}` }
+]
+
+const printSummary = computed<PrintMetaItem[]>(() => [
+  { label: '商品种类', value: mergedOrderDetails.value.length },
+  { label: '总数量', value: orderDetailTotalQty.value },
+  { label: '总金额', value: `¥${orderDetailTotalAmount.value.toFixed(2)}` }
+])
 
 // 整单退货汇总
 const returnAllTotalQty = computed(() => {

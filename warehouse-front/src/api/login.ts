@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request, { BASE_URL } from '@/utils/request'
 import type { ResultObj } from '@/types/api'
 
 export function login(data: { loginname: string; pwd: string; code: string }): Promise<ResultObj> {
@@ -6,7 +6,7 @@ export function login(data: { loginname: string; pwd: string; code: string }): P
 }
 
 export function getCodeUrl(): string {
-  return '/warehouse/login/getCode?t=' + Date.now()
+  return BASE_URL + '/login/getCode?t=' + Date.now()
 }
 
 export function currentUser(): Promise<ResultObj> {

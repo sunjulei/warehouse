@@ -3,6 +3,7 @@ package com.sunlee.bus.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -38,6 +39,7 @@ public class Retailback implements Serializable {
 
     private String remark;
 
+    @TableLogic
     private Integer isdelete;
 
     @TableField(exist = false)

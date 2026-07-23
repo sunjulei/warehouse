@@ -7,35 +7,35 @@
             <when test="type == 'today' or type == 'yesterday'">
                 SELECT HOUR(inporttime) AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY HOUR(inporttime)
                 ORDER BY label
             </when>
             <when test="type == 'week'">
                 SELECT DAYOFWEEK(inporttime) - 1 AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY DAYOFWEEK(inporttime) - 1
                 ORDER BY label
             </when>
             <when test="type == 'month'">
                 SELECT DAY(inporttime) AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY DAY(inporttime)
                 ORDER BY label
             </when>
             <when test="type == 'custom'">
                 SELECT DATE_FORMAT(inporttime, '%Y%m%d') AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY DATE(inporttime)
                 ORDER BY label
             </when>
             <when test="type == 'quarter' or type == 'year'">
                 SELECT MONTH(inporttime) AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY MONTH(inporttime)
                 ORDER BY label
             </when>
@@ -50,6 +50,7 @@
         FROM bus_inport i
         LEFT JOIN bus_goods g ON i.goodsid = g.id
         <where>
+            i.isdelete = 0
             <if test="startDate != null and startDate != ''">
                 AND DATE(i.inporttime) &gt;= #{startDate}
             </if>
@@ -66,35 +67,35 @@
             <when test="type == 'today' or type == 'yesterday'">
                 SELECT HOUR(inporttime) AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY HOUR(inporttime)
                 ORDER BY label
             </when>
             <when test="type == 'week'">
                 SELECT DAYOFWEEK(inporttime) - 1 AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY DAYOFWEEK(inporttime) - 1
                 ORDER BY label
             </when>
             <when test="type == 'month'">
                 SELECT DAY(inporttime) AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY DAY(inporttime)
                 ORDER BY label
             </when>
             <when test="type == 'custom'">
                 SELECT DATE_FORMAT(inporttime, '%Y%m%d') AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY DATE(inporttime)
                 ORDER BY label
             </when>
             <when test="type == 'quarter' or type == 'year'">
                 SELECT MONTH(inporttime) AS label, IFNULL(SUM(inportprice * number), 0) AS total
                 FROM bus_inport
-                WHERE DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
+                WHERE isdelete = 0 AND DATE(inporttime) &gt;= #{startDate} AND DATE(inporttime) &lt;= #{endDate}
                 GROUP BY MONTH(inporttime)
                 ORDER BY label
             </when>
@@ -167,5 +168,11 @@
         </where>
         ORDER BY l.operate_time DESC
     </select>
+
+    <!-- 原子扣减进货单剩余可退数量：剩余不足或已退完时不更新（返回0），防止并发超退 -->
+    <update id="decreaseRemaining">
+        update bus_inport set number = number - #{number}
+        where id = #{id} and isdelete = 0 and ifnull(order_status, 0) = 0 and number &gt;= #{number}
+    </update>
 
 </mapper>

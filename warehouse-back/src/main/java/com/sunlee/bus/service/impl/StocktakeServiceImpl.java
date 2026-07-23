@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sunlee.bus.entity.Goods;
 import com.sunlee.bus.entity.Stocktake;
 import com.sunlee.bus.entity.StocktakeItem;
+import com.sunlee.bus.mapper.GoodsMapper;
 import com.sunlee.bus.mapper.StocktakeMapper;
 import com.sunlee.bus.service.IGoodsService;
 import com.sunlee.bus.service.IStocktakeItemService;
@@ -25,6 +26,9 @@ public class StocktakeServiceImpl extends ServiceImpl<StocktakeMapper, Stocktake
 
     @Autowired
     private IGoodsService goodsService;
+
+    @Autowired
+    private GoodsMapper goodsMapper;
 
     @Autowired
     private IStocktakeItemService stocktakeItemService;
@@ -69,22 +73,33 @@ public class StocktakeServiceImpl extends ServiceImpl<StocktakeMapper, Stocktake
             if (item.getActualNum() == null) {
                 throw new RuntimeException("商品 [" + item.getGoodsname() + "] 尚未填写实际盘点数量");
             }
+        }
+
+        // 原子认领盘点单（status 0→1），防止并发重复提交导致差异被重复应用
+        com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Stocktake> claim =
+                new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<>();
+        claim.eq("id", stocktakeId).eq("status", 0)
+                .set("status", 1).set("finish_time", new Date());
+        if (baseMapper.update(null, claim) == 0) {
+            throw new RuntimeException("盘点单已被提交，请勿重复操作");
+        }
+
+        for (StocktakeItem item : items) {
             // 计算差异
             item.setDiffNum(item.getActualNum() - item.getSystemNum());
             stocktakeItemService.updateById(item);
 
-            // 更新商品库存为实际盘点数量
-            if (!item.getActualNum().equals(item.getSystemNum())) {
-                Goods goods = new Goods();
-                goods.setId(item.getGoodsid());
-                goods.setNumber(item.getActualNum());
-                goodsService.updateById(goods);
+            // 按差异量原子调整库存（而非盲写实际数量）：
+            // 盘点单创建到提交之间发生的正常出入库不会被覆盖，只有差异部分被修正
+            int diff = item.getDiffNum();
+            if (diff > 0) {
+                goodsMapper.increaseStock(item.getGoodsid(), diff);
+            } else if (diff < 0) {
+                if (goodsMapper.decreaseStock(item.getGoodsid(), -diff) == 0) {
+                    throw new RuntimeException("商品 [" + item.getGoodsname() + "] 盘亏扣减失败：盘点期间库存已变动且当前库存不足，请重新盘点");
+                }
             }
         }
-
-        stocktake.setStatus(1);
-        stocktake.setFinishTime(new Date());
-        updateById(stocktake);
     }
 
     @Override

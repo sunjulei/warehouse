@@ -87,7 +87,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import request from '@/utils/request'
+import request, { BASE_URL } from '@/utils/request'
 import { ElMessage, type FormInstance } from 'element-plus'
 
 const router = useRouter()
@@ -120,12 +120,13 @@ const refreshCaptcha = async () => {
       responseType: 'blob',
       timeout: 10000
     })
-    const blob = res.data as Blob
+    // request.ts 的 blob 分支已直接返回 Blob 本体
+    const blob = res as unknown as Blob
     const url = URL.createObjectURL(blob)
     captchaBlobUrl.value = url
     captchaUrl.value = url
   } catch {
-    captchaUrl.value = '/warehouse/login/getCode?t=' + Date.now()
+    captchaUrl.value = BASE_URL + '/login/getCode?t=' + Date.now()
   }
 }
 
